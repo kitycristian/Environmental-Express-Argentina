@@ -46,6 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <nav className="flex flex-col gap-2 p-4 h-full">
       <div className="mb-6 px-2 flex flex-col items-start gap-3">
         <img src={logoUrl} alt="Environmental Express Argentina" className="h-16 w-auto object-contain" />
+        <span className="font-bold text-sm text-primary">Environmental Express Argentina</span>
       </div>
       
       <Link href="/">

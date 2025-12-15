@@ -31,8 +31,9 @@ export default function Report() {
       <header className="mb-8 border-b-4 border-primary pb-4">
         <div className="flex justify-between items-start mb-6">
           <div className="flex flex-col gap-2">
-             <img src={logoUrl} alt="Environmental Express" className="h-24 w-auto object-contain" />
-             <p className="text-xs text-gray-500 font-medium tracking-wider mt-2">HIGIENE OCUPACIONAL Y MEDIO AMBIENTE</p>
+             <img src={logoUrl} alt="Environmental Express Argentina" className="h-24 w-auto object-contain" />
+             <p className="text-sm font-bold text-primary mt-2">Environmental Express Argentina</p>
+             <p className="text-xs text-gray-500 font-medium tracking-wider">HIGIENE OCUPACIONAL Y MEDIO AMBIENTE</p>
           </div>
           <div className="text-right">
              <h1 className="text-3xl font-bold uppercase tracking-wide text-primary">Informe Técnico</h1>
