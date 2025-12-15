@@ -113,6 +113,8 @@ export interface Measurement {
     workPlaneHeight?: number; // Altura plano de trabajo
     lightingType?: 'artificial' | 'natural' | 'mixed';
     lightSource?: string; // LED, Fluorescente, etc.
+    artifactType?: string; // Descarga, LED, Incandescente, etc.
+    luxOff?: number; // Valor de medición con luces apagadas (OFF)
   };
 
   // Detailed Metadata (New Request)
