@@ -54,6 +54,7 @@ export default function Dashboard() {
       case 'cold_stress': return <Wind className="h-6 w-6" />;
       case 'chemical_agents': return <Beaker className="h-6 w-6" />;
       case 'particulate_matter': return <Factory className="h-6 w-6" />;
+      case 'ventilation': return <Wind className="h-6 w-6" />;
       default: return <Building2 className="h-6 w-6" />;
     }
   };

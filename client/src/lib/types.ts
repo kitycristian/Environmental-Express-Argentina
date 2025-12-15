@@ -28,7 +28,8 @@ export type MeasurementType =
   | 'thermal_load'
   | 'cold_stress'
   | 'particulate_matter'
-  | 'chemical_agents';
+  | 'chemical_agents'
+  | 'ventilation';
 
 export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   lighting: 'Iluminación',
@@ -37,6 +38,7 @@ export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   cold_stress: 'Estrés por Frío',
   particulate_matter: 'Material Particulado',
   chemical_agents: 'Agentes Químicos',
+  ventilation: 'Ventilación',
 };
 
 export interface Instrument {

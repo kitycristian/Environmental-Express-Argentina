@@ -46,6 +46,14 @@ const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; o
   chemical_agents: [
     { key: 'substance', label: 'Sustancia', type: 'text' },
     { key: 'concentration', label: 'ppm / mg/m3', type: 'number' }
+  ],
+  ventilation: [
+    { key: 'identification', label: 'Identificación', type: 'text' },
+    { key: 'type', label: 'Tipo', type: 'select', options: ['Inyección', 'Extracción'] },
+    { key: 'velocity', label: 'Velocidad (m/s)', type: 'number' },
+    { key: 'area', label: 'Área (m²)', type: 'number' },
+    { key: 'flow', label: 'Caudal (m³/h)', type: 'number' },
+    { key: 'renovations', label: 'Renov/h', type: 'number' }
   ]
 };
 
