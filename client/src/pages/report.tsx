@@ -28,7 +28,13 @@ export default function Report() {
 
       {/* Report Header */}
       <header className="mb-8 border-b-2 border-black pb-4">
-        <h1 className="text-3xl font-bold uppercase tracking-wide mb-2">Informe de Relevamiento SyH</h1>
+        <div className="flex justify-between items-start mb-4">
+          <h1 className="text-3xl font-bold uppercase tracking-wide">Informe de Relevamiento SyH</h1>
+          <div className="text-right">
+             <h2 className="text-xl font-bold text-gray-800">Environmental Express</h2>
+             <p className="text-sm text-gray-500 uppercase tracking-widest">Argentina</p>
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
           <div>
             <span className="font-bold">Establecimiento:</span> {establishment.name}

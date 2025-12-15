@@ -13,9 +13,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const NavContent = () => (
     <nav className="flex flex-col gap-2 p-4">
       <div className="mb-6 px-2">
-        <h2 className="text-lg font-bold tracking-tight text-primary">Relevamiento SyH</h2>
+        <h2 className="text-lg font-bold tracking-tight text-primary">Environmental Express</h2>
         <p className="text-xs text-muted-foreground truncate">
-          {establishment.name || "Sin establecimiento"}
+          Argentina
         </p>
       </div>
       
