@@ -313,7 +313,7 @@ export default function Report() {
                          return (
                             <tr key={m.id} className="text-center bg-white text-[9px] hover:bg-gray-50 border-b border-black">
                                 <td className="border border-black p-1">{index + 1}</td>
-                                <td className="border border-black p-1 text-left px-2 truncate max-w-[150px]" title={m.name || m.sectorName}>{m.name || m.sectorName}</td>
+                                <td className="border border-black p-1 text-left px-2 break-words" title={m.name || m.sectorName}>{m.name || m.sectorName}</td>
                                 <td className="border border-black p-1">{m.config?.width || '-'}</td>
                                 <td className="border border-black p-1">{m.config?.length || '-'}</td>
                                 <td className="border border-black p-1">{m.config?.height || '-'}</td>
