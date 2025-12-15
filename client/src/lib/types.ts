@@ -105,6 +105,7 @@ export interface MeasurementPoint {
 
 export interface Measurement {
   id: string;
+  name?: string; // Nombre del Puesto / Sección (Col 26)
   type: MeasurementType;
   sectorId: string;
   status: 'pending' | 'compliant' | 'non_compliant';
@@ -123,6 +124,7 @@ export interface Measurement {
     height?: number; // Altura de montaje
     workPlaneHeight?: number; // Altura plano de trabajo
     lightingType?: 'artificial' | 'natural' | 'mixed';
+    lightingSystemType?: 'general' | 'localized' | 'mixed'; // General / Localizada / Mixta (Col 29)
     lightSource?: string; // LED, Fluorescente, etc.
     artifactType?: string; // Descarga, LED, Incandescente, etc.
     luxOff?: number; // Valor de medición con luces apagadas (OFF)

@@ -172,6 +172,26 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
         <div className="flex flex-col md:flex-row">
             {/* LEFT COLUMN: Dimensions & Config */}
             <div className="w-full md:w-64 bg-gray-50/50 border-r p-4 space-y-4">
+                <div className="space-y-1">
+                    <Label className="text-xs font-bold uppercase text-gray-500">Puesto / Sección</Label>
+                    <DebouncedInput 
+                       className="h-7 bg-white text-xs" 
+                       placeholder="Ej. Línea de Cajas"
+                       value={measurement.name || ''}
+                       onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { name: val as string })}
+                    />
+                </div>
+
+                <div className="space-y-1">
+                    <Label className="text-xs font-bold uppercase text-gray-500">Hora Medición</Label>
+                    <DebouncedInput 
+                       type="time"
+                       className="h-7 bg-white text-xs" 
+                       value={measurement.details?.startTime || ''}
+                       onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { details: { ...measurement.details, startTime: val as string } })}
+                    />
+                </div>
+
                 <div>
                     <Label className="text-xs font-bold uppercase text-gray-500 mb-2 block">Dimensiones (m)</Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -233,8 +253,22 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
                             />
                             <label htmlFor="type-artificial" className="text-xs font-medium leading-none cursor-pointer">Artificial</label>
                         </div>
-                        {/* We could add Natural but the image only showed Mixed/Artificial */}
                      </div>
+                     
+                     <Label className="text-xs font-bold uppercase text-gray-500 mt-3 mb-2 block">Sistema Ilum.</Label>
+                     <Select 
+                        value={measurement.config?.lightingSystemType || 'general'} 
+                        onValueChange={(val: any) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightingSystemType: val } })}
+                     >
+                        <SelectTrigger className="h-7 text-xs bg-white w-full">
+                            <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="localized">Localizada</SelectItem>
+                            <SelectItem value="mixed">Mixta</SelectItem>
+                        </SelectContent>
+                     </Select>
                 </div>
 
                 <div className="pt-2 border-t space-y-2">

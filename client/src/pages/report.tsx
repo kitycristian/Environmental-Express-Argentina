@@ -198,87 +198,76 @@ export default function Report() {
     </div>
   );
 
-  const renderLightingProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
-    <div className="space-y-8">
-       {items.map(({ sectorName, measurement }) => (
-         <div key={measurement.id} className="break-inside-avoid mb-12">
-            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL" />
-            
-            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
-                Sector: {sectorName}
-            </div>
+  const renderLightingProtocol = (items: { sectorName: string; measurement: Measurement }[]) => {
+    // Flatten items to get a list of all lighting measurements
+    const lightingMeasurements = items.map(item => ({
+        ...item.measurement,
+        sectorName: item.sectorName
+    }));
 
-            <MeasurementDataBlock measurement={measurement} />
+    return (
+    <div className="space-y-8 break-inside-avoid">
+       <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL" />
+       
+       <div className="mb-6">
+            <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Tabla de Valores de Iluminación</h3>
+            <table className="w-full text-[10px] border-collapse border border-black table-fixed">
+                <thead>
+                <tr className="bg-gray-100 text-black font-bold uppercase text-center h-12 align-middle">
+                    <th className="border border-black p-1 w-12">Punto</th>
+                    <th className="border border-black p-1 w-12">(24) Hora</th>
+                    <th className="border border-black p-1 w-24">(25) Sector</th>
+                    <th className="border border-black p-1 w-32">(26) Sección / Puesto</th>
+                    <th className="border border-black p-1 w-20">(27) Tipo Ilum.</th>
+                    <th className="border border-black p-1 w-20">(28) Fuente Lumínica</th>
+                    <th className="border border-black p-1 w-20">(29) Iluminación</th>
+                    <th className="border border-black p-1 w-24">(30) Uniformidad<br/>E min ≥ E med/2</th>
+                    <th className="border border-black p-1 w-16">(31) Valor Medido (Lux)</th>
+                    <th className="border border-black p-1 w-16">(32) Valor Legal</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {lightingMeasurements.map((m, index) => {
+                         const values = m.points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
+                         const eAvg = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+                         const eMin = values.length > 0 ? Math.min(...values) : 0;
+                         const halfAvg = eAvg / 2;
+                         const compliesUniformity = eAvg > 0 ? eMin >= halfAvg : false;
+                         const uniformityText = `${eMin} ${compliesUniformity ? '≥' : '<'} ${Math.round(halfAvg)}`;
 
-            <div className="mt-6">
-                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
-                <table className="w-full text-[10px] border-collapse border border-black">
-                    <thead>
-                    <tr className="bg-gray-100 text-black font-bold uppercase text-center">
-                        <th className="border border-black p-1 w-24">Punto</th>
-                        <th className="border border-black p-1">Puesto</th>
-                        <th className="border border-black p-1 w-16">Hora</th>
-                        <th className="border border-black p-1">Tipo</th>
-                        <th className="border border-black p-1">Fuente</th>
-                        <th className="border border-black p-1 w-12">Alt. Mont.</th>
-                        <th className="border border-black p-1 w-12">Alt. Trab.</th>
-                        <th className="border border-black p-1 w-16 bg-gray-200">E. Media (Lux)</th>
-                        <th className="border border-black p-1 w-16 bg-gray-200">E. Min (Lux)</th>
-                        <th className="border border-black p-1 w-16">Valor Legal</th>
-                        <th className="border border-black p-1 w-16">Cumple</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                        <tr className="bg-white hover:bg-gray-50 text-center">
-                            <td className="border border-black p-1 font-bold text-left pl-2">
-                                {measurement.points.map(p => p.label).join(', ')}
-                            </td>
-                            <td className="border border-black p-1 text-left pl-2">{sectorName}</td>
-                            <td className="border border-black p-1">-</td>
-                            <td className="border border-black p-1 capitalize">{measurement.config?.lightingType || 'Artificial'}</td>
-                            <td className="border border-black p-1">{measurement.config?.lightSource || '-'}</td>
-                            <td className="border border-black p-1">{measurement.config?.height || '-'} m</td>
-                            <td className="border border-black p-1">{measurement.config?.workPlaneHeight || '-'} m</td>
-                            <td className="border border-black p-1 font-bold">
-                                {(() => {
-                                    const values = measurement.points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
-                                    return values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
-                                })()}
-                            </td>
-                            <td className="border border-black p-1">
-                                {(() => {
-                                    const values = measurement.points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
-                                    return values.length > 0 ? Math.min(...values) : 0;
-                                })()}
-                            </td>
-                            <td className="border border-black p-1">{measurement.config?.limit || '-'}</td>
-                            <td className={`border border-black p-1 font-bold ${measurement.status === 'compliant' ? 'text-black' : 'text-black'}`}>
-                                {measurement.status === 'compliant' ? 'SI' : 'NO'}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                         return (
+                            <tr key={m.id} className="bg-white hover:bg-gray-50 text-center border-b border-black">
+                                <td className="border border-black p-1 font-bold">{String(index + 1).padStart(2, '0')}</td>
+                                <td className="border border-black p-1">{m.details?.startTime || '-'}</td>
+                                <td className="border border-black p-1 font-medium">{m.sectorName}</td>
+                                <td className="border border-black p-1 text-left pl-2">{m.name || m.sectorName}</td>
+                                <td className="border border-black p-1 capitalize">{m.config?.lightingType === 'mixed' ? 'Mixta' : 'Artificial'}</td>
+                                <td className="border border-black p-1">{m.config?.artifactType || 'LED'}</td>
+                                <td className="border border-black p-1 capitalize">{m.config?.lightingSystemType === 'localized' ? 'Localizada' : m.config?.lightingSystemType === 'mixed' ? 'Mixta' : 'General'}</td>
+                                <td className={`border border-black p-1 ${!compliesUniformity ? 'text-red-600 font-bold' : ''}`}>
+                                    {eAvg > 0 ? uniformityText : 'NA'}
+                                </td>
+                                <td className={`border border-black p-1 font-bold ${m.status === 'non_compliant' ? 'text-red-600' : ''}`}>
+                                    {eAvg || 'NA'}
+                                </td>
+                                <td className="border border-black p-1">{m.config?.limit || '-'}</td>
+                            </tr>
+                         );
+                    })}
+                </tbody>
+            </table>
+       </div>
 
-            {/* Conclusions specific to this measurement */}
-            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
-                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
-                <p className="text-xs text-justify leading-relaxed">
-                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
-                </p>
-                {measurement.analysisAndImprovements && (
-                    <>
-                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
-                        <p className="text-xs text-justify leading-relaxed">
-                            {measurement.analysisAndImprovements}
-                        </p>
-                    </>
-                )}
-            </div>
-         </div>
-       ))}
+       {/* Conclusions Block */}
+       <div className="border border-black p-4 bg-gray-50 break-inside-avoid">
+            <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión General de Iluminación:</h4>
+            <p className="text-xs text-justify leading-relaxed">
+                {establishment.conclusions || "Se han realizado las mediciones de iluminación en los puestos indicados. Los valores en rojo indican incumplimiento con la normativa vigente (Res. SRT 84/12)."}
+            </p>
+       </div>
     </div>
   );
+  };
 
   const COLD_STRESS_RECOMMENDATIONS = (
     <div className="mt-8 p-6 bg-blue-50/50 border border-blue-100 rounded-lg text-xs leading-relaxed text-gray-700 break-inside-avoid">
