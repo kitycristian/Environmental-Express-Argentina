@@ -92,65 +92,191 @@ export default function Report() {
     });
   });
 
-  const renderLightingProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
-    <div className="space-y-6">
-       <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
-          Protocolo de Iluminación (Res. 84/12)
+  // Helper Components for Report Structure matching the official forms
+  const ProtocolHeader = ({ title }: { title: string }) => (
+    <div className="mb-6">
+       <h2 className="text-xl font-bold text-center border-y-2 border-black py-2 mb-6 uppercase tracking-wider bg-gray-50">
+          {title}
+       </h2>
+       
+       <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos del establecimiento</h3>
+       <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs mb-6 px-2">
+          <div className="flex gap-2">
+            <span className="font-bold w-32">Razón Social:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">{establishment.razonSocial || establishment.name}</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="font-bold w-32">C.U.I.T.:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">{establishment.cuit || '-'}</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="font-bold w-32">Dirección:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">{establishment.address || '-'}</span>
+          </div>
+           <div className="flex gap-2">
+            <span className="font-bold w-32">Localidad:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">{establishment.city || '-'}</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="font-bold w-32">C.P.:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">{establishment.postalCode || '-'}</span>
+          </div>
+           <div className="flex gap-2">
+            <span className="font-bold w-32">Provincia:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">{establishment.province || '-'}</span>
+          </div>
        </div>
-       <table className="w-full text-xs border-collapse border border-gray-300">
-         <thead>
-           <tr className="bg-gray-50 text-gray-700">
-             <th className="border border-gray-300 p-2 text-left">Sector / Puesto</th>
-             <th className="border border-gray-300 p-2 text-left w-20">Hora</th>
-             <th className="border border-gray-300 p-2 text-left">Tipo</th>
-             <th className="border border-gray-300 p-2 text-left">Fuente</th>
-             <th className="border border-gray-300 p-2 text-center w-16">Alt. Mont.</th>
-             <th className="border border-gray-300 p-2 text-center w-16">Alt. Trab.</th>
-             <th className="border border-gray-300 p-2 text-center w-20 font-bold bg-gray-100">E. Media (Lux)</th>
-             <th className="border border-gray-300 p-2 text-center w-20 bg-gray-100">E. Min (Lux)</th>
-             <th className="border border-gray-300 p-2 text-center w-20">Valor Legal</th>
-             <th className="border border-gray-300 p-2 text-center w-24">Cumple</th>
-           </tr>
-         </thead>
-         <tbody>
-           {items.map(({ sectorName, measurement }) => {
-             const points = measurement.points;
-             const values = points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
-             const eAvg = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
-             const eMin = values.length > 0 ? Math.min(...values) : 0;
-             const limit = measurement.config?.limit || 0;
-             const complies = measurement.status === 'compliant';
+    </div>
+  );
 
-             return (
-               <tr key={measurement.id} className="break-inside-avoid hover:bg-gray-50/50">
-                 <td className="border border-gray-300 p-2 font-medium">
-                    {sectorName}
-                    {measurement.observations && <div className="text-[10px] text-gray-500 italic mt-1">Obs: {measurement.observations}</div>}
-                    {measurement.specificConclusions && <div className="text-[10px] text-blue-600 font-semibold mt-1">Concl: {measurement.specificConclusions}</div>}
-                    {(measurement.attachedDocuments?.calibrationCertificate || measurement.attachedDocuments?.sketch || measurement.attachedDocuments?.measurementProof) && (
-                      <div className="flex gap-1 mt-1 flex-wrap">
-                        {measurement.attachedDocuments.calibrationCertificate && <span className="text-[9px] px-1 bg-gray-100 border rounded text-gray-600">Cert. Calib.</span>}
-                        {measurement.attachedDocuments.sketch && <span className="text-[9px] px-1 bg-gray-100 border rounded text-gray-600">Croquis</span>}
-                        {measurement.attachedDocuments.measurementProof && <span className="text-[9px] px-1 bg-green-50 border border-green-200 rounded text-green-700">Prueba Medición</span>}
-                      </div>
-                    )}
-                 </td>
-                 <td className="border border-gray-300 p-2 text-gray-500">-</td>
-                 <td className="border border-gray-300 p-2 capitalize">{measurement.config?.lightingType || 'Artificial'}</td>
-                 <td className="border border-gray-300 p-2">{measurement.config?.lightSource || '-'}</td>
-                 <td className="border border-gray-300 p-2 text-center">{measurement.config?.height || '-'} m</td>
-                 <td className="border border-gray-300 p-2 text-center">{measurement.config?.workPlaneHeight || '-'} m</td>
-                 <td className="border border-gray-300 p-2 text-center font-bold text-sm">{eAvg}</td>
-                 <td className="border border-gray-300 p-2 text-center text-gray-600">{eMin}</td>
-                 <td className="border border-gray-300 p-2 text-center">{limit > 0 ? limit : '-'}</td>
-                 <td className={`border border-gray-300 p-2 text-center font-bold ${complies ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50'}`}>
-                   {complies ? 'SI' : 'NO'}
-                 </td>
-               </tr>
-             );
-           })}
-         </tbody>
-       </table>
+  const MeasurementDataBlock = ({ measurement }: { measurement: Measurement }) => (
+    <div className="mb-6 text-xs break-inside-avoid">
+       <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos para la medición</h3>
+       
+       <div className="grid grid-cols-1 gap-2 mb-4 px-2">
+          <div className="flex gap-2">
+            <span className="font-bold w-48">Marca, modelo y número de serie del instrumento utilizado:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">
+                {measurement.details?.brand} {measurement.details?.model} - Serie: {measurement.details?.serialNumber}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <span className="font-bold w-48">Fecha del certificado de calibración:</span>
+            <span className="border-b border-dotted border-gray-400 flex-1">{measurement.details?.calibrationDate || '-'}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+              <div className="flex gap-2">
+                <span className="font-bold">Fecha de medición:</span>
+                <span className="border-b border-dotted border-gray-400 flex-1">{measurement.details?.measurementDate ? format(new Date(measurement.details.measurementDate), "dd/MM/yyyy") : '-'}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-bold">Hora inicio:</span>
+                <span className="border-b border-dotted border-gray-400 flex-1">{measurement.details?.startTime || '-'}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-bold">Hora fin:</span>
+                <span className="border-b border-dotted border-gray-400 flex-1">{measurement.details?.endTime || '-'}</span>
+              </div>
+          </div>
+       </div>
+
+       <div className="space-y-4 px-2">
+           <div>
+               <span className="font-bold block mb-1">Horarios/turnos habituales de trabajo:</span>
+               <div className="border border-gray-300 p-2 min-h-[40px] bg-gray-50/50">{measurement.details?.workShifts || '-'}</div>
+           </div>
+           
+           <div>
+               <span className="font-bold block mb-1">Describa las condiciones normales y/o habituales de trabajo:</span>
+               <div className="border border-gray-300 p-2 min-h-[60px] bg-gray-50/50">{measurement.details?.normalConditions || '-'}</div>
+           </div>
+
+           <div>
+               <span className="font-bold block mb-1">Describa las condiciones de trabajo al momento de la medición:</span>
+               <div className="border border-gray-300 p-2 min-h-[60px] bg-gray-50/50">{measurement.details?.currentConditions || '-'}</div>
+           </div>
+
+           <div>
+               <span className="font-bold block mb-1">Condiciones atmosféricas durante la medición:</span>
+               <div className="grid grid-cols-3 gap-4 border border-gray-300 p-2 bg-gray-50/50">
+                  <div>T: {establishment.conditions?.temperature || '-'} °C</div>
+                  <div>H: {establishment.conditions?.humidity || '-'} %</div>
+                  <div>P: {establishment.conditions?.pressure || '-'} mmHg</div>
+               </div>
+           </div>
+           
+           <div>
+               <span className="font-bold block mb-1">Documentación que se adjuntará a la medición:</span>
+               <ul className="list-disc list-inside pl-2">
+                   {measurement.attachedDocuments?.calibrationCertificate && <li>Certificado de calibración</li>}
+                   {measurement.attachedDocuments?.sketch && <li>Croquis</li>}
+                   {measurement.attachedDocuments?.measurementProof && <li>Prueba de Medición (Foto)</li>}
+                   {!measurement.attachedDocuments?.calibrationCertificate && !measurement.attachedDocuments?.sketch && !measurement.attachedDocuments?.measurementProof && <li>-</li>}
+               </ul>
+           </div>
+       </div>
+    </div>
+  );
+
+  const renderLightingProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }) => (
+         <div key={measurement.id} className="break-inside-avoid mb-12">
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
+
+            <MeasurementDataBlock measurement={measurement} />
+
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <table className="w-full text-[10px] border-collapse border border-black">
+                    <thead>
+                    <tr className="bg-gray-100 text-black font-bold uppercase text-center">
+                        <th className="border border-black p-1 w-24">Punto</th>
+                        <th className="border border-black p-1">Puesto</th>
+                        <th className="border border-black p-1 w-16">Hora</th>
+                        <th className="border border-black p-1">Tipo</th>
+                        <th className="border border-black p-1">Fuente</th>
+                        <th className="border border-black p-1 w-12">Alt. Mont.</th>
+                        <th className="border border-black p-1 w-12">Alt. Trab.</th>
+                        <th className="border border-black p-1 w-16 bg-gray-200">E. Media (Lux)</th>
+                        <th className="border border-black p-1 w-16 bg-gray-200">E. Min (Lux)</th>
+                        <th className="border border-black p-1 w-16">Valor Legal</th>
+                        <th className="border border-black p-1 w-16">Cumple</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr className="bg-white hover:bg-gray-50 text-center">
+                            <td className="border border-black p-1 font-bold text-left pl-2">
+                                {measurement.points.map(p => p.label).join(', ')}
+                            </td>
+                            <td className="border border-black p-1 text-left pl-2">{sectorName}</td>
+                            <td className="border border-black p-1">-</td>
+                            <td className="border border-black p-1 capitalize">{measurement.config?.lightingType || 'Artificial'}</td>
+                            <td className="border border-black p-1">{measurement.config?.lightSource || '-'}</td>
+                            <td className="border border-black p-1">{measurement.config?.height || '-'} m</td>
+                            <td className="border border-black p-1">{measurement.config?.workPlaneHeight || '-'} m</td>
+                            <td className="border border-black p-1 font-bold">
+                                {(() => {
+                                    const values = measurement.points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
+                                    return values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+                                })()}
+                            </td>
+                            <td className="border border-black p-1">
+                                {(() => {
+                                    const values = measurement.points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
+                                    return values.length > 0 ? Math.min(...values) : 0;
+                                })()}
+                            </td>
+                            <td className="border border-black p-1">{measurement.config?.limit || '-'}</td>
+                            <td className={`border border-black p-1 font-bold ${measurement.status === 'compliant' ? 'text-black' : 'text-black'}`}>
+                                {measurement.status === 'compliant' ? 'SI' : 'NO'}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Conclusions specific to this measurement */}
+            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
+                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
+                <p className="text-xs text-justify leading-relaxed">
+                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
+                </p>
+                {measurement.analysisAndImprovements && (
+                    <>
+                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
+                        <p className="text-xs text-justify leading-relaxed">
+                            {measurement.analysisAndImprovements}
+                        </p>
+                    </>
+                )}
+            </div>
+         </div>
+       ))}
     </div>
   );
 
@@ -325,57 +451,89 @@ export default function Report() {
   );
 
   const renderNoiseProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
-    <div className="space-y-6">
-       <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
-          Protocolo de Medición de RUIDO en el Ambiente Laboral (Res. 295/03)
-       </div>
-       <div className="overflow-x-auto">
-       <table className="w-full text-[10px] border-collapse border border-gray-300">
-         <thead>
-           <tr className="bg-gray-50 text-gray-700 text-center align-middle h-12">
-             <th className="border border-gray-300 p-1 w-8">(23)<br/>Pto</th>
-             <th className="border border-gray-300 p-1 w-24">(24)<br/>Sector</th>
-             <th className="border border-gray-300 p-1">(25)<br/>Puesto / Tipo</th>
-             <th className="border border-gray-300 p-1 w-12">(26)<br/>T. Expo<br/>(Te)</th>
-             <th className="border border-gray-300 p-1 w-12">(27)<br/>T. Integ</th>
-             <th className="border border-gray-300 p-1 w-16">(28)<br/>Caract.<br/>Ruido</th>
-             <th className="border border-gray-300 p-1 w-16 bg-gray-50">
-                (29)<br/>RUIDO IMPULSO<br/>LC pico (dBC)
-             </th>
-             <th className="border border-gray-300 p-1 w-16 bg-gray-100">
-                (30)<br/>SONIDO CONT.<br/>LAeq,Te (dBA)
-             </th>
-             <th className="border border-gray-300 p-1 w-12">(31)<br/>Suma<br/>Fracc</th>
-             <th className="border border-gray-300 p-1 w-12">(32)<br/>Dosis %</th>
-             <th className="border border-gray-300 p-1 w-12">(33)<br/>Cumple?</th>
-           </tr>
-         </thead>
-         <tbody>
-           {items.flatMap(({ sectorName, measurement }) => {
-             return measurement.points.map((point, idx) => {
-               const values = point.values;
-               const isCompliant = values.cumple === 'SI';
-               return (
-                 <tr key={point.id} className="break-inside-avoid hover:bg-gray-50/50">
-                   <td className="border border-gray-300 p-1 text-center">{point.label || idx + 1}</td>
-                   <td className="border border-gray-300 p-1 text-center">{sectorName}</td>
-                   <td className="border border-gray-300 p-1">{values.puesto || '-'}</td>
-                   <td className="border border-gray-300 p-1 text-center">{values.tiempo_exposicion || '-'}</td>
-                   <td className="border border-gray-300 p-1 text-center">{values.tiempo_integracion || '-'}</td>
-                   <td className="border border-gray-300 p-1 text-center capitalize">{values.caracteristicas || '-'}</td>
-                   <td className="border border-gray-300 p-1 text-center">{values.nivel_pico_c || 'No Aplica'}</td>
-                   <td className="border border-gray-300 p-1 text-center font-bold">{values.nivel_continuo_eq || 'No Aplica'}</td>
-                   <td className="border border-gray-300 p-1 text-center">{values.suma_fracciones || 'No Aplica'}</td>
-                   <td className="border border-gray-300 p-1 text-center">{values.dosis || 'No Aplica'}</td>
-                   <td className={`border border-gray-300 p-1 text-center font-bold ${isCompliant ? 'text-green-700' : 'text-red-700'}`}>
-                     {values.cumple || '-'}
-                   </td>
-                 </tr>
-               );
-             });
-           })}
-         </tbody>
-       </table>
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }) => (
+         <div key={measurement.id} className="break-inside-avoid mb-12">
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL (Res. 295/03)" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
+
+            <MeasurementDataBlock measurement={measurement} />
+
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[10px] border-collapse border border-black">
+                        <thead>
+                        <tr className="bg-gray-100 text-black font-bold uppercase text-center align-middle">
+                            <th className="border border-black p-1 w-8">Pto</th>
+                            <th className="border border-black p-1 w-24">Sector</th>
+                            <th className="border border-black p-1">Puesto / Tipo</th>
+                            <th className="border border-black p-1 w-12">T. Expo (Te)</th>
+                            <th className="border border-black p-1 w-12">T. Integ</th>
+                            <th className="border border-black p-1 w-16">Caract. Ruido</th>
+                            <th className="border border-black p-1 w-16 bg-gray-50">
+                                RUIDO IMPULSO<br/>LC pico (dBC)
+                            </th>
+                            <th className="border border-black p-1 w-16 bg-gray-100">
+                                SONIDO CONT.<br/>LAeq,Te (dBA)
+                            </th>
+                            <th className="border border-black p-1 w-12">Suma Fracc</th>
+                            <th className="border border-black p-1 w-12">Dosis %</th>
+                            <th className="border border-black p-1 w-12">Cumple?</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            {measurement.points.map((point, idx) => {
+                                const values = point.values;
+                                const isCompliant = measurement.status === 'compliant'; // Simplify status check
+                                return (
+                                <tr key={point.id} className="bg-white hover:bg-gray-50 text-center">
+                                    <td className="border border-black p-1 font-bold">{point.label.replace('Punto ', '')}</td>
+                                    <td className="border border-black p-1">{sectorName}</td>
+                                    <td className="border border-black p-1 text-left pl-2">{point.notes || '-'}</td>
+                                    <td className="border border-black p-1">{measurement.details?.duration || '-'}</td>
+                                    <td className="border border-black p-1">20 min</td>
+                                    <td className="border border-black p-1 capitalize">Continuo</td>
+                                    <td className="border border-black p-1">-</td>
+                                    <td className="border border-black p-1 font-bold bg-gray-50">{point.values.dBA || '-'}</td>
+                                    <td className="border border-black p-1">-</td>
+                                    <td className="border border-black p-1">-</td>
+                                    <td className={`border border-black p-1 font-bold ${isCompliant ? 'text-black' : 'text-black'}`}>
+                                        {isCompliant ? 'SI' : 'NO'}
+                                    </td>
+                                </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Conclusions specific to this measurement */}
+            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
+                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
+                <p className="text-xs text-justify leading-relaxed">
+                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
+                </p>
+                {measurement.analysisAndImprovements && (
+                    <>
+                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
+                        <p className="text-xs text-justify leading-relaxed">
+                            {measurement.analysisAndImprovements}
+                        </p>
+                    </>
+                )}
+            </div>
+            
+            {/* Attached Noise Reference Values / Instructions if needed per measurement? No, usually at end. */}
+         </div>
+       ))}
+       {/* Global References for Noise */}
+       <div className="break-inside-avoid">
+           {NOISE_REFERENCE_VALUES}
        </div>
     </div>
   );
@@ -473,144 +631,142 @@ export default function Report() {
   );
 
   const renderThermalLoadProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
-    <div className="space-y-6">
-       {items.flatMap(({ sectorName, measurement }) => 
-         measurement.points.map((point) => {
-           const values = point.values;
-           const tbs = parseFloat(String(values.tbs)) || 0;
-           const tbh = parseFloat(String(values.tbh)) || 0;
-           const tg = parseFloat(String(values.tg)) || 0;
-           
-           // Calculate TGBH (Indoor formula from image: 0.7TBH + 0.3TG)
-           const tgbh = (0.7 * tbh + 0.3 * tg).toFixed(1);
-           
-           const mb = parseFloat(String(values.mb)) || 70;
-           const mi = parseFloat(String(values.mi)) || 0;
-           const mii = parseFloat(String(values.mii)) || 0;
-           const mTotal = mb + mi + mii;
-           
-           return (
-             <div key={point.id} className="break-inside-avoid border border-black mb-8">
-               {/* Header */}
-               <div className="bg-black text-white font-bold text-center text-sm py-1 border-b border-black uppercase">
-                 PROTOCOLO DE MEDICION DE CARGA TERMICA
-               </div>
-               
-               {/* Subheader Info Grid */}
-               <div className="grid grid-cols-12 text-[10px] border-b border-black">
-                  <div className="col-span-4 border-r border-black p-2 font-bold flex items-center">
-                    {establishment.razonSocial || establishment.name} (Store {establishment.address})
-                  </div>
-                  <div className="col-span-3 border-r border-black p-1">
-                    <div className="font-bold border-b border-gray-300 pb-1 mb-1">Puesto y/o sector de trabajo:</div>
-                    <div>{values.puesto || sectorName}</div>
-                  </div>
-                  <div className="col-span-2 border-r border-black p-1 flex items-center">
-                    <span className="font-bold mr-1">Fecha:</span> {establishment.date ? format(new Date(establishment.date), "dd/MM/yyyy") : '-'}
-                  </div>
-                  <div className="col-span-2 border-r border-black p-1">
-                     <div><span className="font-bold">Hora Desde:</span> {establishment.startTime || '-'}</div>
-                     <div><span className="font-bold">Hora Hasta:</span> {establishment.endTime || '-'}</div>
-                  </div>
-                  <div className="col-span-1 p-1 flex items-center justify-center">
-                     <span className="font-bold mr-1">Temp. Ext.:</span> {values.temp_ext || '-'} °C
-                  </div>
-               </div>
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }) => (
+         <div key={measurement.id} className="break-inside-avoid mb-12">
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE CARGA TÉRMICA EN EL AMBIENTE LABORAL" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
 
-               {/* Table Content */}
-               <div className="grid grid-cols-12 text-[10px]">
-                  {/* Column 1: Row Headers */}
-                  <div className="col-span-2 border-r border-black">
-                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">1</div>
-                     <div className="h-32 border-b border-black flex items-center px-2 font-bold bg-white">
-                        Magnitudes evaluadas
-                     </div>
-                     <div className="h-12 flex items-center px-2 font-bold bg-white">
-                        Resultados
-                     </div>
-                  </div>
+            <MeasurementDataBlock measurement={measurement} />
 
-                  {/* Column 2: TGBH */}
-                  <div className="col-span-2 border-r border-black text-center">
-                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">2</div>
-                     <div className="h-32 border-b border-black flex flex-col items-center justify-center bg-white relative">
-                        <span className="transform -rotate-90 whitespace-nowrap font-bold">TGBH</span>
-                        <span className="transform -rotate-90 whitespace-nowrap text-[9px] text-gray-500 mt-2">=0,7TBH + 0,3TG</span>
-                     </div>
-                     <div className="h-12 flex items-center justify-center font-bold text-red-600 text-lg bg-gray-200">
-                        {tgbh}
-                     </div>
-                  </div>
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[10px] border-collapse border border-black">
+                        <thead>
+                        <tr className="bg-gray-100 text-black font-bold uppercase text-center align-middle">
+                            <th className="border border-black p-1 w-12" rowSpan={2}>Punto</th>
+                            <th className="border border-black p-1" rowSpan={2}>Sector</th>
+                            <th className="border border-black p-1" rowSpan={2}>Puesto / Puesto Tipo</th>
+                            <th className="border border-black p-1 w-16" rowSpan={2}>Tiempo Expo (Hs)</th>
+                            <th className="border border-black p-1 w-16" rowSpan={2}>Tiempo Int.</th>
+                            <th className="border border-black p-1 w-20" rowSpan={2}>Carac. Expo</th>
+                            <th className="border border-black p-1" colSpan={4}>Variables Termohigrométricas</th>
+                            <th className="border border-black p-1 w-12" rowSpan={2}>Adicional Ropa</th>
+                            <th className="border border-black p-1 w-16" rowSpan={2}>Estado</th>
+                            <th className="border border-black p-1 w-20" rowSpan={2}>Exigencia</th>
+                            <th className="border border-black p-1 w-12" rowSpan={2}>Límite Legal</th>
+                            <th className="border border-black p-1 w-12" rowSpan={2}>Cumple</th>
+                        </tr>
+                        <tr className="bg-gray-100 text-black font-bold uppercase text-center">
+                             <th className="border border-black p-1 w-10">TBS (°C)</th>
+                             <th className="border border-black p-1 w-10">TBH (°C)</th>
+                             <th className="border border-black p-1 w-10">TG (°C)</th>
+                             <th className="border border-black p-1 w-10 bg-gray-200">TGBH (°C)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            {measurement.points.map(p => (
+                                <tr key={p.id} className="bg-white hover:bg-gray-50 text-center">
+                                    <td className="border border-black p-1 font-bold">{p.label.replace('Punto ', '')}</td>
+                                    <td className="border border-black p-1">{sectorName}</td>
+                                    <td className="border border-black p-1">{p.notes || '-'}</td>
+                                    <td className="border border-black p-1">{measurement.details?.duration ? measurement.details.duration.replace(' min', '') : '-'}</td>
+                                    <td className="border border-black p-1">20 min</td>
+                                    <td className="border border-black p-1">Intermitente</td>
+                                    
+                                    <td className="border border-black p-1">{p.values.tbs || '-'}</td>
+                                    <td className="border border-black p-1">{p.values.tbh || '-'}</td>
+                                    <td className="border border-black p-1">{p.values.tg || '-'}</td>
+                                    <td className="border border-black p-1 font-bold bg-gray-100">{p.values.tgbh || '-'}</td>
+                                    
+                                    <td className="border border-black p-1">0</td>
+                                    <td className="border border-black p-1">Aclimatado</td>
+                                    <td className="border border-black p-1">Ligero</td>
+                                    <td className="border border-black p-1">{measurement.config?.limit || '29.5'}</td>
+                                    <td className="border border-black p-1 font-bold">
+                                        {measurement.status === 'compliant' ? 'SI' : 'NO'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            {/* Detailed Calculations per Point */}
+             <div className="mt-8">
+               <h3 className="font-bold text-sm uppercase mb-4 text-center border-b-2 border-black pb-1">Cálculo de Carga Térmica por Punto</h3>
+               {measurement.points.map(point => {
+                 // Try to parse values safely
+                 const tgbh = Number(point.values.tgbh) || 0;
+                 const mb = 70; // Metabolic Basal (approx standard)
+                 const mi = Number(point.values.mi) || 0;
+                 const mii = Number(point.values.mii) || 0;
+                 const mTotal = mb + mi + mii;
 
-                  {/* Column 3: MB */}
-                  <div className="col-span-1 border-r border-black text-center">
-                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">3</div>
-                     <div className="h-32 border-b border-black flex items-center justify-center bg-white">
-                        <span className="transform -rotate-90 whitespace-nowrap font-bold">MB [W] = 70</span>
+                 return (
+                   <div key={point.id} className="mb-8 border-2 border-black p-1 break-inside-avoid">
+                     <div className="bg-gray-200 p-1 font-bold text-center text-xs border-b border-black">
+                        Punto {point.label.replace('Punto ', '')}: {sectorName} - {point.notes || 'Sin descripción'}
                      </div>
-                     <div className="h-12 flex items-center justify-center font-bold bg-white">
-                        {mb}
+                     
+                     <div className="grid grid-cols-10 border-b border-black text-[10px]">
+                        {/* Header Row */}
+                        <div className="col-span-1 border-r border-black text-center font-bold bg-gray-100 p-1">1</div>
+                        <div className="col-span-1 border-r border-black text-center font-bold bg-gray-100 p-1">2</div>
+                        <div className="col-span-1 border-r border-black text-center font-bold bg-gray-100 p-1">3</div>
+                        <div className="col-span-1 border-r border-black text-center font-bold bg-gray-100 p-1">4</div>
+                        <div className="col-span-1 border-r border-black text-center font-bold bg-gray-100 p-1">5</div>
+                        <div className="col-span-1 border-r border-black text-center font-bold bg-gray-100 p-1">6</div>
+                        <div className="col-span-4 text-center font-bold bg-gray-100 p-1">7</div>
                      </div>
-                  </div>
 
-                  {/* Column 4: MI */}
-                  <div className="col-span-1 border-r border-black text-center">
-                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">4</div>
-                     <div className="h-32 border-b border-black flex items-center justify-center bg-white">
-                        <span className="transform -rotate-90 whitespace-nowrap font-bold">MI [W]</span>
-                     </div>
-                     <div className="h-12 flex items-center justify-center font-bold bg-white">
-                        {mi}
-                     </div>
-                  </div>
-
-                  {/* Column 5: MII */}
-                  <div className="col-span-1 border-r border-black text-center">
-                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">5</div>
-                     <div className="h-32 border-b border-black flex items-center justify-center bg-white">
-                        <span className="transform -rotate-90 whitespace-nowrap font-bold">MII [W]</span>
-                     </div>
-                     <div className="h-12 flex items-center justify-center font-bold bg-white">
-                        {mii}
-                     </div>
-                  </div>
-
-                  {/* Column 6: M Total */}
-                  <div className="col-span-1 border-r border-black text-center bg-gray-200">
-                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">6</div>
-                     <div className="h-32 border-b border-black flex items-center justify-center">
-                        <div className="transform -rotate-90 whitespace-nowrap font-bold text-[9px]">
-                           M [W] = <br/> MB+MI+MII
+                     <div className="grid grid-cols-10 text-[10px]">
+                        {/* Headers */}
+                        <div className="col-span-1 border-r border-black text-center p-1 font-bold flex items-center justify-center">Magnitudes Evaluadas</div>
+                        <div className="col-span-1 border-r border-black text-center p-1 font-bold flex items-center justify-center">TGBH</div>
+                        <div className="col-span-1 border-r border-black text-center p-1 font-bold flex items-center justify-center">= 0.7TBH + 0.3TG</div>
+                        <div className="col-span-1 border-r border-black text-center p-1 font-bold flex items-center justify-center">MB [W] = 70</div>
+                        <div className="col-span-1 border-r border-black text-center p-1 font-bold flex items-center justify-center">MI [W]</div>
+                        <div className="col-span-1 border-r border-black text-center p-1 font-bold flex items-center justify-center">MII [W]</div>
+                        <div className="col-span-4 text-center p-1 font-bold flex items-center justify-center">Comentarios y Conclusiones</div>
+                        
+                        {/* Values Row */}
+                        <div className="col-span-1 border-r border-black border-t border-black text-center p-2 font-bold bg-gray-50 flex items-center justify-center">Resultados</div>
+                        <div className="col-span-1 border-r border-black border-t border-black text-center p-2 font-bold bg-white flex items-center justify-center">{tgbh}</div>
+                        <div className="col-span-1 border-r border-black border-t border-black text-center p-2 font-bold bg-gray-100 flex items-center justify-center">-</div>
+                        <div className="col-span-1 border-r border-black border-t border-black text-center p-2 font-bold bg-white flex items-center justify-center">{mb}</div>
+                        <div className="col-span-1 border-r border-black border-t border-black text-center p-2 font-bold bg-white flex items-center justify-center">{mi}</div>
+                        <div className="col-span-1 border-r border-black border-t border-black text-center p-2 font-bold bg-white flex items-center justify-center">{mii}</div>
+                        
+                        <div className="col-span-4 border-t border-black p-2 text-justify bg-white">
+                            <div className="mb-2">
+                                <span className="font-bold underline">Comentario:</span> {measurement.observations || 'Determinación de carga térmica.'}
+                            </div>
+                            <div>
+                                <span className="font-bold underline">Conclusión:</span> {measurement.specificConclusions || 'Sin conclusión específica.'}
+                            </div>
                         </div>
                      </div>
-                     <div className="h-12 flex items-center justify-center font-bold bg-gray-300">
-                        {mTotal}
+                     
+                     <div className="border-t border-black bg-gray-100 p-1 text-center font-bold text-xs">
+                        M [W] (Gasto Metabólico Total) = {mTotal} W
                      </div>
-                  </div>
-
-                  {/* Column 7: Comments/Conclusion */}
-                  <div className="col-span-4 text-left">
-                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">7</div>
-                     <div className="h-44 p-2 text-[10px] space-y-2 overflow-hidden bg-white">
-                        <div>
-                           <span className="font-bold">Comentario:</span> {point.notes || 'Sin comentarios.'}
-                        </div>
-                        <div className="border-t border-gray-200 pt-1">
-                           <span className="font-bold">Conclusión:</span> {point.conclusion || 'Pendiente.'}
-                        </div>
-                        {measurement.additionalInformation && (
-                          <div className="border-t border-gray-200 pt-1 text-[9px] text-gray-600">
-                             <span className="font-bold text-black">Info Adicional:</span> {measurement.additionalInformation}
-                          </div>
-                        )}
-                     </div>
-                  </div>
-               </div>
+                   </div>
+                 );
+               })}
              </div>
-           );
-         })
-       )}
-       {THERMAL_LOAD_REFERENCE_VALUES}
+
+            {/* Reference Tables Image/Block */}
+            <div className="mt-8 break-inside-avoid">
+                 {THERMAL_LOAD_REFERENCE_VALUES}
+            </div>
+         </div>
+       ))}
     </div>
   );
 
