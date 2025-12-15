@@ -249,6 +249,80 @@ export default function Report() {
     </div>
   );
 
+  const NOISE_REFERENCE_VALUES = (
+    <div className="mt-8 p-6 bg-white border border-gray-200 rounded-lg text-xs leading-relaxed text-gray-700 break-inside-avoid">
+        <h3 className="font-bold text-gray-800 text-sm uppercase mb-3 border-b border-gray-300 pb-2 text-center bg-gray-100 p-2">Valores de Referencia</h3>
+        <p className="mb-4 italic">El criterio de evaluación a seguir luego de las mediciones es el indicado en el Anexo V de la Resolución 295/2003 del MTEySS.</p>
+        
+        <div className="overflow-x-auto mb-4">
+            <table className="w-full text-center border-collapse border border-gray-400">
+                <thead>
+                    <tr className="bg-gray-100 text-gray-800 font-bold">
+                        <th className="border border-gray-400 p-2">Duración por Día</th>
+                        <th className="border border-gray-400 p-2">Nivel de Presión Acústica dBA*</th>
+                        <th className="border border-gray-400 p-2 w-1/3">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {/* Horas */}
+                    <tr>
+                        <td className="border border-gray-400 p-2 font-bold text-left bg-gray-50" colSpan={3}>Horas</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1">24</td>
+                        <td className="border border-gray-400 p-1">80</td>
+                        <td className="border border-gray-400 p-2 text-left text-[10px]" rowSpan={6}>
+                            º No ha de haber exposiciones al ruido continuo o intermitente o de impacto por encima de un nivel pico C ponderado de 140 dBA
+                        </td>
+                    </tr>
+                    <tr><td className="border border-gray-400 p-1">16</td><td className="border border-gray-400 p-1">82</td></tr>
+                    <tr><td className="border border-gray-400 p-1">8</td><td className="border border-gray-400 p-1">85</td></tr>
+                    <tr><td className="border border-gray-400 p-1">4</td><td className="border border-gray-400 p-1">88</td></tr>
+                    <tr><td className="border border-gray-400 p-1">2</td><td className="border border-gray-400 p-1">91</td></tr>
+                    <tr><td className="border border-gray-400 p-1">1</td><td className="border border-gray-400 p-1">94</td></tr>
+
+                    {/* Minutos */}
+                    <tr>
+                        <td className="border border-gray-400 p-2 font-bold text-left bg-gray-50" colSpan={3}>Minutos</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1">30</td>
+                        <td className="border border-gray-400 p-1">97</td>
+                        <td className="border border-gray-400 p-2 text-left text-[10px]" rowSpan={6}>
+                           *El nivel de presión acústica en decibeles se mide con un sonómetro, usando el filtro de ponderación frecuencial A y respuesta lenta
+                        </td>
+                    </tr>
+                    <tr><td className="border border-gray-400 p-1">15</td><td className="border border-gray-400 p-1">100</td></tr>
+                    <tr><td className="border border-gray-400 p-1">7,5**</td><td className="border border-gray-400 p-1">103</td></tr>
+                    <tr><td className="border border-gray-400 p-1">3,75**</td><td className="border border-gray-400 p-1">106</td></tr>
+                    <tr><td className="border border-gray-400 p-1">1,88**</td><td className="border border-gray-400 p-1">109</td></tr>
+                    <tr><td className="border border-gray-400 p-1">0,94**</td><td className="border border-gray-400 p-1">112</td></tr>
+
+                    {/* Segundos */}
+                    <tr>
+                        <td className="border border-gray-400 p-2 font-bold text-left bg-gray-50" colSpan={3}>Segundos**</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1">28,12</td>
+                        <td className="border border-gray-400 p-1">115</td>
+                        <td className="border border-gray-400 p-2 text-left text-[10px]" rowSpan={9}>
+                            **Limitado por la fuente de ruido y no por control administrativo. También se recomienda utilizar un dosímetro o un medidor de integración de nivel sonoro para sonidos por encima de los 120 decibeles
+                        </td>
+                    </tr>
+                    <tr><td className="border border-gray-400 p-1">14,06</td><td className="border border-gray-400 p-1">118</td></tr>
+                    <tr><td className="border border-gray-400 p-1">7,03</td><td className="border border-gray-400 p-1">121</td></tr>
+                    <tr><td className="border border-gray-400 p-1">3,52</td><td className="border border-gray-400 p-1">124</td></tr>
+                    <tr><td className="border border-gray-400 p-1">1,76</td><td className="border border-gray-400 p-1">127</td></tr>
+                    <tr><td className="border border-gray-400 p-1">0,88</td><td className="border border-gray-400 p-1">130</td></tr>
+                    <tr><td className="border border-gray-400 p-1">0,44</td><td className="border border-gray-400 p-1">133</td></tr>
+                    <tr><td className="border border-gray-400 p-1">0,22</td><td className="border border-gray-400 p-1">136</td></tr>
+                    <tr><td className="border border-gray-400 p-1">0,11</td><td className="border border-gray-400 p-1">139</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+  );
+
   const THERMAL_LOAD_REFERENCE_VALUES = (
     <div className="mt-8 p-6 bg-white border border-gray-200 rounded-lg text-xs leading-relaxed text-gray-700 break-inside-avoid">
         <h3 className="font-bold text-gray-800 text-sm uppercase mb-3 border-b border-gray-300 pb-2 text-center bg-gray-100 p-2">Valores de Referencia</h3>
@@ -444,7 +518,12 @@ export default function Report() {
        {type === 'cold_stress' && COLD_STRESS_RECOMMENDATIONS}
 
        {/* Auto-injected Instructions for Noise */}
-       {type === 'noise' && NOISE_INSTRUCTIONS}
+       {type === 'noise' && (
+         <>
+            {NOISE_REFERENCE_VALUES}
+            {NOISE_INSTRUCTIONS}
+         </>
+       )}
 
        {/* Auto-injected Reference Values for Thermal Load */}
        {type === 'thermal_load' && THERMAL_LOAD_REFERENCE_VALUES}
