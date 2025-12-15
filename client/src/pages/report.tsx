@@ -612,6 +612,75 @@ export default function Report() {
             </div>
         </div>
 
+        {/* Anexo 1: Croquis */}
+        <div className="break-before-page mt-8">
+            <h2 className="text-xl font-bold text-primary mb-6 uppercase tracking-wide border-b-2 border-primary pb-2">
+                Anexo 1: Croquis del Establecimiento
+            </h2>
+            {establishment.sketchImage ? (
+                <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-gray-50/30 min-h-[400px]">
+                    <img src={establishment.sketchImage} alt="Croquis del Establecimiento" className="max-w-full max-h-[800px] object-contain" />
+                </div>
+            ) : (
+                <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
+                    No se ha adjuntado un croquis general del establecimiento.
+                </div>
+            )}
+        </div>
+
+        {/* Anexo 2: Instrumentos */}
+        <div className="break-before-page mt-8">
+            <h2 className="text-xl font-bold text-primary mb-6 uppercase tracking-wide border-b-2 border-primary pb-2">
+                Anexo 2: Instrumental Utilizado y Certificados
+            </h2>
+            
+            {!establishment.instruments || establishment.instruments.length === 0 ? (
+                <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
+                    No hay instrumentos registrados.
+                </div>
+            ) : (
+                <div className="space-y-12">
+                    {establishment.instruments.map((inst, index) => (
+                        <div key={inst.id} className="break-inside-avoid">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 bg-gray-100 p-2 border-l-4 border-primary">
+                                {index + 1}. {inst.brand} {inst.model} (S/N: {inst.serialNumber})
+                            </h3>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm mb-6 px-4">
+                                <div><span className="font-semibold">Tipo:</span> {inst.type === 'generic' ? 'Genérico' : MEASUREMENT_LABELS[inst.type as MeasurementType]}</div>
+                                <div><span className="font-semibold">Certificado N°:</span> {inst.calibrationCertificate || '-'}</div>
+                                <div><span className="font-semibold">Fecha Calibración:</span> {inst.calibrationDate || '-'}</div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
+                                {inst.attachedDocuments?.calibrationCertificateImage && (
+                                    <div className="flex flex-col gap-2">
+                                        <span className="font-bold text-xs uppercase text-gray-500 border-b pb-1">Certificado de Calibración</span>
+                                        <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-sm">
+                                            <img src={inst.attachedDocuments.calibrationCertificateImage} alt="Certificado Calibración" className="w-full h-auto object-contain max-h-[500px]" />
+                                        </div>
+                                    </div>
+                                )}
+                                {inst.attachedDocuments?.traceablePatternImage && (
+                                    <div className="flex flex-col gap-2">
+                                        <span className="font-bold text-xs uppercase text-gray-500 border-b pb-1">Patrón Trazable</span>
+                                        <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-sm">
+                                            <img src={inst.attachedDocuments.traceablePatternImage} alt="Patrón Trazable" className="w-full h-auto object-contain max-h-[500px]" />
+                                        </div>
+                                    </div>
+                                )}
+                                {!inst.attachedDocuments?.calibrationCertificateImage && !inst.attachedDocuments?.traceablePatternImage && (
+                                    <div className="col-span-2 text-center py-8 text-gray-400 italic text-xs">
+                                        No hay imágenes de documentación adjuntas para este instrumento.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+
         <footer className="mt-16 pt-6 border-t border-gray-200 flex flex-col items-center text-xs text-gray-400 print:fixed print:bottom-0 print:left-0 print:w-full print:bg-white print:px-8 print:pb-4">
           <div className="flex justify-between w-full mb-8">
              <div className="text-left">

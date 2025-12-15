@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText } from "lucide-react";
+import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -35,6 +35,15 @@ export default function Dashboard() {
         title: "Inspección Guardada",
         description: "Se ha guardado una copia en el historial local.",
       });
+  };
+
+  const handleSketchUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      updateEstablishment({ sketchImage: reader.result as string });
+      toast({ title: "Croquis cargado correctamente" });
+    };
+    reader.readAsDataURL(file);
   };
 
   const getIcon = (type: MeasurementType) => {
@@ -164,6 +173,44 @@ export default function Dashboard() {
               onChange={(e) => updateEstablishment({ date: e.target.value })}
               className="bg-background h-8"
             />
+          </div>
+          
+          <div className="col-span-full border-t pt-4 mt-2">
+            <div className="flex items-center gap-4">
+                <Label className="text-xs text-muted-foreground">Croquis del Establecimiento (Anexo 1)</Label>
+                {establishment.sketchImage ? (
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                            <Check className="h-3 w-3" /> Cargado
+                        </span>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            onClick={() => updateEstablishment({ sketchImage: undefined })}
+                        >
+                            <Trash2 className="h-3 w-3 mr-1" /> Eliminar
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="relative">
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-2">
+                            <ImageIcon className="h-3 w-3" /> Subir Croquis
+                        </Button>
+                        <Input 
+                            type="file" 
+                            accept="image/*" 
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            onChange={(e) => e.target.files?.[0] && handleSketchUpload(e.target.files[0])}
+                        />
+                    </div>
+                )}
+            </div>
+            {establishment.sketchImage && (
+                <div className="mt-2 border rounded-md p-2 bg-white w-fit max-w-xs">
+                    <img src={establishment.sketchImage} alt="Croquis" className="max-h-32 object-contain" />
+                </div>
+            )}
           </div>
         </CardContent>
       </Card>

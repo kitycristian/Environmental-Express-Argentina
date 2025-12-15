@@ -15,6 +15,8 @@ import { useEffect } from "react";
 import ClientsPage from "@/pages/clients";
 import ReportsList from "@/pages/reports-list";
 
+import InstrumentsPage from "@/pages/instruments";
+
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType, adminOnly?: boolean }) {
   const [location, setLocation] = useLocation();
   const user = useAuth((state) => state.user);
@@ -46,6 +48,7 @@ function Router() {
         <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
         <Route path="/clients" component={() => <ProtectedRoute component={ClientsPage} adminOnly />} />
         <Route path="/reports" component={() => <ProtectedRoute component={ReportsList} adminOnly />} />
+        <Route path="/instruments" component={() => <ProtectedRoute component={InstrumentsPage} />} />
         <Route path="/campaign/:type" component={() => <ProtectedRoute component={MeasurementCampaign} />} />
         <Route path="/sector/:id" component={() => <ProtectedRoute component={SectorDetail} />} />
         <Route path="/report" component={() => <ProtectedRoute component={Report} adminOnly />} />

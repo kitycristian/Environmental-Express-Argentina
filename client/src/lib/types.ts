@@ -40,6 +40,11 @@ export interface Instrument {
   serialNumber: string;
   calibrationCertificate: string;
   calibrationDate: string;
+  // New fields for attachments
+  attachedDocuments?: {
+    calibrationCertificateImage?: string; // Base64 Data URL
+    traceablePatternImage?: string; // Base64 Data URL
+  };
 }
 
 export interface AtmosphericConditions {
@@ -64,6 +69,7 @@ export interface Establishment {
   responsible: string;
   conditions?: AtmosphericConditions;
   instruments?: Instrument[];
+  sketchImage?: string; // Base64 Data URL for the establishment sketch (Anexo 1)
   conclusions?: string;
   recommendations?: string;
 }
