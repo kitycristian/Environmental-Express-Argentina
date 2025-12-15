@@ -11,15 +11,15 @@ import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/hooks/use-toast";
 
 export default function InstrumentsPage() {
-  const establishment = useStore((state) => state.establishment);
-  const updateEstablishment = useStore((state) => state.updateEstablishment);
+  const instruments = useStore((state) => state.availableInstruments);
+  const addInstrument = useStore((state) => state.addInstrument);
+  const updateInstrumentStore = useStore((state) => state.updateInstrument);
+  const deleteInstrumentStore = useStore((state) => state.deleteInstrument);
   const { toast } = useToast();
 
   // Local state for the form
   const [editingId, setEditingId] = useState<string | null>(null);
   
-  const instruments = establishment.instruments || [];
-
   const handleAddInstrument = () => {
     const newInstrument: Instrument = {
       id: uuidv4(),
@@ -32,42 +32,20 @@ export default function InstrumentsPage() {
       attachedDocuments: {}
     };
 
-    updateEstablishment({
-      instruments: [...instruments, newInstrument]
-    });
+    addInstrument(newInstrument);
     setEditingId(newInstrument.id);
   };
 
   const handleUpdateInstrument = (id: string, data: Partial<Instrument>) => {
-    const updatedInstruments = instruments.map(inst => 
-      inst.id === id ? { ...inst, ...data } : inst
-    );
-    updateEstablishment({ instruments: updatedInstruments });
-  };
-
-  const handleUpdateDocuments = (id: string, key: 'calibrationCertificateImage' | 'traceablePatternImage', value: string) => {
-    const instrument = instruments.find(i => i.id === id);
-    if (!instrument) return;
-
-    const updatedInstrument = {
-      ...instrument,
-      attachedDocuments: {
-        ...instrument.attachedDocuments,
-        [key]: value
-      }
-    };
-
-    handleUpdateInstrument(id, updatedInstrument);
+    updateInstrumentStore(id, data);
   };
 
   const handleDeleteInstrument = (id: string) => {
-    updateEstablishment({
-      instruments: instruments.filter(i => i.id !== id)
-    });
+    deleteInstrumentStore(id);
     if (editingId === id) setEditingId(null);
     toast({
         title: "Instrumento Eliminado",
-        description: "El instrumento ha sido quitado de la lista."
+        description: "El instrumento ha sido quitado de la lista global."
     });
   };
 

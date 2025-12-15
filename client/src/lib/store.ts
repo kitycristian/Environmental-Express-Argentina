@@ -8,6 +8,7 @@ interface AppState {
   sectors: Sector[];
   history: Inspection[];
   clients: Client[];
+  availableInstruments: Instrument[];
   
   // Actions
   updateEstablishment: (data: Partial<Establishment>) => void;
@@ -29,6 +30,11 @@ interface AppState {
   deleteInspection: (id: string) => void;
   
   addSectorWithMeasurement: (sectorData: Omit<Sector, 'id' | 'measurements'>, type: MeasurementType) => void;
+
+  // Instruments Actions
+  addInstrument: (instrument: Instrument) => void;
+  updateInstrument: (id: string, data: Partial<Instrument>) => void;
+  deleteInstrument: (id: string) => void;
 
   // CRM Actions
   addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
@@ -56,6 +62,24 @@ export const useStore = create<AppState>()(
       sectors: [],
       history: [],
       clients: [],
+      availableInstruments: [],
+
+      addInstrument: (instrument) =>
+        set((state) => ({
+          availableInstruments: [...state.availableInstruments, instrument]
+        })),
+
+      updateInstrument: (id, data) =>
+        set((state) => ({
+          availableInstruments: state.availableInstruments.map((i) =>
+            i.id === id ? { ...i, ...data } : i
+          )
+        })),
+
+      deleteInstrument: (id) =>
+        set((state) => ({
+          availableInstruments: state.availableInstruments.filter((i) => i.id !== id)
+        })),
 
       updateEstablishment: (data) => 
         set((state) => ({ establishment: { ...state.establishment, ...data } })),

@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStore } from "@/lib/store";
-import { Settings2, FileText, Paperclip, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Settings2, FileText, Paperclip, Image as ImageIcon, Trash2, Database } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface MeasurementDetailsProps {
   measurement: Measurement;
@@ -16,6 +17,30 @@ interface MeasurementDetailsProps {
 
 export function MeasurementDetails({ measurement, sectorId }: MeasurementDetailsProps) {
   const updateMeasurement = useStore((state) => state.updateMeasurement);
+  const availableInstruments = useStore((state) => state.availableInstruments);
+
+  const handleSelectInstrument = (instrumentId: string) => {
+    const instrument = availableInstruments.find(i => i.id === instrumentId);
+    if (!instrument) return;
+
+    // Auto-fill details from selected instrument
+    updateMeasurement(sectorId, measurement.id, {
+      details: {
+        ...measurement.details,
+        brand: instrument.brand,
+        model: instrument.model,
+        serialNumber: instrument.serialNumber,
+        calibrationDate: instrument.calibrationDate,
+      },
+      // Also copy attached documents if they exist and aren't already set?
+      // Or maybe just let the user attach them manually to the measurement if needed.
+      // For now, let's copy the calibration certificate image if available on the instrument
+      attachedDocuments: {
+        ...measurement.attachedDocuments,
+        calibrationCertificateImage: instrument.attachedDocuments?.calibrationCertificateImage || measurement.attachedDocuments?.calibrationCertificateImage
+      }
+    });
+  };
 
   const updateDetails = (key: string, value: string) => {
     updateMeasurement(sectorId, measurement.id, {
@@ -243,7 +268,26 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
 
             {/* Instrument Info */}
             <div className="space-y-3 border-b pb-4">
-              <h4 className="text-xs font-bold uppercase text-gray-500">Datos del Instrumento</h4>
+              <div className="flex items-center justify-between">
+                 <h4 className="text-xs font-bold uppercase text-gray-500">Datos del Instrumento</h4>
+                 {availableInstruments.length > 0 && (
+                   <div className="flex items-center gap-2">
+                     <Database className="h-3 w-3 text-blue-500" />
+                     <Select onValueChange={handleSelectInstrument}>
+                        <SelectTrigger className="h-7 text-xs w-[200px] border-blue-200 bg-blue-50">
+                            <SelectValue placeholder="Cargar desde Base de Datos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableInstruments.map(inst => (
+                                <SelectItem key={inst.id} value={inst.id}>
+                                    {inst.brand} {inst.model} ({inst.serialNumber})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                     </Select>
+                   </div>
+                 )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs">Marca</Label>
