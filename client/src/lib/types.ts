@@ -131,8 +131,11 @@ export interface Measurement {
   specificConclusions?: string;
   attachedDocuments?: {
     calibrationCertificate?: boolean;
+    calibrationCertificateImage?: string; // Base64 Data URL
     sketch?: boolean;
+    sketchImage?: string; // Base64 Data URL
     other?: string;
+    otherImages?: string[]; // Array of Base64 Data URLs
   };
 }
 

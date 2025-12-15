@@ -209,11 +209,41 @@ export default function Report() {
                
                {/* Attached Documents Badge */}
                {(measurement.attachedDocuments?.calibrationCertificate || measurement.attachedDocuments?.sketch || measurement.attachedDocuments?.other) && (
-                 <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
-                   <span className="font-bold uppercase text-[10px]">Adjuntos:</span>
-                   {measurement.attachedDocuments.calibrationCertificate && <span className="px-2 py-0.5 bg-gray-100 rounded border">Certificado Calibración</span>}
-                   {measurement.attachedDocuments.sketch && <span className="px-2 py-0.5 bg-gray-100 rounded border">Croquis</span>}
-                   {measurement.attachedDocuments.other && <span className="px-2 py-0.5 bg-gray-100 rounded border">{measurement.attachedDocuments.other}</span>}
+                 <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col gap-2 text-xs text-gray-500">
+                   <div className="flex items-center gap-2">
+                       <span className="font-bold uppercase text-[10px]">Adjuntos:</span>
+                       {measurement.attachedDocuments.calibrationCertificate && <span className="px-2 py-0.5 bg-gray-100 rounded border">Certificado Calibración</span>}
+                       {measurement.attachedDocuments.sketch && <span className="px-2 py-0.5 bg-gray-100 rounded border">Croquis</span>}
+                       {measurement.attachedDocuments.other && <span className="px-2 py-0.5 bg-gray-100 rounded border">{measurement.attachedDocuments.other}</span>}
+                   </div>
+                   
+                   {/* Attached Images */}
+                   <div className="grid grid-cols-4 gap-4 mt-2">
+                        {measurement.attachedDocuments.calibrationCertificate && measurement.attachedDocuments.calibrationCertificateImage && (
+                            <div className="flex flex-col gap-1 items-center">
+                                <div className="border border-gray-200 p-1 bg-white shadow-sm rounded">
+                                    <img src={measurement.attachedDocuments.calibrationCertificateImage} alt="Certificado" className="max-h-[150px] object-contain" />
+                                </div>
+                                <span className="text-[10px] text-gray-400">Certificado Calibración</span>
+                            </div>
+                        )}
+                        {measurement.attachedDocuments.sketch && measurement.attachedDocuments.sketchImage && (
+                            <div className="flex flex-col gap-1 items-center">
+                                <div className="border border-gray-200 p-1 bg-white shadow-sm rounded">
+                                    <img src={measurement.attachedDocuments.sketchImage} alt="Croquis" className="max-h-[150px] object-contain" />
+                                </div>
+                                <span className="text-[10px] text-gray-400">Croquis / Plano</span>
+                            </div>
+                        )}
+                        {measurement.attachedDocuments.otherImages?.map((img, idx) => (
+                             <div key={idx} className="flex flex-col gap-1 items-center">
+                                <div className="border border-gray-200 p-1 bg-white shadow-sm rounded">
+                                    <img src={img} alt={`Img ${idx}`} className="max-h-[150px] object-contain" />
+                                </div>
+                                <span className="text-[10px] text-gray-400">Imagen Adjunta {idx + 1}</span>
+                            </div>
+                        ))}
+                   </div>
                  </div>
                )}
             </div>

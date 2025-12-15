@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStore } from "@/lib/store";
-import { Settings2, FileText, Paperclip } from "lucide-react";
+import { Settings2, FileText, Paperclip, Image as ImageIcon, Trash2 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 interface MeasurementDetailsProps {
   measurement: Measurement;
@@ -34,6 +35,51 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
     });
   };
 
+  const handleImageUpload = (key: 'calibrationCertificateImage' | 'sketchImage' | 'otherImages', file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      if (key === 'otherImages') {
+          const currentImages = measurement.attachedDocuments?.otherImages || [];
+          updateMeasurement(sectorId, measurement.id, {
+            attachedDocuments: {
+                ...measurement.attachedDocuments,
+                otherImages: [...currentImages, base64String]
+            }
+          });
+      } else {
+          updateMeasurement(sectorId, measurement.id, {
+            attachedDocuments: {
+                ...measurement.attachedDocuments,
+                [key]: base64String
+            }
+          });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = (key: 'calibrationCertificateImage' | 'sketchImage' | 'otherImages', index?: number) => {
+      if (key === 'otherImages' && typeof index === 'number') {
+          const currentImages = measurement.attachedDocuments?.otherImages || [];
+          const newImages = [...currentImages];
+          newImages.splice(index, 1);
+          updateMeasurement(sectorId, measurement.id, {
+            attachedDocuments: {
+                ...measurement.attachedDocuments,
+                otherImages: newImages
+            }
+          });
+      } else {
+        updateMeasurement(sectorId, measurement.id, {
+            attachedDocuments: {
+                ...measurement.attachedDocuments,
+                [key]: undefined
+            }
+          });
+      }
+  };
+
   return (
     <Accordion type="single" collapsible className="w-full mb-4 border rounded-md bg-white">
       <AccordionItem value="details" className="border-none">
@@ -45,48 +91,130 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
         </AccordionTrigger>
         <AccordionContent className="px-4 pb-4 pt-2">
           <div className="grid gap-6">
-            {/* Documentation & Conclusions Section (New) */}
+            {/* Documentation & Conclusions Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-6">
                <div className="space-y-3">
                  <h4 className="text-xs font-bold uppercase text-gray-500 flex items-center gap-2">
                    <Paperclip className="h-3 w-3" /> Documentación Adjunta
                  </h4>
-                 <div className="bg-gray-50 p-3 rounded-md space-y-3">
-                   <div className="flex items-center space-x-2">
-                     <Checkbox 
-                       id="doc-cert" 
-                       checked={measurement.attachedDocuments?.calibrationCertificate || false}
-                       onCheckedChange={(checked) => updateDocuments('calibrationCertificate', checked === true)}
-                     />
-                     <label
-                       htmlFor="doc-cert"
-                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                     >
-                       Certificado de Calibración
-                     </label>
+                 <div className="bg-gray-50 p-3 rounded-md space-y-4">
+                   
+                   {/* Calibration Certificate */}
+                   <div className="space-y-2 border-b border-gray-200 pb-2">
+                     <div className="flex items-center space-x-2">
+                       <Checkbox 
+                         id="doc-cert" 
+                         checked={measurement.attachedDocuments?.calibrationCertificate || false}
+                         onCheckedChange={(checked) => updateDocuments('calibrationCertificate', checked === true)}
+                       />
+                       <label htmlFor="doc-cert" className="text-sm font-medium leading-none">
+                         Certificado de Calibración
+                       </label>
+                     </div>
+                     {measurement.attachedDocuments?.calibrationCertificate && (
+                       <div className="pl-6">
+                         {measurement.attachedDocuments?.calibrationCertificateImage ? (
+                            <div className="relative group w-24 h-24 border rounded overflow-hidden">
+                                <img src={measurement.attachedDocuments.calibrationCertificateImage} alt="Certificado" className="w-full h-full object-cover" />
+                                <button 
+                                    onClick={() => removeImage('calibrationCertificateImage')}
+                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </button>
+                            </div>
+                         ) : (
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="h-8 text-xs w-full cursor-pointer"
+                                    onChange={(e) => {
+                                        if (e.target.files?.[0]) handleImageUpload('calibrationCertificateImage', e.target.files[0]);
+                                    }}
+                                />
+                            </div>
+                         )}
+                       </div>
+                     )}
                    </div>
-                   <div className="flex items-center space-x-2">
-                     <Checkbox 
-                       id="doc-sketch" 
-                       checked={measurement.attachedDocuments?.sketch || false}
-                       onCheckedChange={(checked) => updateDocuments('sketch', checked === true)}
-                     />
-                     <label
-                       htmlFor="doc-sketch"
-                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                     >
-                       Croquis / Plano
-                     </label>
+
+                   {/* Sketch / Plan */}
+                   <div className="space-y-2 border-b border-gray-200 pb-2">
+                     <div className="flex items-center space-x-2">
+                       <Checkbox 
+                         id="doc-sketch" 
+                         checked={measurement.attachedDocuments?.sketch || false}
+                         onCheckedChange={(checked) => updateDocuments('sketch', checked === true)}
+                       />
+                       <label htmlFor="doc-sketch" className="text-sm font-medium leading-none">
+                         Croquis / Plano
+                       </label>
+                     </div>
+                     {measurement.attachedDocuments?.sketch && (
+                       <div className="pl-6">
+                         {measurement.attachedDocuments?.sketchImage ? (
+                            <div className="relative group w-24 h-24 border rounded overflow-hidden">
+                                <img src={measurement.attachedDocuments.sketchImage} alt="Croquis" className="w-full h-full object-cover" />
+                                <button 
+                                    onClick={() => removeImage('sketchImage')}
+                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </button>
+                            </div>
+                         ) : (
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="h-8 text-xs w-full cursor-pointer"
+                                    onChange={(e) => {
+                                        if (e.target.files?.[0]) handleImageUpload('sketchImage', e.target.files[0]);
+                                    }}
+                                />
+                            </div>
+                         )}
+                       </div>
+                     )}
                    </div>
-                   <div className="space-y-1 pt-2">
-                     <Label className="text-xs text-muted-foreground">Otros Documentos</Label>
+
+                   {/* Other Documents */}
+                   <div className="space-y-2 pt-1">
+                     <Label className="text-xs text-muted-foreground">Otros Documentos / Imágenes</Label>
                      <Input 
-                       className="h-7 text-xs bg-white" 
-                       placeholder="Ej. Fotos, Planillas anexas..."
+                       className="h-7 text-xs bg-white mb-2" 
+                       placeholder="Descripción (Ej. Fotos, Planillas...)"
                        value={measurement.attachedDocuments?.other || ''}
                        onChange={(e) => updateDocuments('other', e.target.value)}
                      />
+                     <div className="grid grid-cols-3 gap-2">
+                        {measurement.attachedDocuments?.otherImages?.map((img, idx) => (
+                            <div key={idx} className="relative group w-full h-16 border rounded overflow-hidden bg-white">
+                                <img src={img} alt={`Other ${idx}`} className="w-full h-full object-cover" />
+                                <button 
+                                    onClick={() => removeImage('otherImages', idx)}
+                                    className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="h-2 w-2" />
+                                </button>
+                            </div>
+                        ))}
+                        <div className="relative w-full h-16 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                            <ImageIcon className="h-4 w-4 text-gray-400" />
+                            <Input 
+                                type="file" 
+                                accept="image/*" 
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onChange={(e) => {
+                                    if (e.target.files?.[0]) handleImageUpload('otherImages', e.target.files[0]);
+                                    e.target.value = ''; // Reset input
+                                }}
+                            />
+                        </div>
+                     </div>
                    </div>
+
                  </div>
                </div>
 
