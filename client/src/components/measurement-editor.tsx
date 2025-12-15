@@ -443,9 +443,17 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
   );
 }
 
+import { MeasurementDetails } from "./measurement-details";
+
 export function MeasurementEditor({ measurement }: { measurement: Measurement }) {
-  if (measurement.type === 'lighting') {
-    return <LightingGridEditor measurement={measurement} />;
-  }
-  return <GenericMeasurementEditor measurement={measurement} />;
+  const content = measurement.type === 'lighting' 
+    ? <LightingGridEditor measurement={measurement} />
+    : <GenericMeasurementEditor measurement={measurement} />;
+
+  return (
+    <div className="space-y-4">
+      <MeasurementDetails measurement={measurement} sectorId={measurement.sectorId} />
+      {content}
+    </div>
+  );
 }

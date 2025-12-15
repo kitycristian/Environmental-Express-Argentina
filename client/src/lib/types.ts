@@ -107,6 +107,25 @@ export interface Measurement {
     lightingType?: 'artificial' | 'natural' | 'mixed';
     lightSource?: string; // LED, Fluorescente, etc.
   };
+
+  // Detailed Metadata (New Request)
+  details?: {
+    // Instrument Info
+    brand?: string;
+    model?: string;
+    serialNumber?: string;
+    calibrationDate?: string; // Fecha del certificado de calibración
+
+    // Measurement Info
+    measurementDate?: string;
+    startTime?: string;
+    endTime?: string;
+
+    // Work Conditions
+    workShifts?: string; // Horarios/turnos habituales
+    normalConditions?: string; // Descripción condiciones normales
+    currentConditions?: string; // Descripción condiciones al momento
+  };
 }
 
 export interface Inspection {
