@@ -9,11 +9,14 @@ import MeasurementCampaign from "@/pages/measurement-campaign";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 
+import ClientsPage from "@/pages/clients";
+
 function Router() {
   return (
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/clients" component={ClientsPage} />
         <Route path="/campaign/:type" component={MeasurementCampaign} />
         <Route path="/sector/:id" component={SectorDetail} />
         <Route path="/report" component={Report} />

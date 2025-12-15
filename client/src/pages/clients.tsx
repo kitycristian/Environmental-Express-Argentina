@@ -1,0 +1,250 @@
+import { useState } from "react";
+import { useStore } from "@/lib/store";
+import { Client } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+export default function ClientsPage() {
+  const clients = useStore((state) => state.clients);
+  const addClient = useStore((state) => state.addClient);
+  const updateClient = useStore((state) => state.updateClient);
+  const deleteClient = useStore((state) => state.deleteClient);
+  const { toast } = useToast();
+
+  const [search, setSearch] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+
+  const filteredClients = clients.filter(c => 
+    c.name.toLowerCase().includes(search.toLowerCase()) || 
+    c.razonSocial.toLowerCase().includes(search.toLowerCase()) ||
+    c.cuit.includes(search)
+  );
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    const clientData = {
+      name: formData.get('name') as string,
+      razonSocial: formData.get('razonSocial') as string,
+      cuit: formData.get('cuit') as string,
+      conditionIva: formData.get('conditionIva') as string,
+      address: formData.get('address') as string,
+      city: formData.get('city') as string,
+      province: formData.get('province') as string,
+      postalCode: formData.get('postalCode') as string,
+      phone: formData.get('phone') as string,
+      email: formData.get('email') as string,
+      contactName: formData.get('contactName') as string,
+      notes: formData.get('notes') as string,
+    };
+
+    if (editingClient) {
+      updateClient(editingClient.id, clientData);
+      toast({ title: "Cliente Actualizado", description: "Los datos han sido modificados correctamente." });
+    } else {
+      addClient(clientData);
+      toast({ title: "Cliente Creado", description: "Se ha añadido un nuevo cliente a la base de datos." });
+    }
+    
+    setIsDialogOpen(false);
+    setEditingClient(null);
+  };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if(confirm('¿Está seguro de eliminar este cliente? Se perderán sus datos de contacto.')) {
+      deleteClient(id);
+      toast({ title: "Cliente Eliminado", variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-primary">Gestión de Clientes (CRM)</h1>
+          <p className="text-muted-foreground">Administre su base de datos de empresas y contactos.</p>
+        </div>
+        <Button onClick={() => { setEditingClient(null); setIsDialogOpen(true); }} className="gap-2">
+          <UserPlus className="h-4 w-4" /> Nuevo Cliente
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2 bg-card p-2 rounded-lg border shadow-sm max-w-md">
+        <Search className="h-4 w-4 text-muted-foreground ml-2" />
+        <Input 
+          placeholder="Buscar por nombre, razón social o CUIT..." 
+          className="border-0 focus-visible:ring-0" 
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {clients.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold">No hay clientes registrados</h3>
+            <p className="text-muted-foreground max-w-sm mt-2 mb-6">
+              Comience agregando empresas para agilizar la carga de datos en sus inspecciones.
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)}>Agregar Primer Cliente</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredClients.map((client) => (
+            <Card key={client.id} className="group hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg font-bold text-primary">{client.name}</CardTitle>
+                    <CardDescription className="font-medium mt-1">{client.razonSocial}</CardDescription>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleEdit(client)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(client.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                   <span className="text-xs bg-muted px-2 py-1 rounded border font-mono text-muted-foreground">CUIT: {client.cuit}</span>
+                   <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">{client.conditionIva}</span>
+                </div>
+              </CardHeader>
+              <CardContent className="text-sm space-y-3 pt-0">
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{client.address}, {client.city}, {client.province} (CP: {client.postalCode})</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{client.phone || '-'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="truncate" title={client.email}>{client.email || '-'}</span>
+                  </div>
+                </div>
+                {client.contactName && (
+                  <div className="text-xs bg-muted/50 p-2 rounded mt-2">
+                    <span className="font-semibold text-gray-600">Contacto:</span> {client.contactName}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-6 py-4">
+            
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold border-b pb-2 text-primary">Datos Fiscales</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre de Fantasía</Label>
+                  <Input id="name" name="name" required defaultValue={editingClient?.name} placeholder="Ej. Fábrica Central" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="razonSocial">Razón Social</Label>
+                  <Input id="razonSocial" name="razonSocial" required defaultValue={editingClient?.razonSocial} placeholder="Ej. Industria S.A." />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cuit">CUIT</Label>
+                  <Input id="cuit" name="cuit" required defaultValue={editingClient?.cuit} placeholder="XX-XXXXXXXX-X" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="conditionIva">Condición IVA</Label>
+                  <Select name="conditionIva" defaultValue={editingClient?.conditionIva || "Responsable Inscripto"}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Responsable Inscripto">Responsable Inscripto</SelectItem>
+                      <SelectItem value="Monotributo">Monotributo</SelectItem>
+                      <SelectItem value="Exento">Exento</SelectItem>
+                      <SelectItem value="Consumidor Final">Consumidor Final</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold border-b pb-2 text-primary">Ubicación</h3>
+              <div className="space-y-2">
+                <Label htmlFor="address">Dirección</Label>
+                <Input id="address" name="address" required defaultValue={editingClient?.address} placeholder="Calle y Altura" />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">Localidad</Label>
+                  <Input id="city" name="city" required defaultValue={editingClient?.city} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="province">Provincia</Label>
+                  <Input id="province" name="province" required defaultValue={editingClient?.province} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">CP</Label>
+                  <Input id="postalCode" name="postalCode" required defaultValue={editingClient?.postalCode} />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold border-b pb-2 text-primary">Contacto</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contactName">Persona de Contacto</Label>
+                  <Input id="contactName" name="contactName" defaultValue={editingClient?.contactName} placeholder="Nombre completo" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Teléfono</Label>
+                  <Input id="phone" name="phone" defaultValue={editingClient?.phone} placeholder="+54 9 ..." />
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" defaultValue={editingClient?.email} placeholder="contacto@empresa.com" />
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="notes">Notas Adicionales</Label>
+                  <Input id="notes" name="notes" defaultValue={editingClient?.notes} placeholder="Horarios de atención, requisitos de ingreso, etc." />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit">Guardar Cliente</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

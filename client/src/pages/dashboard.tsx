@@ -4,15 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory } from "lucide-react";
-import { useLocation } from "wouter";
+import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus } from "lucide-react";
+import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
   const sectors = useStore((state) => state.sectors);
+  const clients = useStore((state) => state.clients);
+  const loadClientToEstablishment = useStore((state) => state.loadClientToEstablishment);
   const [, setLocation] = useLocation();
+  const [openClientSelect, setOpenClientSelect] = useState(false);
 
   const getMeasurementCount = (type: MeasurementType) => {
     return sectors.filter(s => s.measurements.some(m => m.type === type)).length;
@@ -32,16 +38,64 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Tablero de Inspección</h1>
-        <p className="text-muted-foreground">
-          Seleccione el tipo de riesgo para comenzar a cargar mediciones por sector.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Tablero de Inspección</h1>
+          <p className="text-muted-foreground">
+            Gestión de relevamientos de higiene y seguridad.
+          </p>
+        </div>
+        
+        {/* Client Selector */}
+        <div className="flex items-center gap-2">
+           <Popover open={openClientSelect} onOpenChange={setOpenClientSelect}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" role="combobox" aria-expanded={openClientSelect} className="justify-between w-[250px] shadow-sm">
+                {establishment.name ? (
+                  <span className="truncate">{establishment.name}</span>
+                ) : (
+                  <span className="text-muted-foreground">Seleccionar Cliente...</span>
+                )}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0">
+              <Command>
+                <CommandInput placeholder="Buscar cliente..." />
+                <CommandList>
+                  <CommandEmpty>No se encontraron clientes.</CommandEmpty>
+                  <CommandGroup heading="Mis Clientes">
+                    {clients.map((client) => (
+                      <CommandItem
+                        key={client.id}
+                        value={client.name}
+                        onSelect={() => {
+                          loadClientToEstablishment(client.id);
+                          setOpenClientSelect(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", establishment.name === client.name ? "opacity-100" : "opacity-0")} />
+                        {client.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                  <CommandGroup heading="Acciones">
+                      <Link href="/clients">
+                        <CommandItem className="cursor-pointer text-primary font-medium">
+                          <Plus className="mr-2 h-4 w-4" /> Crear Nuevo Cliente
+                        </CommandItem>
+                      </Link>
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {/* Establishment Info Card - Compact */}
       <Card className="bg-muted/10 border-none shadow-none">
-        <CardContent className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1">
             <Label htmlFor="name" className="text-xs text-muted-foreground">Establecimiento</Label>
             <Input 
@@ -61,6 +115,16 @@ export default function Dashboard() {
               placeholder="Dirección"
               className="bg-background h-8"
             />
+          </div>
+          <div className="space-y-1">
+             <Label htmlFor="cuit" className="text-xs text-muted-foreground">CUIT</Label>
+             <Input 
+               id="cuit" 
+               value={establishment.cuit} 
+               onChange={(e) => updateEstablishment({ cuit: e.target.value })}
+               placeholder="XX-XXXXXXXX-X"
+               className="bg-background h-8"
+             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="date" className="text-xs text-muted-foreground">Fecha de Relevamiento</Label>

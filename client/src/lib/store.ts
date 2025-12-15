@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType, Inspection } from './types';
+import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType, Inspection, Client } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
   establishment: Establishment;
   sectors: Sector[];
   history: Inspection[];
+  clients: Client[];
   
   // Actions
   updateEstablishment: (data: Partial<Establishment>) => void;
@@ -29,6 +30,12 @@ interface AppState {
   
   addSectorWithMeasurement: (sectorData: Omit<Sector, 'id' | 'measurements'>, type: MeasurementType) => void;
 
+  // CRM Actions
+  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
+  updateClient: (id: string, data: Partial<Client>) => void;
+  deleteClient: (id: string) => void;
+  loadClientToEstablishment: (clientId: string) => void;
+
   resetStore: () => void;
 }
 
@@ -48,6 +55,7 @@ export const useStore = create<AppState>()(
       establishment: initialEstablishment,
       sectors: [],
       history: [],
+      clients: [],
 
       updateEstablishment: (data) => 
         set((state) => ({ establishment: { ...state.establishment, ...data } })),
@@ -225,6 +233,45 @@ export const useStore = create<AppState>()(
           };
           return {
             sectors: [...state.sectors, newSector]
+          };
+        }),
+
+      addClient: (clientData) =>
+        set((state) => ({
+          clients: [
+            ...state.clients,
+            { ...clientData, id: uuidv4(), createdAt: new Date().toISOString() }
+          ]
+        })),
+
+      updateClient: (id, data) =>
+        set((state) => ({
+          clients: state.clients.map((c) => 
+            c.id === id ? { ...c, ...data } : c
+          )
+        })),
+
+      deleteClient: (id) =>
+        set((state) => ({
+          clients: state.clients.filter((c) => c.id !== id)
+        })),
+        
+      loadClientToEstablishment: (clientId) =>
+        set((state) => {
+          const client = state.clients.find(c => c.id === clientId);
+          if (!client) return state;
+          
+          return {
+            establishment: {
+              ...state.establishment,
+              name: client.name,
+              razonSocial: client.razonSocial,
+              cuit: client.cuit,
+              address: client.address,
+              city: client.city,
+              province: client.province,
+              postalCode: client.postalCode
+            }
           };
         }),
 

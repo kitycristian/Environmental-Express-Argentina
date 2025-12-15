@@ -1,3 +1,20 @@
+export interface Client {
+  id: string;
+  name: string; // Nombre de fantasía
+  razonSocial: string;
+  cuit: string;
+  conditionIva: string; // Responsable Inscripto, Monotributo, etc.
+  address: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  phone: string;
+  email: string;
+  contactName: string; // Persona de contacto
+  notes?: string;
+  createdAt: string;
+}
+
 export type MeasurementType = 
   | 'lighting'
   | 'noise'
