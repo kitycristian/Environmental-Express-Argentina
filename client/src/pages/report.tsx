@@ -197,6 +197,58 @@ export default function Report() {
     </div>
   );
 
+  const NOISE_INSTRUCTIONS = (
+    <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg text-xs leading-relaxed text-gray-700 break-inside-avoid">
+        <h3 className="font-bold text-gray-800 text-sm uppercase mb-3 border-b border-gray-300 pb-2">Instructivo para completar el protocolo de medición de ruido</h3>
+        <div className="columns-2 gap-8">
+            <ol className="list-decimal pl-5 space-y-1 text-[10px] text-gray-600">
+                <li>Identificación del establecimiento, explotación o centro de trabajo donde se realiza la medición de ruido (razón social completa).</li>
+                <li>Domicilio real del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Localidad del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Provincia en la cual se encuentra radicado el establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Código Postal del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>C.U.I.T. de la empresa o institución.</li>
+                <li>Marca, modelo y número de serie del instrumento utilizado en la medición. Las mediciones de nivel sonoro continuo equivalente se efectuarán con un medidor de nivel sonoro integrador (decibelímetro), o con un dosímetro, que cumplan como mínimo con las exigencias señaladas para un instrumento Clase o Tipo 2, establecidas en las normas IRAM 4074 e IEC 804. Las mediciones de nivel sonoro pico se realizarán con un medidor de nivel sonoro con detector de pico.</li>
+                <li>Fecha de la última calibración realizada en laboratorio al instrumento empleado en la medición.</li>
+                <li>Fecha de la medición, o indicar en el caso de que el estudio lleve más de un día la fecha de la primera y de la última medición.</li>
+                <li>Hora de inicio de la primera medición.</li>
+                <li>Hora de finalización de la última medición.</li>
+                <li>Indicar la duración de la jornada laboral en el establecimiento (en horas), la que deberá tenerse en cuenta para que la medición de ruido sea representativa de una jornada habitual.</li>
+                <li>Detallar las condiciones normales y/o habituales de los puestos de trabajo a evaluar: enumeración y descripción de las fuentes de ruido presentes, condición de funcionamiento de las mismas.</li>
+                <li>Detallar las condiciones de trabajo al momento de efectuar la medición de los puestos de trabajo a evaluar (si son diferentes a las condiciones normales descritas en el punto 13).</li>
+                <li>Adjuntar copia del certificado de calibración del equipo, expedido por un laboratorio.</li>
+                <li>Adjuntar plano o croquis del establecimiento, indicando los puntos en los que se realizaron las mediciones. El croquis deberá contar, como mínimo, con dimensiones, sectores, puestos.</li>
+                <li>Identificación del establecimiento, explotación o centro de trabajo donde se realiza la medición de ruido (razón social completa).</li>
+                <li>C.U.I.T. de la empresa o institución.</li>
+                <li>Domicilio real del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Localidad del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Código Postal del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Provincia en la cual se encuentra radicada el establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Punto de medición: Indicar mediante un número el puesto o puesto tipo donde realiza la medición, el cual deberá coincidir con el del plano o croquis que se adjunta al Protocolo.</li>
+                <li>Sector de la empresa donde se realiza la medición.</li>
+                <li>Puesto de trabajo, se debe indicar el lugar físico dentro del sector de la empresa donde se realiza la medición. Si existen varios puestos que son similares, se podrá tomarlos en conjunto como puesto tipo y en el caso de que se deba analizar un puesto móvil se deberá realizar la medición al trabajador mediante una dosimetría.</li>
+                <li>Indicar el tiempo que los trabajadores se exponen al ruido en el puesto de trabajo. Cuando la exposición diaria se componga de dos o más períodos a distintos niveles de ruido, indicar la duración de cada uno de esos períodos.</li>
+                <li>Tiempo de integración o de medición, este debe representar como mínimo un ciclo típico de trabajo, teniendo en cuenta los horarios y turnos de trabajo y debe ser expresado en horas o minutos.</li>
+                <li>Indicar el tipo de ruido a medir, continuo o intermitente / ruido de impulso o de impacto.</li>
+                <li>Indicar el nivel pico ponderado C de presión acústica obtenido para el ruido de impulso o impacto, LCpico en dBC, obtenido con un medidor de nivel sonoro con detector de pico (Ver Anexo V, de la Resolución MTEySS 295/03).</li>
+                <li>Indicar el nivel de presión acústica correspondiente a la jornada laboral completa, midiendo el nivel sonoro continuo equivalente (LAeq,Te, en dBA). Cuando la exposición diaria se componga de dos o más períodos a distintos niveles de ruido, indicar el nivel sonoro continuo equivalente de cada uno de esos períodos. (NOTA: Completar este campo solo cuando no se cumpla con la condición del punto 31).</li>
+                <li>Cuando la exposición diaria se componga de dos o más períodos a distintos niveles de ruido, y luego de haber completado las correspondientes celdas para cada uno de esos períodos (ver referencias 27 y 30), en esta columna se deberá indicar el resultado de la suma de las siguientes fracciones: C1 / T1 + C2 / T2 +...+ Cn / Tn. (Ver Anexo V, de la Resolución MTEySS 295/03). Adjuntar los calculos. (NOTA: Completar este campo solo para sonidos con niveles estables de por lo menos 3 segundos).</li>
+                <li>Indicar la dosis de ruido (en porcentaje), obtenida mediante un dosímetro fijado para un índice de conversión de 3dB y un nivel sonoro equivalente de 85 dBA como criterio para las 8 horas de jornada laboral. (Ver Anexo V, de la Resolución MTEySS 295/03). (NOTA: Completar este campo solo cuando la medición se realice con un dosímetro).</li>
+                <li>Indicar si se cumple con el nivel de ruido máximo permitido para el tiempo de exposición. Responder: SI o NO.</li>
+                <li>Espacio para agregar información adicional de importancia.</li>
+                <li>Identificación del establecimiento, explotación o centro de trabajo donde se realiza la medición de ruido (razón social completa).</li>
+                <li>C.U.I.T. de la empresa o institución.</li>
+                <li>Domicilio real del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Localidad del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Código Postal del establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Provincia en la cual se encuentra radicada el establecimiento, explotación o centro de trabajo donde se realiza la medición.</li>
+                <li>Indicar las conclusiones a las que se arribó, una vez analizados los resultados obtenidos en las mediciones.</li>
+                <li>Indicar las recomendaciones, después de analizar las conclusiones, para adecuar el nivel de ruido a la legislación vigente.</li>
+            </ol>
+        </div>
+    </div>
+  );
+
   const renderGenericProtocol = (type: MeasurementType, items: { sectorName: string; measurement: Measurement }[]) => (
      <div className="space-y-6">
        <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
@@ -301,6 +353,9 @@ export default function Report() {
        
        {/* Auto-injected Recommendations for Cold Stress */}
        {type === 'cold_stress' && COLD_STRESS_RECOMMENDATIONS}
+
+       {/* Auto-injected Instructions for Noise */}
+       {type === 'noise' && NOISE_INSTRUCTIONS}
      </div>
   );
 
