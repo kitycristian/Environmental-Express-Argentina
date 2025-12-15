@@ -56,11 +56,17 @@ const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; o
     { key: 'renovations', label: 'Renov/h', type: 'number' }
   ],
   grounding: [
-    { key: 'point', label: 'Punto de Medición', type: 'text' },
-    { key: 'resistance', label: 'Resistencia (Ω)', type: 'number' },
-    { key: 'continuity', label: 'Continuidad', type: 'select', options: ['SI', 'NO'] },
-    { key: 'differential_protection', label: 'Prot. Diferencial', type: 'select', options: ['SI', 'NO'] },
-    { key: 'visual_inspection', label: 'Insp. Visual', type: 'select', options: ['Aprobada', 'Desaprobada'] }
+    { key: 'grounding_number', label: 'N° Toma', type: 'text' },
+    { key: 'sector_name', label: 'Ubicación/Sector', type: 'text' },
+    { key: 'terrain_condition', label: 'Cond. Terreno', type: 'select', options: ['Lecho seco', 'Arcilloso', 'Pantanoso', 'Lluvias recientes', 'Arenoso seco', 'Arenoso húmedo', 'Otro'] },
+    { key: 'usage', label: 'Uso PAT', type: 'select', options: ['Seguridad Masas', 'Neutro Trafo', 'Electrónica', 'Informática', 'Iluminación', 'Pararrayos', 'Otros'] },
+    { key: 'scheme', label: 'Esquema', type: 'select', options: ['TT', 'TN-S', 'TN-C', 'TN-C-S', 'IT'] },
+    { key: 'resistance', label: 'Valor (Ω)', type: 'text' },
+    { key: 'complies_resistance', label: 'Cumple (Ω)', type: 'select', options: ['SI', 'NO'] },
+    { key: 'continuity_permanent', label: 'Continuidad', type: 'select', options: ['SI', 'NO'] },
+    { key: 'capacity_charge', label: 'Cap. Carga', type: 'select', options: ['SI', 'NO'] },
+    { key: 'protection_type', label: 'Tipo Prot.', type: 'select', options: ['DD', 'IA', 'Fusible'] },
+    { key: 'automatic_disconnection', label: 'Desc. Auto', type: 'select', options: ['SI', 'NO'] }
   ]
 };
 
