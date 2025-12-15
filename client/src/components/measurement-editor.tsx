@@ -120,27 +120,34 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
         </div>
 
         {/* Configuration Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm p-4 bg-background border-b">
+           <div className="space-y-1">
+             <Label className="text-xs text-muted-foreground">Tipo de Iluminación</Label>
+             <Select 
+                value={measurement.config?.lightingType || 'artificial'} 
+                onValueChange={(val: any) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightingType: val } })}
+             >
+               <SelectTrigger className="h-8">
+                 <SelectValue />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="artificial">Artificial</SelectItem>
+                 <SelectItem value="natural">Natural</SelectItem>
+                 <SelectItem value="mixed">Mixta</SelectItem>
+               </SelectContent>
+             </Select>
+          </div>
           <div className="space-y-1">
-             <Label className="text-xs text-muted-foreground">Ancho (m)</Label>
+             <Label className="text-xs text-muted-foreground">Fuente Luminosa</Label>
              <Input 
-               type="number" 
                className="h-8 bg-background" 
-               value={measurement.config?.width || ''}
-               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, width: parseFloat(e.target.value) } })}
+               placeholder="Ej. LED, Fluorescente..."
+               value={measurement.config?.lightSource || ''}
+               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightSource: e.target.value } })}
              />
           </div>
           <div className="space-y-1">
-             <Label className="text-xs text-muted-foreground">Largo (m)</Label>
-             <Input 
-               type="number" 
-               className="h-8 bg-background" 
-               value={measurement.config?.length || ''}
-               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, length: parseFloat(e.target.value) } })}
-             />
-          </div>
-          <div className="space-y-1">
-             <Label className="text-xs text-muted-foreground">Alto (m)</Label>
+             <Label className="text-xs text-muted-foreground">Altura Montaje (m)</Label>
              <Input 
                type="number" 
                className="h-8 bg-background" 
@@ -149,7 +156,38 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
              />
           </div>
           <div className="space-y-1">
-             <Label className="text-xs text-muted-foreground font-bold text-primary">Limite Legal (Lux)</Label>
+             <Label className="text-xs text-muted-foreground">Altura Plano Trabajo (m)</Label>
+             <Input 
+               type="number" 
+               className="h-8 bg-background" 
+               value={measurement.config?.workPlaneHeight || ''}
+               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, workPlaneHeight: parseFloat(e.target.value) } })}
+             />
+          </div>
+        </div>
+
+        {/* Grid Dimensions & Limit */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm px-4 pb-2">
+          <div className="space-y-1">
+             <Label className="text-xs text-muted-foreground">Ancho Local (m)</Label>
+             <Input 
+               type="number" 
+               className="h-8 bg-background" 
+               value={measurement.config?.width || ''}
+               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, width: parseFloat(e.target.value) } })}
+             />
+          </div>
+          <div className="space-y-1">
+             <Label className="text-xs text-muted-foreground">Largo Local (m)</Label>
+             <Input 
+               type="number" 
+               className="h-8 bg-background" 
+               value={measurement.config?.length || ''}
+               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, length: parseFloat(e.target.value) } })}
+             />
+          </div>
+           <div className="space-y-1">
+             <Label className="text-xs text-muted-foreground font-bold text-primary">Nivel Mínimo (Lux)</Label>
              <Input 
                type="number" 
                className="h-8 bg-background border-primary/30" 
@@ -158,7 +196,7 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
              />
           </div>
            <div className="space-y-1">
-             <Label className="text-xs text-muted-foreground">Puntos a Medir</Label>
+             <Label className="text-xs text-muted-foreground">Puntos de Medición</Label>
              <div className="flex gap-1">
                <Input 
                  type="number" 

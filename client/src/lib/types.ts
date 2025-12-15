@@ -59,8 +59,10 @@ export interface Measurement {
     // Lighting specific
     width?: number;
     length?: number;
-    height?: number;
-    workPlaneHeight?: number;
+    height?: number; // Altura de montaje
+    workPlaneHeight?: number; // Altura plano de trabajo
+    lightingType?: 'artificial' | 'natural' | 'mixed';
+    lightSource?: string; // LED, Fluorescente, etc.
   };
 }
 
