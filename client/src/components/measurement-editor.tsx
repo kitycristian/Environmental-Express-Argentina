@@ -45,6 +45,16 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
   // Local state for grid generation to avoid spamming the store
   const [gridSize, setGridSize] = useState(measurement.points.length || 9);
 
+  // Initialize points on mount if empty
+  useEffect(() => {
+    if (measurement.points.length === 0) {
+       // Create initial points (9 by default)
+       for (let i = 0; i < 9; i++) {
+         addPoint(measurement.sectorId, measurement.id, { values: { lux: '' } });
+       }
+    }
+  }, []);
+
   // Calculations
   const points = measurement.points;
   const values = points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
