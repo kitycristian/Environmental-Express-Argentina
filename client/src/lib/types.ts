@@ -89,6 +89,7 @@ export interface MeasurementPoint {
   label: string; // e.g., "Punto 1"
   values: Record<string, string | number>; // Flexible for different types (lux, db, temp, etc.)
   notes?: string;
+  conclusion?: string;
 }
 
 export interface Measurement {
@@ -137,6 +138,7 @@ export interface Measurement {
   // Documentation & Report Extras
   specificConclusions?: string;
   analysisAndImprovements?: string; // Análisis de datos y mejoras a realizar
+  additionalInformation?: string; // Información adicional que englobe a todos los puntos
   attachedDocuments?: {
     calibrationCertificate?: boolean;
     calibrationCertificateImage?: string; // Base64 Data URL

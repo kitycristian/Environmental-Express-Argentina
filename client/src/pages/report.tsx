@@ -592,11 +592,16 @@ export default function Report() {
                      <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">7</div>
                      <div className="h-44 p-2 text-[10px] space-y-2 overflow-hidden bg-white">
                         <div>
-                           <span className="font-bold">Comentario:</span> {point.notes || measurement.observations || 'Sin observaciones.'}
+                           <span className="font-bold">Comentario:</span> {point.notes || 'Sin comentarios.'}
                         </div>
                         <div className="border-t border-gray-200 pt-1">
-                           <span className="font-bold">Conclusión:</span> {measurement.specificConclusions || 'Pendiente de análisis.'}
+                           <span className="font-bold">Conclusión:</span> {point.conclusion || 'Pendiente.'}
                         </div>
+                        {measurement.additionalInformation && (
+                          <div className="border-t border-gray-200 pt-1 text-[9px] text-gray-600">
+                             <span className="font-bold text-black">Info Adicional:</span> {measurement.additionalInformation}
+                          </div>
+                        )}
                      </div>
                   </div>
                </div>

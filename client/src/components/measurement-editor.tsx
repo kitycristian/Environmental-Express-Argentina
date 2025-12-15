@@ -374,7 +374,8 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
                 {fields.map(f => (
                   <TableHead key={f.key}>{f.label}</TableHead>
                 ))}
-                <TableHead>Observación</TableHead>
+                <TableHead>Comentario</TableHead>
+                {measurement.type === 'thermal_load' && <TableHead>Conclusión</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -414,11 +415,21 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
                   <TableCell>
                     <Input 
                        className="h-8 min-w-[150px]" 
-                       placeholder="Notas..." 
+                       placeholder="Comentario..." 
                        value={point.notes || ''}
                        onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { notes: e.target.value })}
                     />
                   </TableCell>
+                  {measurement.type === 'thermal_load' && (
+                    <TableCell>
+                      <Input 
+                         className="h-8 min-w-[150px]" 
+                         placeholder="Conclusión..." 
+                         value={point.conclusion || ''}
+                         onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { conclusion: e.target.value })}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Button 
                       variant="ghost" 
@@ -440,14 +451,27 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
             <Plus className="mr-2 h-4 w-4" /> Agregar Punto
           </Button>
           
-          <div className="w-full md:w-1/2">
-             <Label className="text-xs text-muted-foreground mb-1 block">Observaciones Generales</Label>
-             <Textarea 
-               className="h-20 text-sm resize-none" 
-               placeholder="Comentarios generales sobre esta medición..."
-               value={measurement.observations || ''}
-               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { observations: e.target.value })}
-             />
+          <div className="w-full md:w-1/2 space-y-2">
+             <div className="space-y-1">
+               <Label className="text-xs text-muted-foreground block">Observaciones Generales</Label>
+               <Textarea 
+                 className="h-16 text-sm resize-none" 
+                 placeholder="Comentarios generales sobre esta medición..."
+                 value={measurement.observations || ''}
+                 onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { observations: e.target.value })}
+               />
+             </div>
+             {measurement.type === 'thermal_load' && (
+               <div className="space-y-1">
+                 <Label className="text-xs text-muted-foreground block">Información Adicional (Global)</Label>
+                 <Textarea 
+                   className="h-16 text-sm resize-none" 
+                   placeholder="Información adicional que englobe todos los puntos..."
+                   value={measurement.additionalInformation || ''}
+                   onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { additionalInformation: e.target.value })}
+                 />
+               </div>
+             )}
           </div>
         </div>
       </CardContent>
