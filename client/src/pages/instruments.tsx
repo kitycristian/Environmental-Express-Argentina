@@ -49,6 +49,21 @@ export default function InstrumentsPage() {
     });
   };
 
+  const handleUpdateDocuments = (id: string, key: 'calibrationCertificateImage' | 'traceablePatternImage', value: string) => {
+    const instrument = instruments.find(i => i.id === id);
+    if (!instrument) return;
+
+    const updatedInstrument = {
+      ...instrument,
+      attachedDocuments: {
+        ...instrument.attachedDocuments,
+        [key]: value
+      }
+    };
+
+    handleUpdateInstrument(id, updatedInstrument);
+  };
+
   const handleImageUpload = (id: string, key: 'calibrationCertificateImage' | 'traceablePatternImage', file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {

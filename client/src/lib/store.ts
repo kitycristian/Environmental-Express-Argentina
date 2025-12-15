@@ -62,7 +62,78 @@ export const useStore = create<AppState>()(
       sectors: [],
       history: [],
       clients: [],
-      availableInstruments: [],
+      availableInstruments: [
+        {
+          id: 'inst-1',
+          type: 'thermal_load',
+          brand: 'TES',
+          model: '1639B',
+          serialNumber: '130308165',
+          calibrationCertificate: '22R4496',
+          calibrationDate: '',
+          attachedDocuments: {}
+        },
+        {
+          id: 'inst-2',
+          type: 'cold_stress',
+          brand: 'EXTECH',
+          model: 'SD700',
+          serialNumber: 'A.070301',
+          calibrationCertificate: '22R4500',
+          calibrationDate: '',
+          attachedDocuments: {}
+        },
+        {
+          id: 'inst-3',
+          type: 'cold_stress',
+          brand: 'TESTO',
+          model: '440',
+          serialNumber: '81216382',
+          calibrationCertificate: '22R4495',
+          calibrationDate: '',
+          attachedDocuments: {}
+        },
+        {
+          id: 'inst-4',
+          type: 'lighting',
+          brand: 'TRIGGER',
+          model: 'TG-531',
+          serialNumber: '200807261',
+          calibrationCertificate: '',
+          calibrationDate: '',
+          attachedDocuments: {}
+        },
+        {
+          id: 'inst-5',
+          type: 'generic',
+          brand: 'FLUKE',
+          model: '404D',
+          serialNumber: '27910311',
+          calibrationCertificate: '',
+          calibrationDate: '',
+          attachedDocuments: {}
+        },
+        {
+          id: 'inst-6',
+          type: 'noise',
+          brand: 'TES',
+          model: '1353 H',
+          serialNumber: '130105756',
+          calibrationCertificate: '22R4498',
+          calibrationDate: '',
+          attachedDocuments: {}
+        },
+        {
+          id: 'inst-7',
+          type: 'noise',
+          brand: 'TES',
+          model: '1355',
+          serialNumber: '130807935',
+          calibrationCertificate: '22R4497',
+          calibrationDate: '',
+          attachedDocuments: {}
+        }
+      ],
 
       addInstrument: (instrument) =>
         set((state) => ({
