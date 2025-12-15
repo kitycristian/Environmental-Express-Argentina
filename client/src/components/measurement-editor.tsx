@@ -25,9 +25,14 @@ const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; o
     { key: 'cumple', label: 'Cumple?', type: 'select', options: ['SI', 'NO'] }
   ],
   thermal_load: [
+    { key: 'puesto', label: 'Puesto', type: 'text' },
     { key: 'tbs', label: 'TBS (°C)', type: 'number' },
     { key: 'tbh', label: 'TBH (°C)', type: 'number' },
-    { key: 'tg', label: 'TG (°C)', type: 'number' }
+    { key: 'tg', label: 'TG (°C)', type: 'number' },
+    { key: 'mb', label: 'MB (W)', type: 'number' },
+    { key: 'mi', label: 'MI (W)', type: 'number' },
+    { key: 'mii', label: 'MII (W)', type: 'number' },
+    { key: 'temp_ext', label: 'Temp Ext (°C)', type: 'number' }
   ],
   cold_stress: [
     { key: 'temp', label: 'Temp (°C)', type: 'number' },

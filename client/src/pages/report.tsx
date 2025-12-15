@@ -554,6 +554,143 @@ export default function Report() {
     </div>
   );
 
+  const renderThermalLoadProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-6">
+       {items.flatMap(({ sectorName, measurement }) => 
+         measurement.points.map((point) => {
+           const values = point.values;
+           const tbs = parseFloat(values.tbs) || 0;
+           const tbh = parseFloat(values.tbh) || 0;
+           const tg = parseFloat(values.tg) || 0;
+           
+           // Calculate TGBH (Indoor formula from image: 0.7TBH + 0.3TG)
+           const tgbh = (0.7 * tbh + 0.3 * tg).toFixed(1);
+           
+           const mb = parseFloat(values.mb) || 70;
+           const mi = parseFloat(values.mi) || 0;
+           const mii = parseFloat(values.mii) || 0;
+           const mTotal = mb + mi + mii;
+           
+           return (
+             <div key={point.id} className="break-inside-avoid border border-black mb-8">
+               {/* Header */}
+               <div className="bg-black text-white font-bold text-center text-sm py-1 border-b border-black uppercase">
+                 PROTOCOLO DE MEDICION DE CARGA TERMICA
+               </div>
+               
+               {/* Subheader Info Grid */}
+               <div className="grid grid-cols-12 text-[10px] border-b border-black">
+                  <div className="col-span-4 border-r border-black p-2 font-bold flex items-center">
+                    {establishment.razonSocial || establishment.name} (Store {establishment.address})
+                  </div>
+                  <div className="col-span-3 border-r border-black p-1">
+                    <div className="font-bold border-b border-gray-300 pb-1 mb-1">Puesto y/o sector de trabajo:</div>
+                    <div>{values.puesto || sectorName}</div>
+                  </div>
+                  <div className="col-span-2 border-r border-black p-1 flex items-center">
+                    <span className="font-bold mr-1">Fecha:</span> {establishment.date ? format(new Date(establishment.date), "dd/MM/yyyy") : '-'}
+                  </div>
+                  <div className="col-span-2 border-r border-black p-1">
+                     <div><span className="font-bold">Hora Desde:</span> {establishment.startTime || '-'}</div>
+                     <div><span className="font-bold">Hora Hasta:</span> {establishment.endTime || '-'}</div>
+                  </div>
+                  <div className="col-span-1 p-1 flex items-center justify-center">
+                     <span className="font-bold mr-1">Temp. Ext.:</span> {values.temp_ext || '-'} °C
+                  </div>
+               </div>
+
+               {/* Table Content */}
+               <div className="grid grid-cols-12 text-[10px]">
+                  {/* Column 1: Row Headers */}
+                  <div className="col-span-2 border-r border-black">
+                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">1</div>
+                     <div className="h-32 border-b border-black flex items-center px-2 font-bold bg-white">
+                        Magnitudes evaluadas
+                     </div>
+                     <div className="h-12 flex items-center px-2 font-bold bg-white">
+                        Resultados
+                     </div>
+                  </div>
+
+                  {/* Column 2: TGBH */}
+                  <div className="col-span-2 border-r border-black text-center">
+                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">2</div>
+                     <div className="h-32 border-b border-black flex flex-col items-center justify-center bg-white relative">
+                        <span className="transform -rotate-90 whitespace-nowrap font-bold">TGBH</span>
+                        <span className="transform -rotate-90 whitespace-nowrap text-[9px] text-gray-500 mt-2">=0,7TBH + 0,3TG</span>
+                     </div>
+                     <div className="h-12 flex items-center justify-center font-bold text-red-600 text-lg bg-gray-200">
+                        {tgbh}
+                     </div>
+                  </div>
+
+                  {/* Column 3: MB */}
+                  <div className="col-span-1 border-r border-black text-center">
+                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">3</div>
+                     <div className="h-32 border-b border-black flex items-center justify-center bg-white">
+                        <span className="transform -rotate-90 whitespace-nowrap font-bold">MB [W] = 70</span>
+                     </div>
+                     <div className="h-12 flex items-center justify-center font-bold bg-white">
+                        {mb}
+                     </div>
+                  </div>
+
+                  {/* Column 4: MI */}
+                  <div className="col-span-1 border-r border-black text-center">
+                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">4</div>
+                     <div className="h-32 border-b border-black flex items-center justify-center bg-white">
+                        <span className="transform -rotate-90 whitespace-nowrap font-bold">MI [W]</span>
+                     </div>
+                     <div className="h-12 flex items-center justify-center font-bold bg-white">
+                        {mi}
+                     </div>
+                  </div>
+
+                  {/* Column 5: MII */}
+                  <div className="col-span-1 border-r border-black text-center">
+                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">5</div>
+                     <div className="h-32 border-b border-black flex items-center justify-center bg-white">
+                        <span className="transform -rotate-90 whitespace-nowrap font-bold">MII [W]</span>
+                     </div>
+                     <div className="h-12 flex items-center justify-center font-bold bg-white">
+                        {mii}
+                     </div>
+                  </div>
+
+                  {/* Column 6: M Total */}
+                  <div className="col-span-1 border-r border-black text-center bg-gray-200">
+                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">6</div>
+                     <div className="h-32 border-b border-black flex items-center justify-center">
+                        <div className="transform -rotate-90 whitespace-nowrap font-bold text-[9px]">
+                           M [W] = <br/> MB+MI+MII
+                        </div>
+                     </div>
+                     <div className="h-12 flex items-center justify-center font-bold bg-gray-300">
+                        {mTotal}
+                     </div>
+                  </div>
+
+                  {/* Column 7: Comments/Conclusion */}
+                  <div className="col-span-4 text-left">
+                     <div className="h-8 border-b border-black bg-gray-100 flex items-center justify-center font-bold">7</div>
+                     <div className="h-44 p-2 text-[10px] space-y-2 overflow-hidden bg-white">
+                        <div>
+                           <span className="font-bold">Comentario:</span> {point.notes || measurement.observations || 'Sin observaciones.'}
+                        </div>
+                        <div className="border-t border-gray-200 pt-1">
+                           <span className="font-bold">Conclusión:</span> {measurement.specificConclusions || 'Pendiente de análisis.'}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+             </div>
+           );
+         })
+       )}
+       {THERMAL_LOAD_REFERENCE_VALUES}
+    </div>
+  );
+
   const renderGenericProtocol = (type: MeasurementType, items: { sectorName: string; measurement: Measurement }[]) => (
      <div className="space-y-6">
        <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
@@ -806,7 +943,9 @@ export default function Report() {
                    ? renderLightingProtocol(items!) 
                    : type === 'noise'
                      ? renderNoiseProtocol(items!)
-                     : renderGenericProtocol(type as MeasurementType, items!)
+                     : type === 'thermal_load'
+                       ? renderThermalLoadProtocol(items!)
+                       : renderGenericProtocol(type as MeasurementType, items!)
                  }
               </section>
             ))
