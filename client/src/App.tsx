@@ -35,6 +35,8 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
   return <Component />;
 }
 
+import SettingsPage from "@/pages/settings";
+
 function Router() {
   const [location] = useLocation();
 
@@ -49,6 +51,7 @@ function Router() {
         <Route path="/clients" component={() => <ProtectedRoute component={ClientsPage} adminOnly />} />
         <Route path="/reports" component={() => <ProtectedRoute component={ReportsList} adminOnly />} />
         <Route path="/instruments" component={() => <ProtectedRoute component={InstrumentsPage} />} />
+        <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} adminOnly />} />
         <Route path="/campaign/:type" component={() => <ProtectedRoute component={MeasurementCampaign} />} />
         <Route path="/sector/:id" component={() => <ProtectedRoute component={SectorDetail} />} />
         <Route path="/report" component={() => <ProtectedRoute component={Report} adminOnly />} />

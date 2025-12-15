@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ClipboardList, Home, FileText, Menu, ChevronRight, Save, History, Trash2, RotateCcw, PlusCircle, Building2, Calendar, Users, FileStack, LogOut, User, Settings2 } from "lucide-react";
+import { ClipboardList, Home, FileText, Menu, ChevronRight, Save, History, Trash2, RotateCcw, PlusCircle, Building2, Calendar, Users, FileStack, LogOut, User, Settings2, Wrench, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -104,10 +104,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <Link href="/instruments">
         <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/instruments' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
-          <Settings2 className="h-4 w-4" />
+          <Wrench className="h-4 w-4" />
           Instrumentos
         </div>
       </Link>
+
+      {user?.role === 'admin' && (
+        <Link href="/settings">
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/settings' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+            <Settings className="h-4 w-4" />
+            Configuración
+            </div>
+        </Link>
+      )}
 
       <div className="mt-auto pt-4 border-t border-gray-100">
         <div onClick={handleLogout} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 cursor-pointer">
