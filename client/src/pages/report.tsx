@@ -1,6 +1,6 @@
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil } from "lucide-react";
+import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { MEASUREMENT_LABELS, Measurement, MeasurementType } from "@/lib/types";
 import logoUrl from "@assets/image_1765761040646.png";
