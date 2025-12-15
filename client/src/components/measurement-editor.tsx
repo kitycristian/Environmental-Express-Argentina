@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 // Configuration for fields per measurement type
 const FIELD_CONFIG: Record<MeasurementType, { key: string; label: string; type: string; options?: string[] }[]> = {
   lighting: [
-    { key: 'lux', label: 'Lux (lx)', type: 'number' },
-    { key: 'height', label: 'Altura (m)', type: 'number' }
+    { key: 'lux', label: 'Valor Medido (Lux)', type: 'number' },
+    { key: 'required', label: 'Valor Exigido (Lux)', type: 'number' },
+    { key: 'height', label: 'Altura Plano (m)', type: 'number' }
   ],
   noise: [
     { key: 'db', label: 'Nivel (dBA)', type: 'number' },
@@ -46,7 +47,12 @@ const calculateResult = (type: MeasurementType, points: MeasurementPoint[]) => {
   if (type === 'lighting') {
     const sum = points.reduce((acc, p) => acc + (Number(p.values.lux) || 0), 0);
     const avg = Math.round(sum / points.length);
-    return `Promedio: ${avg} Lux`;
+    
+    // Calculate uniformity if we have required values
+    const min = Math.min(...points.map(p => Number(p.values.lux) || 0));
+    const uniformity = avg > 0 ? (min / avg).toFixed(2) : 0;
+    
+    return `Promedio: ${avg} Lux | Uniformidad: ${uniformity}`;
   }
   
   if (type === 'noise') {
@@ -85,7 +91,7 @@ export function MeasurementEditor({ measurement }: { measurement: Measurement })
            <CardTitle className="text-base font-semibold text-primary/80">
              {measurement.type.replace('_', ' ').toUpperCase()}
            </CardTitle>
-           <div className="text-xs font-mono bg-background px-2 py-0.5 rounded border text-muted-foreground">
+           <div className="text-xs font-mono bg-background px-2 py-0.5 rounded border text-muted-foreground hidden md:block">
              {calculateResult(measurement.type, measurement.points)}
            </div>
         </div>
@@ -125,6 +131,9 @@ export function MeasurementEditor({ measurement }: { measurement: Measurement })
                 {fields.map(f => (
                   <TableHead key={f.key}>{f.label}</TableHead>
                 ))}
+                {measurement.type === 'lighting' && (
+                  <TableHead>Resultado</TableHead>
+                )}
                 <TableHead>Observación</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -162,6 +171,27 @@ export function MeasurementEditor({ measurement }: { measurement: Measurement })
                       )}
                     </TableCell>
                   ))}
+                  
+                  {/* Dynamic Result Column for Lighting */}
+                  {measurement.type === 'lighting' && (
+                    <TableCell>
+                      {(() => {
+                        const lux = Number(point.values.lux) || 0;
+                        const required = Number(point.values.required) || 0;
+                        if (!lux || !required) return <span className="text-muted-foreground text-xs">-</span>;
+                        return lux >= required ? (
+                          <span className="text-green-600 font-bold text-xs flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> CUMPLE
+                          </span>
+                        ) : (
+                          <span className="text-red-600 font-bold text-xs flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> BAJO
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
+                  )}
+
                   <TableCell>
                     <Input 
                        className="h-8 min-w-[150px]" 
