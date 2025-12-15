@@ -373,7 +373,7 @@ export const useStore = create<AppState>()(
       resetStore: () => set({ establishment: initialEstablishment, sectors: [] }),
     }),
     {
-      name: 'syh-relevamiento-storage',
+      name: 'syh-relevamiento-storage-v2',
       storage: createJSONStorage(() => localStorage),
     }
   )
