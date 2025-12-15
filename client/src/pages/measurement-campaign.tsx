@@ -7,10 +7,62 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search, Building2 } from "lucide-react";
 import { MeasurementEditor } from "@/components/measurement-editor";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const SUPERMARKET_SECTORS = [
+  "Salón de Ventas",
+  "Salón de Ventas (Linea de Cajas)",
+  "Salon de Ventas (Atención al Cliente)",
+  "Deposito de Linea de Cajas",
+  "Sala de Cajero",
+  "Tesoreria",
+  "TOMRA",
+  "Recepción de Mercaderia",
+  "Panaderia",
+  "Deposito de Panaderia",
+  "Camara de Congelado de Panaderia",
+  "Camara de Enfriado de Panaderia",
+  "Laboratorio de Tortas",
+  "Laboratorio de Fiambres",
+  "Laboratorio de Rotiseria",
+  "Camara de Vegetales",
+  "Camara de Deli y Fiambres",
+  "Camara de Congelado de Carniceria",
+  "Camara de Congelado de Lacteos",
+  "Camara de Enfriado de Lacteos (WC)",
+  "Camara de Enfriado de Carnes",
+  "Sala de Tableros",
+  "Pasillo de Costos (Trastienda)",
+  "Pasillo de Circulacion (Oficinas)",
+  "Pasillo (acceso desde Costos)",
+  "Vestuario Hombre",
+  "Vestuario Mujer",
+  "Sala de Entrenamiento CBL",
+  "Oficina de Recursos Humanos",
+  "Oficina de Seguridad e Higiene",
+  "Sala de Reuniones",
+  "Oficina de Jefes/Recep./UPC",
+  "Sistemas",
+  "Mantenimiento",
+  "Puesto 1",
+  "Comedor",
+  "Gerencia",
+  "Deposito de Insumos",
+  "Laboratorio de Vegetales",
+  "Claims",
+  "Servicios Financieros",
+  "Laboratorio de Carnes",
+  "Laboratorio de Pollos",
+  "Camara de Pollos",
+  "Autoshop",
+  "Autocenter Taller",
+  "Sala de CCTV"
+];
 
 export default function MeasurementCampaign() {
   const [match, params] = useRoute("/campaign/:type");
@@ -29,6 +81,8 @@ export default function MeasurementCampaign() {
   const [isNewSectorOpen, setIsNewSectorOpen] = useState(false);
   const [newSectorName, setNewSectorName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRubro, setSelectedRubro] = useState<string>("manual");
+  const [selectedRubroSectors, setSelectedRubroSectors] = useState<string[]>([]);
 
   if (!type || !MEASUREMENT_LABELS[type]) {
     return <div>Tipo de medición no válido</div>;
@@ -42,33 +96,29 @@ export default function MeasurementCampaign() {
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddSector = () => {
-    if (!newSectorName.trim()) return;
+  const handleCreateRubroSectors = () => {
+    // Determine which sectors to add
+    const sectorsToAdd = selectedRubro === "supermercados" ? SUPERMARKET_SECTORS : [];
     
-    // Check if sector already exists (by name) to reuse it? 
-    // For now, let's create a new one as requested "Add Sector". 
-    // But if they type "Taller", and "Taller" exists, maybe we should just add the measurement to it?
-    // Let's keep it simple: Create New Sector + Add Measurement.
+    // Add only selected ones from the checklist? Or all?
+    // Let's add all for now as per "Listar estos sectores" -> "Cargar Rubro"
+    // Actually, letting them select which ones to import is better UX.
     
-    // Wait, create sector is async in store? No, synchronous.
-    // We need the ID of the new sector to add the measurement.
-    // The store `addSector` doesn't return ID. I need to generate ID here or update store to return it.
-    // I will use a direct approach: Generate ID here or update store logic.
-    // Actually, `addSector` in store uses uuid(). I can't easily get it back without refactoring store.
-    // Refactoring store is safer. Or I can just pass a pre-generated ID to `addSector`.
-    // Let's check `store.ts`. `addSector` takes `Omit<Sector, 'id' ...>`.
+    const targetSectors = selectedRubroSectors.length > 0 ? selectedRubroSectors : sectorsToAdd;
     
-    // WORKAROUND: I will modify `store.ts` to accept an ID or I will find the last added sector. 
-    // BETTER: I'll just refactor `addSector` in `store.ts` to accept an optional ID, or I'll implement a "addSectorWithMeasurement" action in store?
-    // "addSectorWithMeasurement" sounds perfect for this requirement.
+    targetSectors.forEach(sectorName => {
+        useStore.getState().addSectorWithMeasurement({
+            name: sectorName,
+            description: "",
+            dimensions: "",
+            activity: "",
+            workersCount: 0
+        }, type);
+    });
     
-    // For now, let's assume I can't change store easily (I can, but I want to be fast).
-    // I will refactor the store in the next step to support this workflow better. 
-    // Wait, I can just use `addSector` and then immediately `addMeasurement` to the last sector? Risky.
-    
-    // Let's modify the store to return the ID or accept it.
-    // Actually, I'll just change the store first.
-    return; 
+    setIsNewSectorOpen(false);
+    setSelectedRubro("manual");
+    setSelectedRubroSectors([]);
   };
 
   return (
@@ -109,37 +159,90 @@ export default function MeasurementCampaign() {
                 Agregar Sector
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Nuevo Sector para {MEASUREMENT_LABELS[type]}</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sectorName">Nombre del Sector</Label>
-                  <Input 
-                    id="sectorName" 
-                    value={newSectorName} 
-                    onChange={(e) => setNewSectorName(e.target.value)} 
-                    placeholder="Ej. Nave de Producción"
-                    autoFocus
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsNewSectorOpen(false)}>Cancelar</Button>
-                <Button onClick={() => {
-                  // This will be handled by a new store action I'll create
-                  useStore.getState().addSectorWithMeasurement({
-                    name: newSectorName,
-                    description: "",
-                    dimensions: "",
-                    activity: "",
-                    workersCount: 0
-                  }, type);
-                  setNewSectorName("");
-                  setIsNewSectorOpen(false);
-                }}>Crear y Medir</Button>
-              </DialogFooter>
+              
+              <Tabs defaultValue="manual" onValueChange={(val) => setSelectedRubro(val)}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="manual">Manual</TabsTrigger>
+                  <TabsTrigger value="supermercados">Rubro Supermercados</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="manual" className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="sectorName">Nombre del Sector</Label>
+                      <Input 
+                        id="sectorName" 
+                        value={newSectorName} 
+                        onChange={(e) => setNewSectorName(e.target.value)} 
+                        placeholder="Ej. Nave de Producción"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex justify-end pt-4">
+                         <Button onClick={() => {
+                          useStore.getState().addSectorWithMeasurement({
+                            name: newSectorName,
+                            description: "",
+                            dimensions: "",
+                            activity: "",
+                            workersCount: 0
+                          }, type);
+                          setNewSectorName("");
+                          setIsNewSectorOpen(false);
+                        }}>Crear y Medir</Button>
+                    </div>
+                </TabsContent>
+                
+                <TabsContent value="supermercados" className="space-y-4 py-4">
+                    <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4">
+                        <div className="flex items-center gap-2 text-blue-800 font-medium mb-1">
+                            <Building2 className="h-4 w-4" />
+                            Sectores Sugeridos
+                        </div>
+                        <p className="text-xs text-blue-600">
+                            Seleccione los sectores que desea agregar a la campaña. Se crearán automáticamente con el protocolo correspondiente.
+                        </p>
+                    </div>
+                    
+                    <div className="h-[300px] overflow-y-auto border rounded-md p-2 space-y-1">
+                        {SUPERMARKET_SECTORS.map((sector) => (
+                            <div key={sector} className="flex items-center space-x-2 hover:bg-gray-50 p-2 rounded cursor-pointer" onClick={() => {
+                                if (selectedRubroSectors.includes(sector)) {
+                                    setSelectedRubroSectors(selectedRubroSectors.filter(s => s !== sector));
+                                } else {
+                                    setSelectedRubroSectors([...selectedRubroSectors, sector]);
+                                }
+                            }}>
+                                <input 
+                                    type="checkbox" 
+                                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                                    checked={selectedRubroSectors.includes(sector)}
+                                    readOnly
+                                />
+                                <span className="text-sm">{sector}</span>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="flex justify-between items-center pt-4 border-t mt-2">
+                        <div className="text-xs text-muted-foreground">
+                            {selectedRubroSectors.length} sectores seleccionados
+                        </div>
+                        <div className="space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => setSelectedRubroSectors(SUPERMARKET_SECTORS)}>
+                                Seleccionar Todos
+                            </Button>
+                            <Button onClick={handleCreateRubroSectors} disabled={selectedRubroSectors.length === 0}>
+                                Importar Sectores
+                            </Button>
+                        </div>
+                    </div>
+                </TabsContent>
+              </Tabs>
+              
             </DialogContent>
           </Dialog>
         </div>
