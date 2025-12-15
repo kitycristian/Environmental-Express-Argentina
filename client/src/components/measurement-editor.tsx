@@ -5,10 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Calculator, CheckCircle2, AlertCircle, Grid3X3, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Calculator, CheckCircle2, AlertCircle, Grid3X3, ArrowRight, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 // Configuration for fields per measurement type (Non-lighting)
 const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; options?: string[] }[]> = {
@@ -41,6 +42,7 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
   const addPoint = useStore((state) => state.addPoint);
   const deletePoint = useStore((state) => state.deletePoint);
   const deleteMeasurement = useStore((state) => state.deleteMeasurement);
+  const { toast } = useToast();
 
   // Local state for grid generation to avoid spamming the store
   const [gridSize, setGridSize] = useState(measurement.points.length || 9);
@@ -107,16 +109,31 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
               ILUMINACIÓN
             </CardTitle>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-            onClick={() => {
-              if(confirm('¿Eliminar esta medición?')) deleteMeasurement(measurement.sectorId, measurement.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              className="h-8 gap-2 bg-primary/90 hover:bg-primary text-white"
+              onClick={() => {
+                toast({
+                  title: "Medición guardada",
+                  description: "Los datos de iluminación han sido actualizados correctamente.",
+                });
+              }}
+            >
+              <Save className="h-4 w-4" />
+              Guardar
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={() => {
+                if(confirm('¿Eliminar esta medición?')) deleteMeasurement(measurement.sectorId, measurement.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Configuration Row */}
@@ -284,6 +301,7 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
   const deletePoint = useStore((state) => state.deletePoint);
   const updateMeasurement = useStore((state) => state.updateMeasurement);
   const deleteMeasurement = useStore((state) => state.deleteMeasurement);
+  const { toast } = useToast();
 
   const fields = FIELD_CONFIG[measurement.type] || [];
 
@@ -309,6 +327,19 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
               <SelectItem value="non_compliant">No Cumple</SelectItem>
             </SelectContent>
           </Select>
+          <Button 
+            size="sm" 
+            className="h-8 gap-2 bg-primary/90 hover:bg-primary text-white"
+            onClick={() => {
+              toast({
+                title: "Medición guardada",
+                description: `Los datos de ${measurement.type.replace('_', ' ')} han sido guardados.`,
+              });
+            }}
+          >
+            <Save className="h-4 w-4" />
+            Guardar
+          </Button>
           <Button 
             variant="ghost" 
             size="icon" 
