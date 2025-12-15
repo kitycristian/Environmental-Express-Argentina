@@ -127,10 +127,11 @@ export default function Report() {
                     {sectorName}
                     {measurement.observations && <div className="text-[10px] text-gray-500 italic mt-1">Obs: {measurement.observations}</div>}
                     {measurement.specificConclusions && <div className="text-[10px] text-blue-600 font-semibold mt-1">Concl: {measurement.specificConclusions}</div>}
-                    {(measurement.attachedDocuments?.calibrationCertificate || measurement.attachedDocuments?.sketch) && (
+                    {(measurement.attachedDocuments?.calibrationCertificate || measurement.attachedDocuments?.sketch || measurement.attachedDocuments?.measurementProof) && (
                       <div className="flex gap-1 mt-1 flex-wrap">
                         {measurement.attachedDocuments.calibrationCertificate && <span className="text-[9px] px-1 bg-gray-100 border rounded text-gray-600">Cert. Calib.</span>}
                         {measurement.attachedDocuments.sketch && <span className="text-[9px] px-1 bg-gray-100 border rounded text-gray-600">Croquis</span>}
+                        {measurement.attachedDocuments.measurementProof && <span className="text-[9px] px-1 bg-green-50 border border-green-200 rounded text-green-700">Prueba Medición</span>}
                       </div>
                     )}
                  </td>

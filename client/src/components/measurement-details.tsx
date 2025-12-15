@@ -60,7 +60,7 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
     });
   };
 
-  const handleImageUpload = (key: 'calibrationCertificateImage' | 'sketchImage' | 'otherImages', file: File) => {
+  const handleImageUpload = (key: 'calibrationCertificateImage' | 'sketchImage' | 'otherImages' | 'measurementProofImage', file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
@@ -84,7 +84,7 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
     reader.readAsDataURL(file);
   };
 
-  const removeImage = (key: 'calibrationCertificateImage' | 'sketchImage' | 'otherImages', index?: number) => {
+  const removeImage = (key: 'calibrationCertificateImage' | 'sketchImage' | 'otherImages' | 'measurementProofImage', index?: number) => {
       if (key === 'otherImages' && typeof index === 'number') {
           const currentImages = measurement.attachedDocuments?.otherImages || [];
           const newImages = [...currentImages];
@@ -196,6 +196,46 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
                                     className="h-8 text-xs w-full cursor-pointer"
                                     onChange={(e) => {
                                         if (e.target.files?.[0]) handleImageUpload('sketchImage', e.target.files[0]);
+                                    }}
+                                />
+                            </div>
+                         )}
+                       </div>
+                     )}
+                   </div>
+
+                   {/* Measurement Proof */}
+                   <div className="space-y-2 border-b border-gray-200 pb-2">
+                     <div className="flex items-center space-x-2">
+                       <Checkbox 
+                         id="doc-proof" 
+                         checked={measurement.attachedDocuments?.measurementProof || false}
+                         onCheckedChange={(checked) => updateDocuments('measurementProof', checked === true)}
+                       />
+                       <label htmlFor="doc-proof" className="text-sm font-medium leading-none">
+                         Imagen de Prueba de Medición
+                       </label>
+                     </div>
+                     {measurement.attachedDocuments?.measurementProof && (
+                       <div className="pl-6">
+                         {measurement.attachedDocuments?.measurementProofImage ? (
+                            <div className="relative group w-24 h-24 border rounded overflow-hidden">
+                                <img src={measurement.attachedDocuments.measurementProofImage} alt="Prueba Medición" className="w-full h-full object-cover" />
+                                <button 
+                                    onClick={() => removeImage('measurementProofImage')}
+                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </button>
+                            </div>
+                         ) : (
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="h-8 text-xs w-full cursor-pointer"
+                                    onChange={(e) => {
+                                        if (e.target.files?.[0]) handleImageUpload('measurementProofImage', e.target.files[0]);
                                     }}
                                 />
                             </div>
