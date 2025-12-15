@@ -9,6 +9,7 @@ import { useStore } from "@/lib/store";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import logoUrl from "@assets/image_1765761040646.png";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -43,11 +44,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const NavContent = () => (
     <nav className="flex flex-col gap-2 p-4 h-full">
-      <div className="mb-6 px-2">
-        <h2 className="text-lg font-bold tracking-tight text-primary">Environmental Express</h2>
-        <p className="text-xs text-muted-foreground truncate">
-          Argentina
-        </p>
+      <div className="mb-6 px-2 flex flex-col items-start gap-3">
+        <img src={logoUrl} alt="Environmental Express Argentina" className="h-16 w-auto object-contain" />
       </div>
       
       <Link href="/">
@@ -138,12 +136,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row print:block">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b bg-card sticky top-0 z-50 print:hidden">
+      <div className="md:hidden flex items-center justify-between p-4 border-b bg-card sticky top-0 z-50 print:hidden shadow-sm">
         <div className="flex items-center gap-2">
-           <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold">
-             EE
-           </div>
-           <span className="font-semibold text-sm truncate max-w-[200px]">
+           <img src={logoUrl} alt="EE Logo" className="h-8 w-auto" />
+           <span className="font-semibold text-sm truncate max-w-[200px] text-primary">
              {establishment.name || "Nueva Inspección"}
            </span>
         </div>
@@ -160,7 +156,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0 print:hidden">
+      <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0 print:hidden shadow-sm z-20">
         <NavContent />
       </aside>
 
