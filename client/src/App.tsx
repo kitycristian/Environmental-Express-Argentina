@@ -4,7 +4,8 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
-import SectorDetail from "@/pages/sector-detail";
+import SectorDetail from "@/pages/sector-detail"; // Keeping it for backward compat or if needed
+import MeasurementCampaign from "@/pages/measurement-campaign";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 
@@ -13,6 +14,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/campaign/:type" component={MeasurementCampaign} />
         <Route path="/sector/:id" component={SectorDetail} />
         <Route path="/report" component={Report} />
         <Route component={NotFound} />

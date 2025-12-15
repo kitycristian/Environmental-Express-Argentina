@@ -27,6 +27,8 @@ interface AppState {
   loadInspection: (id: string) => void;
   deleteInspection: (id: string) => void;
   
+  addSectorWithMeasurement: (sectorData: Omit<Sector, 'id' | 'measurements'>, type: MeasurementType) => void;
+
   resetStore: () => void;
 }
 
@@ -203,6 +205,28 @@ export const useStore = create<AppState>()(
         set((state) => ({
           history: state.history.filter((i) => i.id !== id)
         })),
+
+      addSectorWithMeasurement: (sectorData, type) => 
+        set((state) => {
+          const newSectorId = uuidv4();
+          const newSector: Sector = {
+            ...sectorData,
+            id: newSectorId,
+            measurements: [
+              {
+                id: uuidv4(),
+                type,
+                sectorId: newSectorId,
+                status: 'pending',
+                points: [],
+                observations: ''
+              }
+            ]
+          };
+          return {
+            sectors: [...state.sectors, newSector]
+          };
+        }),
 
       resetStore: () => set({ establishment: initialEstablishment, sectors: [] }),
     }),
