@@ -1,3 +1,9 @@
+export interface Rubro {
+  id: string;
+  name: string;
+  sectors: string[];
+}
+
 export interface Client {
   id: string;
   name: string; // Nombre de fantasía
@@ -11,6 +17,7 @@ export interface Client {
   phone: string;
   email: string;
   contactName: string; // Persona de contacto
+  rubroId?: string; // ID of the assigned rubro
   notes?: string;
   createdAt: string;
 }

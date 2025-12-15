@@ -1,88 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { useRoute, Link } from "wouter";
-import { MeasurementType, MEASUREMENT_LABELS, Measurement } from "@/lib/types";
+import { MeasurementType, MEASUREMENT_LABELS, Measurement, Rubro } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search, Building2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search, Building2, ListPlus, Settings, Save } from "lucide-react";
 import { MeasurementEditor } from "@/components/measurement-editor";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const SUPERMARKET_SECTORS = [
-  "Salón de Ventas",
-  "Salón de Ventas (Linea de Cajas)",
-  "Salon de Ventas (Atención al Cliente)",
-  "Deposito de Linea de Cajas",
-  "Sala de Cajero",
-  "Tesoreria",
-  "TOMRA",
-  "Recepción de Mercaderia",
-  "Panaderia",
-  "Deposito de Panaderia",
-  "Camara de Congelado de Panaderia",
-  "Camara de Enfriado de Panaderia",
-  "Laboratorio de Tortas",
-  "Laboratorio de Fiambres",
-  "Laboratorio de Rotiseria",
-  "Camara de Vegetales",
-  "Camara de Deli y Fiambres",
-  "Camara de Congelado de Carniceria",
-  "Camara de Congelado de Lacteos",
-  "Camara de Enfriado de Lacteos (WC)",
-  "Camara de Enfriado de Carnes",
-  "Sala de Tableros",
-  "Pasillo de Costos (Trastienda)",
-  "Pasillo de Circulacion (Oficinas)",
-  "Pasillo (acceso desde Costos)",
-  "Vestuario Hombre",
-  "Vestuario Mujer",
-  "Sala de Entrenamiento CBL",
-  "Oficina de Recursos Humanos",
-  "Oficina de Seguridad e Higiene",
-  "Sala de Reuniones",
-  "Oficina de Jefes/Recep./UPC",
-  "Sistemas",
-  "Mantenimiento",
-  "Puesto 1",
-  "Comedor",
-  "Gerencia",
-  "Deposito de Insumos",
-  "Laboratorio de Vegetales",
-  "Claims",
-  "Servicios Financieros",
-  "Laboratorio de Carnes",
-  "Laboratorio de Pollos",
-  "Camara de Pollos",
-  "Autoshop",
-  "Autocenter Taller",
-  "Sala de CCTV"
-];
+import { Textarea } from "@/components/ui/textarea";
 
 export default function MeasurementCampaign() {
   const [match, params] = useRoute("/campaign/:type");
   const type = params?.type as MeasurementType;
   
   const sectors = useStore((state) => state.sectors);
+  const establishment = useStore((state) => state.establishment);
+  const clients = useStore((state) => state.clients);
+  const rubros = useStore((state) => state.rubros);
   const addSector = useStore((state) => state.addSector);
   const addMeasurement = useStore((state) => state.addMeasurement);
-  const deleteSector = useStore((state) => state.deleteSector); // We might want to delete just the measurement, not the sector? 
-  // User asked: "Add sectors inside measurement". If I delete from here, do I delete the sector or just the measurement?
-  // Usually in this workflow, the sector exists *for* the measurement. Let's assume deleting the card removes the measurement from the sector. If sector has no other measurements, maybe warn?
-  // For simplicity: "Delete Measurement from Sector".
   const deleteMeasurement = useStore((state) => state.deleteMeasurement);
   const updateSector = useStore((state) => state.updateSector);
+  const addRubro = useStore((state) => state.addRubro);
+  const updateRubro = useStore((state) => state.updateRubro);
+  const deleteRubro = useStore((state) => state.deleteRubro);
 
   const [isNewSectorOpen, setIsNewSectorOpen] = useState(false);
   const [newSectorName, setNewSectorName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Rubro states
   const [selectedRubro, setSelectedRubro] = useState<string>("manual");
   const [selectedRubroSectors, setSelectedRubroSectors] = useState<string[]>([]);
+  const [isRubroManagerOpen, setIsRubroManagerOpen] = useState(false);
+  const [editingRubro, setEditingRubro] = useState<Rubro | null>(null);
+  const [newRubroName, setNewRubroName] = useState("");
+  const [newRubroSectorsText, setNewRubroSectorsText] = useState("");
+
+  // Auto-detect rubro from client
+  useEffect(() => {
+    if (establishment.name && clients.length > 0) {
+        // Try to find the client by name (fuzzy match or exact)
+        const client = clients.find(c => c.name === establishment.name);
+        if (client && client.rubroId) {
+            setSelectedRubro(client.rubroId);
+        }
+    }
+  }, [establishment.name, clients]);
 
   if (!type || !MEASUREMENT_LABELS[type]) {
     return <div>Tipo de medición no válido</div>;
@@ -96,13 +66,15 @@ export default function MeasurementCampaign() {
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getRubroSectors = (rubroId: string) => {
+    const rubro = rubros.find(r => r.id === rubroId);
+    return rubro ? rubro.sectors : [];
+  };
+
   const handleCreateRubroSectors = () => {
     // Determine which sectors to add
-    const sectorsToAdd = selectedRubro === "supermercados" ? SUPERMARKET_SECTORS : [];
-    
-    // Add only selected ones from the checklist? Or all?
-    // Let's add all for now as per "Listar estos sectores" -> "Cargar Rubro"
-    // Actually, letting them select which ones to import is better UX.
+    const rubro = rubros.find(r => r.id === selectedRubro);
+    const sectorsToAdd = rubro ? rubro.sectors : [];
     
     const targetSectors = selectedRubroSectors.length > 0 ? selectedRubroSectors : sectorsToAdd;
     
@@ -119,6 +91,26 @@ export default function MeasurementCampaign() {
     setIsNewSectorOpen(false);
     setSelectedRubro("manual");
     setSelectedRubroSectors([]);
+  };
+
+  const handleSaveRubro = () => {
+      const sectorsList = newRubroSectorsText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+      
+      if (editingRubro) {
+          updateRubro(editingRubro.id, {
+              name: newRubroName,
+              sectors: sectorsList
+          });
+      } else {
+          addRubro({
+              name: newRubroName,
+              sectors: sectorsList
+          });
+      }
+      setEditingRubro(null);
+      setNewRubroName("");
+      setNewRubroSectorsText("");
+      setIsRubroManagerOpen(false);
   };
 
   return (
@@ -164,10 +156,10 @@ export default function MeasurementCampaign() {
                 <DialogTitle>Nuevo Sector para {MEASUREMENT_LABELS[type]}</DialogTitle>
               </DialogHeader>
               
-              <Tabs defaultValue="manual" onValueChange={(val) => setSelectedRubro(val)}>
+              <Tabs defaultValue="manual" value={selectedRubro === 'manual' ? 'manual' : 'rubro'} onValueChange={(val) => val === 'manual' ? setSelectedRubro('manual') : setSelectedRubro(rubros[0]?.id)}>
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="manual">Manual</TabsTrigger>
-                  <TabsTrigger value="supermercados">Rubro Supermercados</TabsTrigger>
+                  <TabsTrigger value="rubro">Importar por Rubro</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="manual" className="space-y-4 py-4">
@@ -196,55 +188,114 @@ export default function MeasurementCampaign() {
                     </div>
                 </TabsContent>
                 
-                <TabsContent value="supermercados" className="space-y-4 py-4">
-                    <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4">
-                        <div className="flex items-center gap-2 text-blue-800 font-medium mb-1">
-                            <Building2 className="h-4 w-4" />
-                            Sectores Sugeridos
-                        </div>
-                        <p className="text-xs text-blue-600">
-                            Seleccione los sectores que desea agregar a la campaña. Se crearán automáticamente con el protocolo correspondiente.
-                        </p>
-                    </div>
-                    
-                    <div className="h-[300px] overflow-y-auto border rounded-md p-2 space-y-1">
-                        {SUPERMARKET_SECTORS.map((sector) => (
-                            <div key={sector} className="flex items-center space-x-2 hover:bg-gray-50 p-2 rounded cursor-pointer" onClick={() => {
-                                if (selectedRubroSectors.includes(sector)) {
-                                    setSelectedRubroSectors(selectedRubroSectors.filter(s => s !== sector));
-                                } else {
-                                    setSelectedRubroSectors([...selectedRubroSectors, sector]);
-                                }
+                <TabsContent value="rubro" className="space-y-4 py-4">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <div className="flex-1 space-y-1">
+                            <Label>Seleccionar Rubro</Label>
+                            <Select value={selectedRubro === 'manual' ? '' : selectedRubro} onValueChange={(val) => {
+                                setSelectedRubro(val);
+                                setSelectedRubroSectors([]);
                             }}>
-                                <input 
-                                    type="checkbox" 
-                                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                                    checked={selectedRubroSectors.includes(sector)}
-                                    readOnly
-                                />
-                                <span className="text-sm">{sector}</span>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione un rubro" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {rubros.map(r => (
+                                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button variant="outline" size="icon" className="mt-6" onClick={() => {
+                            setNewRubroName("");
+                            setNewRubroSectorsText("");
+                            setEditingRubro(null);
+                            setIsRubroManagerOpen(true);
+                        }}>
+                            <Settings className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {selectedRubro !== 'manual' && (
+                        <>
+                            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mb-2">
+                                <div className="flex items-center gap-2 text-blue-800 font-medium mb-1">
+                                    <Building2 className="h-4 w-4" />
+                                    Sectores de {rubros.find(r => r.id === selectedRubro)?.name}
+                                </div>
+                                <p className="text-xs text-blue-600">
+                                    Seleccione los sectores que desea agregar a la campaña.
+                                </p>
                             </div>
-                        ))}
-                    </div>
-                    
-                    <div className="flex justify-between items-center pt-4 border-t mt-2">
-                        <div className="text-xs text-muted-foreground">
-                            {selectedRubroSectors.length} sectores seleccionados
-                        </div>
-                        <div className="space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => setSelectedRubroSectors(SUPERMARKET_SECTORS)}>
-                                Seleccionar Todos
-                            </Button>
-                            <Button onClick={handleCreateRubroSectors} disabled={selectedRubroSectors.length === 0}>
-                                Importar Sectores
-                            </Button>
-                        </div>
-                    </div>
+                            
+                            <div className="h-[250px] overflow-y-auto border rounded-md p-2 space-y-1 bg-white">
+                                {getRubroSectors(selectedRubro).map((sector) => (
+                                    <div key={sector} className="flex items-center space-x-2 hover:bg-gray-50 p-2 rounded cursor-pointer" onClick={() => {
+                                        if (selectedRubroSectors.includes(sector)) {
+                                            setSelectedRubroSectors(selectedRubroSectors.filter(s => s !== sector));
+                                        } else {
+                                            setSelectedRubroSectors([...selectedRubroSectors, sector]);
+                                        }
+                                    }}>
+                                        <input 
+                                            type="checkbox" 
+                                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                                            checked={selectedRubroSectors.includes(sector)}
+                                            readOnly
+                                        />
+                                        <span className="text-sm">{sector}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-4 border-t mt-2">
+                                <div className="text-xs text-muted-foreground">
+                                    {selectedRubroSectors.length} seleccionados
+                                </div>
+                                <div className="space-x-2">
+                                    <Button variant="outline" size="sm" onClick={() => setSelectedRubroSectors(getRubroSectors(selectedRubro))}>
+                                        Todos
+                                    </Button>
+                                    <Button onClick={handleCreateRubroSectors} disabled={selectedRubroSectors.length === 0}>
+                                        Importar
+                                    </Button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </TabsContent>
               </Tabs>
-              
             </DialogContent>
           </Dialog>
+
+          {/* Rubro Manager Dialog */}
+          <Dialog open={isRubroManagerOpen} onOpenChange={setIsRubroManagerOpen}>
+            <DialogContent>
+              <DialogHeader>
+                 <DialogTitle>{editingRubro ? 'Editar Rubro' : 'Nuevo Rubro'}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                 <div className="space-y-2">
+                    <Label>Nombre del Rubro</Label>
+                    <Input value={newRubroName} onChange={(e) => setNewRubroName(e.target.value)} placeholder="Ej. Metalúrgica, Oficina, etc." />
+                 </div>
+                 <div className="space-y-2">
+                    <Label>Listado de Sectores (uno por línea)</Label>
+                    <Textarea 
+                        value={newRubroSectorsText} 
+                        onChange={(e) => setNewRubroSectorsText(e.target.value)} 
+                        className="h-[200px]"
+                        placeholder={"Recepción\nProducción\nBaños\n..."} 
+                    />
+                 </div>
+              </div>
+              <DialogFooter>
+                 <Button variant="outline" onClick={() => setIsRubroManagerOpen(false)}>Cancelar</Button>
+                 <Button onClick={handleSaveRubro}>Guardar Rubro</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
         </div>
       </div>
 

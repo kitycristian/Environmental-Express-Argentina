@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType, Inspection, Client, Instrument } from './types';
+import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType, Inspection, Client, Instrument, Rubro } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
@@ -9,6 +9,7 @@ interface AppState {
   history: Inspection[];
   clients: Client[];
   availableInstruments: Instrument[];
+  rubros: Rubro[];
   
   // Actions
   updateEstablishment: (data: Partial<Establishment>) => void;
@@ -42,6 +43,11 @@ interface AppState {
   deleteClient: (id: string) => void;
   loadClientToEstablishment: (clientId: string) => void;
 
+  // Rubro Actions
+  addRubro: (rubro: Omit<Rubro, 'id'>) => void;
+  updateRubro: (id: string, data: Partial<Rubro>) => void;
+  deleteRubro: (id: string) => void;
+
   resetStore: () => void;
 }
 
@@ -55,6 +61,56 @@ const initialEstablishment: Establishment = {
   responsible: '',
 };
 
+const SUPERMARKET_SECTORS = [
+    "Salón de Ventas",
+    "Salón de Ventas (Linea de Cajas)",
+    "Salon de Ventas (Atención al Cliente)",
+    "Deposito de Linea de Cajas",
+    "Sala de Cajero",
+    "Tesoreria",
+    "TOMRA",
+    "Recepción de Mercaderia",
+    "Panaderia",
+    "Deposito de Panaderia",
+    "Camara de Congelado de Panaderia",
+    "Camara de Enfriado de Panaderia",
+    "Laboratorio de Tortas",
+    "Laboratorio de Fiambres",
+    "Laboratorio de Rotiseria",
+    "Camara de Vegetales",
+    "Camara de Deli y Fiambres",
+    "Camara de Congelado de Carniceria",
+    "Camara de Congelado de Lacteos",
+    "Camara de Enfriado de Lacteos (WC)",
+    "Camara de Enfriado de Carnes",
+    "Sala de Tableros",
+    "Pasillo de Costos (Trastienda)",
+    "Pasillo de Circulacion (Oficinas)",
+    "Pasillo (acceso desde Costos)",
+    "Vestuario Hombre",
+    "Vestuario Mujer",
+    "Sala de Entrenamiento CBL",
+    "Oficina de Recursos Humanos",
+    "Oficina de Seguridad e Higiene",
+    "Sala de Reuniones",
+    "Oficina de Jefes/Recep./UPC",
+    "Sistemas",
+    "Mantenimiento",
+    "Puesto 1",
+    "Comedor",
+    "Gerencia",
+    "Deposito de Insumos",
+    "Laboratorio de Vegetales",
+    "Claims",
+    "Servicios Financieros",
+    "Laboratorio de Carnes",
+    "Laboratorio de Pollos",
+    "Camara de Pollos",
+    "Autoshop",
+    "Autocenter Taller",
+    "Sala de CCTV"
+  ];
+
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
@@ -62,6 +118,13 @@ export const useStore = create<AppState>()(
       sectors: [],
       history: [],
       clients: [],
+      rubros: [
+        {
+          id: 'rubro-default-super',
+          name: 'Supermercados',
+          sectors: SUPERMARKET_SECTORS
+        }
+      ],
       availableInstruments: [
         {
           id: 'inst-1',
@@ -369,6 +432,21 @@ export const useStore = create<AppState>()(
             }
           };
         }),
+
+      addRubro: (rubro) =>
+        set((state) => ({
+            rubros: [...state.rubros, { ...rubro, id: uuidv4() }]
+        })),
+
+      updateRubro: (id, data) =>
+        set((state) => ({
+            rubros: state.rubros.map(r => r.id === id ? { ...r, ...data } : r)
+        })),
+
+      deleteRubro: (id) =>
+        set((state) => ({
+            rubros: state.rubros.filter(r => r.id !== id)
+        })),
 
       resetStore: () => set({ establishment: initialEstablishment, sectors: [] }),
     }),

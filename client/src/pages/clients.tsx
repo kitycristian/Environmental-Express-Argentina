@@ -8,13 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail, FileText, Calendar, RotateCcw } from "lucide-react";
+import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail, FileText, Calendar, RotateCcw, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function ClientsPage() {
   const clients = useStore((state) => state.clients);
+  const rubros = useStore((state) => state.rubros);
   const addClient = useStore((state) => state.addClient);
   const updateClient = useStore((state) => state.updateClient);
   const deleteClient = useStore((state) => state.deleteClient);
@@ -27,6 +28,9 @@ export default function ClientsPage() {
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClientHistory, setSelectedClientHistory] = useState<Client | null>(null);
+
+  // Form state
+  const [selectedRubroId, setSelectedRubroId] = useState<string>("");
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -51,6 +55,7 @@ export default function ClientsPage() {
       email: formData.get('email') as string,
       contactName: formData.get('contactName') as string,
       notes: formData.get('notes') as string,
+      rubroId: selectedRubroId || undefined,
     };
 
     if (editingClient) {
@@ -63,10 +68,18 @@ export default function ClientsPage() {
     
     setIsDialogOpen(false);
     setEditingClient(null);
+    setSelectedRubroId("");
   };
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
+    setSelectedRubroId(client.rubroId || "");
+    setIsDialogOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditingClient(null);
+    setSelectedRubroId("");
     setIsDialogOpen(true);
   };
 
@@ -104,7 +117,7 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-primary">Gestión de Clientes (CRM)</h1>
           <p className="text-muted-foreground">Administre su base de datos de empresas y contactos.</p>
         </div>
-        <Button onClick={() => { setEditingClient(null); setIsDialogOpen(true); }} className="gap-2">
+        <Button onClick={handleAdd} className="gap-2">
           <UserPlus className="h-4 w-4" /> Nuevo Cliente
         </Button>
       </div>
@@ -127,7 +140,7 @@ export default function ClientsPage() {
             <p className="text-muted-foreground max-w-sm mt-2 mb-6">
               Comience agregando empresas para agilizar la carga de datos en sus inspecciones.
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>Agregar Primer Cliente</Button>
+            <Button onClick={handleAdd}>Agregar Primer Cliente</Button>
           </CardContent>
         </Card>
       ) : (
@@ -152,6 +165,12 @@ export default function ClientsPage() {
                 <div className="flex flex-wrap gap-2 mt-2">
                    <span className="text-xs bg-muted px-2 py-1 rounded border font-mono text-muted-foreground">CUIT: {client.cuit}</span>
                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">{client.conditionIva}</span>
+                   {client.rubroId && (
+                       <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100 flex items-center gap-1">
+                           <Tag className="h-3 w-3" />
+                           {rubros.find(r => r.id === client.rubroId)?.name || 'Rubro desconocido'}
+                       </span>
+                   )}
                 </div>
               </CardHeader>
               <CardContent className="text-sm space-y-3 pt-0">
@@ -225,6 +244,22 @@ export default function ClientsPage() {
                       <SelectItem value="Consumidor Final">Consumidor Final</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2 col-span-2">
+                   <Label htmlFor="rubro">Rubro / Actividad</Label>
+                   <Select value={selectedRubroId} onValueChange={setSelectedRubroId}>
+                     <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un rubro..." />
+                     </SelectTrigger>
+                     <SelectContent>
+                        {rubros.map(r => (
+                            <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                        ))}
+                     </SelectContent>
+                   </Select>
+                   <p className="text-[10px] text-muted-foreground">
+                      * Asigne un rubro para habilitar la importación rápida de sectores.
+                   </p>
                 </div>
               </div>
             </div>
