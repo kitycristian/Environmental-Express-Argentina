@@ -462,6 +462,98 @@ export default function Report() {
     </div>
   );
 
+  const THERMAL_LOAD_REFERENCE_VALUES = (
+    <div className="mt-8 p-6 bg-white border border-gray-200 rounded-lg text-xs leading-relaxed text-gray-700 break-inside-avoid">
+        <h3 className="font-bold text-gray-800 text-sm uppercase mb-3 border-b border-gray-300 pb-2 text-center bg-gray-100 p-2">Valores de Referencia</h3>
+        <p className="mb-4 italic">El consumo metabólico se ha estimado mediante la clasificación expuesta en la Tabla 1 del Anexo III de la Res. 295/2003 y resume a continuación:</p>
+        
+        <div className="overflow-x-auto mb-4">
+            <table className="w-full text-center border-collapse border border-gray-400">
+                <thead>
+                    <tr className="bg-gray-100 text-gray-800 font-bold">
+                        <th className="border border-gray-400 p-2" colSpan={2}>Referencia para la determinación de MI</th>
+                        <th className="border border-gray-400 p-2" colSpan={2}>Referencia para la determinación de MII</th>
+                        <th className="border border-gray-400 p-2 w-1/4">Factores de Exposición</th>
+                    </tr>
+                    <tr className="bg-gray-50 text-gray-800 font-bold text-[10px]">
+                        <th className="border border-gray-400 p-1">Posición del cuerpo</th>
+                        <th className="border border-gray-400 p-1 w-12">MI [W]</th>
+                        <th className="border border-gray-400 p-1">Tipo de trabajo</th>
+                        <th className="border border-gray-400 p-1 w-12">MII [W]</th>
+                        <th className="border border-gray-400 p-1 bg-white border-b-0"></th>
+                    </tr>
+                </thead>
+                <tbody className="text-[10px]">
+                    <tr>
+                        <td className="border border-gray-400 p-1 text-left">Acostado o sentado</td>
+                        <td className="border border-gray-400 p-1">21</td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo manual ligero</td>
+                        <td className="border border-gray-400 p-1">28</td>
+                        <td className="border border-gray-400 p-1 text-left">Gasto Energético del Trabajo</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 text-left text-red-600 font-bold">De pie</td>
+                        <td className="border border-gray-400 p-1 text-red-600 font-bold">42</td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo manual pesado</td>
+                        <td className="border border-gray-400 p-1">63</td>
+                        <td className="border border-gray-400 p-1 text-left">Temperatura de Aire</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 text-left">Caminando</td>
+                        <td className="border border-gray-400 p-1">140</td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo con un brazo ligero</td>
+                        <td className="border border-gray-400 p-1">70</td>
+                        <td className="border border-gray-400 p-1 text-left">Humedad del Aire</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 text-left">Subiendo pendiente</td>
+                        <td className="border border-gray-400 p-1">210</td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo con un brazo pesado</td>
+                        <td className="border border-gray-400 p-1">126</td>
+                        <td className="border border-gray-400 p-1 text-left">Movimiento del Aire</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 bg-gray-50" colSpan={2}></td>
+                        <td className="border border-gray-400 p-1 text-left text-red-600 font-bold">Trabajo con ambos brazos ligero</td>
+                        <td className="border border-gray-400 p-1 text-red-600 font-bold">105</td>
+                        <td className="border border-gray-400 p-1 text-left">Intercambio de calor radiante</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 bg-gray-50" colSpan={2}></td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo con ambos brazos pesado</td>
+                        <td className="border border-gray-400 p-1">175</td>
+                        <td className="border border-gray-400 p-1 text-left">Requisitos de la Ropa</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 bg-gray-50" colSpan={2}></td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo con el cuerpo ligero</td>
+                        <td className="border border-gray-400 p-1">210</td>
+                        <td className="border border-gray-400 p-1 text-left">Operación de Horno eléctrico</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 bg-gray-50" colSpan={2}></td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo con el cuerpo moderado</td>
+                        <td className="border border-gray-400 p-1">350</td>
+                        <td className="border border-gray-400 p-1 bg-gray-50"></td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 bg-gray-50" colSpan={2}></td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo con el cuerpo pesado</td>
+                        <td className="border border-gray-400 p-1">490</td>
+                        <td className="border border-gray-400 p-1 bg-gray-50"></td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-1 bg-gray-50" colSpan={2}></td>
+                        <td className="border border-gray-400 p-1 text-left">Trabajo con el cuerpo muy pesado</td>
+                        <td className="border border-gray-400 p-1">630</td>
+                        <td className="border border-gray-400 p-1 bg-gray-50"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+  );
+
   const renderGenericProtocol = (type: MeasurementType, items: { sectorName: string; measurement: Measurement }[]) => (
      <div className="space-y-6">
        <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
