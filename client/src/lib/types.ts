@@ -126,6 +126,14 @@ export interface Measurement {
     normalConditions?: string; // Descripción condiciones normales
     currentConditions?: string; // Descripción condiciones al momento
   };
+
+  // Documentation & Report Extras
+  specificConclusions?: string;
+  attachedDocuments?: {
+    calibrationCertificate?: boolean;
+    sketch?: boolean;
+    other?: string;
+  };
 }
 
 export interface Inspection {

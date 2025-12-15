@@ -125,7 +125,14 @@ export default function Report() {
                <tr key={measurement.id} className="break-inside-avoid hover:bg-gray-50/50">
                  <td className="border border-gray-300 p-2 font-medium">
                     {sectorName}
-                    {measurement.observations && <div className="text-[10px] text-gray-500 italic mt-1">{measurement.observations}</div>}
+                    {measurement.observations && <div className="text-[10px] text-gray-500 italic mt-1">Obs: {measurement.observations}</div>}
+                    {measurement.specificConclusions && <div className="text-[10px] text-blue-600 font-semibold mt-1">Concl: {measurement.specificConclusions}</div>}
+                    {(measurement.attachedDocuments?.calibrationCertificate || measurement.attachedDocuments?.sketch) && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {measurement.attachedDocuments.calibrationCertificate && <span className="text-[9px] px-1 bg-gray-100 border rounded text-gray-600">Cert. Calib.</span>}
+                        {measurement.attachedDocuments.sketch && <span className="text-[9px] px-1 bg-gray-100 border rounded text-gray-600">Croquis</span>}
+                      </div>
+                    )}
                  </td>
                  <td className="border border-gray-300 p-2 text-gray-500">-</td>
                  <td className="border border-gray-300 p-2 capitalize">{measurement.config?.lightingType || 'Artificial'}</td>
@@ -191,8 +198,23 @@ export default function Report() {
                </table>
                {measurement.observations && (
                   <div className="mt-3 text-xs bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-800">
-                    <span className="font-bold mr-1">Obs:</span> {measurement.observations}
+                    <span className="font-bold mr-1">Comentario:</span> {measurement.observations}
                   </div>
+               )}
+               {measurement.specificConclusions && (
+                  <div className="mt-2 text-xs bg-blue-50 p-2 rounded border border-blue-100 text-blue-800">
+                    <span className="font-bold mr-1">Conclusión:</span> {measurement.specificConclusions}
+                  </div>
+               )}
+               
+               {/* Attached Documents Badge */}
+               {(measurement.attachedDocuments?.calibrationCertificate || measurement.attachedDocuments?.sketch || measurement.attachedDocuments?.other) && (
+                 <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
+                   <span className="font-bold uppercase text-[10px]">Adjuntos:</span>
+                   {measurement.attachedDocuments.calibrationCertificate && <span className="px-2 py-0.5 bg-gray-100 rounded border">Certificado Calibración</span>}
+                   {measurement.attachedDocuments.sketch && <span className="px-2 py-0.5 bg-gray-100 rounded border">Croquis</span>}
+                   {measurement.attachedDocuments.other && <span className="px-2 py-0.5 bg-gray-100 rounded border">{measurement.attachedDocuments.other}</span>}
+                 </div>
                )}
             </div>
          </div>
