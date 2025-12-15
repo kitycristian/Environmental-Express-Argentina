@@ -57,3 +57,10 @@ export interface Measurement {
     reference?: string;
   };
 }
+
+export interface Inspection {
+  id: string;
+  savedAt: string;
+  establishment: Establishment;
+  sectors: Sector[];
+}

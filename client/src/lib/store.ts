@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType } from './types';
+import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType, Inspection } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
   establishment: Establishment;
   sectors: Sector[];
+  history: Inspection[];
   
   // Actions
   updateEstablishment: (data: Partial<Establishment>) => void;
@@ -21,6 +22,10 @@ interface AppState {
   addPoint: (sectorId: string, measurementId: string, pointData?: Partial<MeasurementPoint>) => void;
   updatePoint: (sectorId: string, measurementId: string, pointId: string, data: Partial<MeasurementPoint>) => void;
   deletePoint: (sectorId: string, measurementId: string, pointId: string) => void;
+  
+  saveInspection: () => void;
+  loadInspection: (id: string) => void;
+  deleteInspection: (id: string) => void;
   
   resetStore: () => void;
 }
@@ -40,6 +45,7 @@ export const useStore = create<AppState>()(
     (set) => ({
       establishment: initialEstablishment,
       sectors: [],
+      history: [],
 
       updateEstablishment: (data) => 
         set((state) => ({ establishment: { ...state.establishment, ...data } })),
@@ -168,6 +174,34 @@ export const useStore = create<AppState>()(
               })
             };
           })
+        })),
+
+      saveInspection: () =>
+        set((state) => ({
+          history: [
+            {
+              id: uuidv4(),
+              savedAt: new Date().toISOString(),
+              establishment: JSON.parse(JSON.stringify(state.establishment)),
+              sectors: JSON.parse(JSON.stringify(state.sectors))
+            },
+            ...state.history
+          ]
+        })),
+
+      loadInspection: (id) =>
+        set((state) => {
+          const inspection = state.history.find((i) => i.id === id);
+          if (!inspection) return state;
+          return {
+            establishment: JSON.parse(JSON.stringify(inspection.establishment)),
+            sectors: JSON.parse(JSON.stringify(inspection.sectors))
+          };
+        }),
+
+      deleteInspection: (id) =>
+        set((state) => ({
+          history: state.history.filter((i) => i.id !== id)
         })),
 
       resetStore: () => set({ establishment: initialEstablishment, sectors: [] }),
