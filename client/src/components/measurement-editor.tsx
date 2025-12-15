@@ -49,6 +49,8 @@ const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; o
   ]
 };
 
+import { DebouncedInput } from "@/components/ui/debounced-input";
+
 function LightingGridEditor({ measurement }: { measurement: Measurement }) {
   const updateMeasurement = useStore((state) => state.updateMeasurement);
   const updatePoint = useStore((state) => state.updatePoint);
@@ -154,38 +156,38 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
                     <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                              <Label className="text-[10px] text-gray-400">Ancho</Label>
-                             <Input 
+                             <DebouncedInput 
                                type="number" 
                                className="h-7 bg-white text-xs" 
                                value={measurement.config?.width || ''}
-                               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, width: parseFloat(e.target.value) } })}
+                               onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, width: parseFloat(val as string) } })}
                              />
                         </div>
                         <div className="space-y-1">
                              <Label className="text-[10px] text-gray-400">Largo</Label>
-                             <Input 
+                             <DebouncedInput 
                                type="number" 
                                className="h-7 bg-white text-xs" 
                                value={measurement.config?.length || ''}
-                               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, length: parseFloat(e.target.value) } })}
+                               onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, length: parseFloat(val as string) } })}
                              />
                         </div>
                         <div className="space-y-1">
                              <Label className="text-[10px] text-gray-400">Alto</Label>
-                             <Input 
+                             <DebouncedInput 
                                type="number" 
                                className="h-7 bg-white text-xs" 
                                value={measurement.config?.height || ''}
-                               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, height: parseFloat(e.target.value) } })}
+                               onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, height: parseFloat(val as string) } })}
                              />
                         </div>
                          <div className="space-y-1">
                              <Label className="text-[10px] text-gray-400">Plano Trab.</Label>
-                             <Input 
+                             <DebouncedInput 
                                type="number" 
                                className="h-7 bg-white text-xs" 
                                value={measurement.config?.workPlaneHeight || ''}
-                               onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, workPlaneHeight: parseFloat(e.target.value) } })}
+                               onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, workPlaneHeight: parseFloat(val as string) } })}
                              />
                         </div>
                     </div>
@@ -235,12 +237,12 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
                      </div>
                      <div className="space-y-1">
                         <Label className="text-xs font-bold uppercase text-gray-500">Medición OFF (Lux)</Label>
-                        <Input 
+                        <DebouncedInput 
                             type="number"
                             className="h-7 bg-white text-xs border-gray-300"
                             placeholder="0"
                             value={measurement.config?.luxOff || ''}
-                            onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, luxOff: parseFloat(e.target.value) } })}
+                            onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, luxOff: parseFloat(val as string) } })}
                         />
                      </div>
                 </div>
@@ -289,13 +291,13 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-9 gap-2">
                      {points.map((point, index) => (
                        <div key={point.id} className="relative group">
-                         <Input 
+                         <DebouncedInput 
                             id={`lux-input-${index}`}
                             type="number"
                             className="h-9 text-center font-mono text-sm bg-white border-gray-200 focus:border-blue-500 transition-colors px-1"
                             placeholder="-"
                             value={point.values.lux || ''}
-                            onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, lux: e.target.value } })}
+                            onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, lux: val } })}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     e.preventDefault();
@@ -429,31 +431,31 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Input 
+                        <DebouncedInput 
                           type={f.type} 
                           className="h-8 min-w-[80px]" 
                           placeholder="-"
                           value={point.values[f.key] || ''}
-                          onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, [f.key]: e.target.value } })}
+                          onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, [f.key]: val as string } })}
                         />
                       )}
                     </TableCell>
                   ))}
                   <TableCell>
-                    <Input 
+                    <DebouncedInput 
                        className="h-8 min-w-[150px]" 
                        placeholder="Comentario..." 
                        value={point.notes || ''}
-                       onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { notes: e.target.value })}
+                       onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { notes: val as string })}
                     />
                   </TableCell>
                   {measurement.type === 'thermal_load' && (
                     <TableCell>
-                      <Input 
+                      <DebouncedInput 
                          className="h-8 min-w-[150px]" 
                          placeholder="Conclusión..." 
                          value={point.conclusion || ''}
-                         onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { conclusion: e.target.value })}
+                         onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { conclusion: val as string })}
                       />
                     </TableCell>
                   )}
