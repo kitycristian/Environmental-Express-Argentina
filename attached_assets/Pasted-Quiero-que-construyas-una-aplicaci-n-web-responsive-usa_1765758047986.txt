@@ -1,0 +1,116 @@
+Quiero que construyas una aplicación web responsive (usable desde PC y celular) para relevamiento de datos de Seguridad e Higiene en campo, orientada a normativa argentina.
+
+OBJETIVO
+La herramienta debe permitir registrar mediciones ambientales y de exposición laboral por sector/área de trabajo, de forma simple, editable y conforme a la legislación vigente de Seguridad e Higiene y Riesgos del Trabajo en Argentina.
+
+TIPO DE APLICACIÓN
+- Web app responsive (mobile first)
+- Formularios dinámicos
+- Persistencia de datos (base de datos local o cloud)
+- Interfaz clara, pensada para uso en inspecciones en campo
+
+USUARIOS
+- Técnicos en Seguridad e Higiene
+- Higienistas
+- Inspectores
+- Consultores
+
+ENTIDADES PRINCIPALES
+
+1. ESTABLECIMIENTO
+- Nombre
+- Razón social
+- CUIL/CUIT
+- Dirección
+- Fecha de medición
+- Responsable del relevamiento
+
+2. SECTORES / ÁREAS
+- Nombre del sector (editable por el usuario)
+- Descripción opcional
+- Dimensión del sector (m2 o referencia)
+- Actividad realizada
+- Cantidad de trabajadores expuestos
+
+3. TIPOS DE MEDICIONES (cada una configurable)
+La aplicación debe permitir agregar uno o más tipos de medición por sector:
+
+- Ruido
+- Iluminación
+- Estrés por frío
+- Carga térmica
+- Material particulado
+- Agentes químicos
+
+Para cada tipo de medición:
+- Posibilidad de definir cantidad de puntos de medición (ejemplo: iluminación de 3 a 9 puntos según tamaño del sector)
+- Campos dinámicos según la cantidad de puntos configurados
+- Registro de valores por punto
+- Promedio automático
+- Campo de observaciones
+
+DETALLE POR MEDICIÓN
+
+ILUMINACIÓN
+- Punto de medición (1 a N)
+- Lux medidos
+- Altura del plano de trabajo
+- Promedio automático
+- Referencia normativa
+
+RUIDO
+- Nivel sonoro dB(A)
+- Tipo de medición (continua / puntual)
+- Tiempo de exposición
+- Comparación con límites legales
+
+ESTRÉS POR FRÍO / CARGA TÉRMICA
+- Temperatura
+- Humedad
+- Velocidad del aire
+- Índice calculado (WBGT u otro según corresponda)
+- Clasificación del riesgo
+
+MATERIAL PARTICULADO
+- Tipo (PM10, PM2.5, etc.)
+- Concentración
+- Método de medición
+
+AGENTES QUÍMICOS
+- Sustancia
+- Concentración
+- Método
+- Comparación con valores límite permisibles
+
+NORMATIVA
+Toda la lógica y referencias deben alinearse a:
+- Ley 19.587 de Higiene y Seguridad en el Trabajo
+- Decreto 351/79
+- Decreto 658/96
+- Resoluciones SRT vigentes (por ejemplo 295/03 y complementarias)
+- Valores límite permisibles utilizados en Argentina
+
+La app no debe dar diagnósticos médicos, solo:
+- Clasificar resultados como “Dentro de norma / Fuera de norma”
+- Mostrar alertas visuales cuando se superen valores legales
+
+FUNCIONALIDADES CLAVE
+- Crear, editar y eliminar sectores
+- Configurar cantidad de puntos por medición
+- Cálculos automáticos
+- Validaciones de datos
+- Guardado automático
+- Exportación de resultados (PDF o Excel)
+- Interfaz clara y usable en celular
+
+TECNOLOGÍA (sugerida, pero flexible)
+- Frontend: React o similar
+- Backend: Node.js / Express
+- Base de datos: SQLite o similar
+- Estilos simples y profesionales
+
+ENTREGABLE
+- Código funcional
+- Estructura clara
+- Comentarios explicativos
+- Pensado para escalar (agregar más mediciones en el futuro)
