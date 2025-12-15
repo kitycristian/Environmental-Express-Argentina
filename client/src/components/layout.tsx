@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ClipboardList, Home, FileText, Menu, ChevronRight, Save, History, Trash2, RotateCcw, PlusCircle, Building2, Calendar, Users, FileStack } from "lucide-react";
+import { ClipboardList, Home, FileText, Menu, ChevronRight, Save, History, Trash2, RotateCcw, PlusCircle, Building2, Calendar, Users, FileStack, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -19,10 +20,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const establishment = useStore((state) => state.establishment);
   const saveInspection = useStore((state) => state.saveInspection);
   const resetStore = useStore((state) => state.resetStore);
+  const { user, logout } = useAuth();
   
   const [open, setOpen] = useState(false);
   const [newInspectionOpen, setNewInspectionOpen] = useState(false);
   const { toast } = useToast();
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/login");
+  };
 
   const handleNewInspection = (saveFirst: boolean) => {
     if (saveFirst) {
@@ -48,25 +55,41 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <img src={logoUrl} alt="Environmental Express Argentina" className="h-16 w-auto object-contain" />
         <span className="font-bold text-sm text-primary">Environmental Express Argentina</span>
       </div>
+
+      {user && (
+        <div className="mb-6 px-2 py-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center gap-3">
+          <div className="bg-primary/10 p-2 rounded-full">
+            <User className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex flex-col overflow-hidden">
+            <span className="font-bold text-xs truncate">{user.name}</span>
+            <span className="text-[10px] text-gray-500 capitalize">{user.role}</span>
+          </div>
+        </div>
+      )}
       
       <div onClick={() => setNewInspectionOpen(true)} className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted cursor-pointer text-primary`}>
           <PlusCircle className="h-4 w-4" />
           Nueva Inspección
       </div>
       
-      <Link href="/reports">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/reports' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
-          <FileStack className="h-4 w-4" />
-          Informes
-        </div>
-      </Link>
+      {user?.role === 'admin' && (
+        <>
+          <Link href="/reports">
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/reports' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+              <FileStack className="h-4 w-4" />
+              Informes
+            </div>
+          </Link>
 
-      <Link href="/clients">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/clients' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
-          <Users className="h-4 w-4" />
-          Clientes (CRM)
-        </div>
-      </Link>
+          <Link href="/clients">
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/clients' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+              <Users className="h-4 w-4" />
+              Clientes (CRM)
+            </div>
+          </Link>
+        </>
+      )}
 
       <div className="mt-8 px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
         Navegación
@@ -79,6 +102,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </Link>
 
+      <div className="mt-auto pt-4 border-t border-gray-100">
+        <div onClick={handleLogout} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 cursor-pointer">
+          <LogOut className="h-4 w-4" />
+          Cerrar Sesión
+        </div>
+      </div>
 
       <AlertDialog open={newInspectionOpen} onOpenChange={setNewInspectionOpen}>
         <AlertDialogContent>

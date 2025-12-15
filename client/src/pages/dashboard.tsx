@@ -11,6 +11,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 
 export default function Dashboard() {
   const establishment = useStore((state) => state.establishment);
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [openClientSelect, setOpenClientSelect] = useState(false);
   const { toast } = useToast();
+  const user = useAuth((state) => state.user);
 
   const getMeasurementCount = (type: MeasurementType) => {
     return sectors.filter(s => s.measurements.some(m => m.type === type)).length;
@@ -63,11 +65,13 @@ export default function Dashboard() {
              <Button variant="outline" onClick={handleSave} className="gap-2">
                <Save className="h-4 w-4" /> Guardar
              </Button>
-             <Link href="/report">
-                <Button variant="default" className="gap-2">
-                    <FileText className="h-4 w-4" /> Generar Informe
-                </Button>
-             </Link>
+             {user?.role === 'admin' && (
+               <Link href="/report">
+                  <Button variant="default" className="gap-2">
+                      <FileText className="h-4 w-4" /> Generar Informe
+                  </Button>
+               </Link>
+             )}
            </div>
            
            <Popover open={openClientSelect} onOpenChange={setOpenClientSelect}>
@@ -101,13 +105,15 @@ export default function Dashboard() {
                       </CommandItem>
                     ))}
                   </CommandGroup>
-                  <CommandGroup heading="Acciones">
-                      <Link href="/clients">
-                        <CommandItem className="cursor-pointer text-primary font-medium">
-                          <Plus className="mr-2 h-4 w-4" /> Crear Nuevo Cliente
-                        </CommandItem>
-                      </Link>
-                  </CommandGroup>
+                  {user?.role === 'admin' && (
+                    <CommandGroup heading="Acciones">
+                        <Link href="/clients">
+                          <CommandItem className="cursor-pointer text-primary font-medium">
+                            <Plus className="mr-2 h-4 w-4" /> Crear Nuevo Cliente
+                          </CommandItem>
+                        </Link>
+                    </CommandGroup>
+                  )}
                 </CommandList>
               </Command>
             </PopoverContent>
