@@ -249,6 +249,89 @@ export default function Report() {
     </div>
   );
 
+  const THERMAL_LOAD_REFERENCE_VALUES = (
+    <div className="mt-8 p-6 bg-white border border-gray-200 rounded-lg text-xs leading-relaxed text-gray-700 break-inside-avoid">
+        <h3 className="font-bold text-gray-800 text-sm uppercase mb-3 border-b border-gray-300 pb-2 text-center bg-gray-100 p-2">Valores de Referencia</h3>
+        <ul className="list-disc pl-5 space-y-2 mb-4">
+            <li>El criterio de evaluación a seguir luego de las mediciones es el indicado en la Resolución 295/2003 del MTESS.</li>
+            <li>Los valores de referencia utilizados del índice TGBH vienen especificados en la Tabla 2 "Criterios de selección para la exposición al estrés térmico (Valores TGBH ºC), tema "Estrés térmico y tensión térmica", del Anexo III de la Resolución 295/03 MTESS que modifica el Anexo II, del Decreto 351/79, para una situación determinada, para un trabajador normalmente vestido para la época estival y físicamente apto para la actividad considerada y con buena salud.</li>
+        </ul>
+
+        <div className="overflow-x-auto mb-4">
+            <table className="w-full text-center border-collapse border border-gray-400">
+                <thead>
+                    <tr className="bg-gray-100">
+                        <th className="border border-gray-400 p-2 text-left w-1/4" rowSpan={2}>Exigencias de Trabajo</th>
+                        <th className="border border-gray-400 p-2" colSpan={4}>Aclimatado</th>
+                        <th className="border border-gray-400 p-2" colSpan={4}>Sin aclimatar</th>
+                    </tr>
+                    <tr className="bg-gray-50 text-[10px]">
+                        <th className="border border-gray-400 p-1">Ligero</th>
+                        <th className="border border-gray-400 p-1">Moderado</th>
+                        <th className="border border-gray-400 p-1">Pesado</th>
+                        <th className="border border-gray-400 p-1">Muy pesado</th>
+                        <th className="border border-gray-400 p-1">Ligero</th>
+                        <th className="border border-gray-400 p-1">Moderado</th>
+                        <th className="border border-gray-400 p-1">Pesado</th>
+                        <th className="border border-gray-400 p-1">Muy pesado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td className="border border-gray-400 p-2 text-left font-medium">100% trabajo</td>
+                        <td className="border border-gray-400 p-2">29,5</td>
+                        <td className="border border-gray-400 p-2">27,5</td>
+                        <td className="border border-gray-400 p-2">26</td>
+                        <td className="border border-gray-400 p-2 bg-gray-100" rowSpan={3}></td>
+                        <td className="border border-gray-400 p-2">27,5</td>
+                        <td className="border border-gray-400 p-2">25</td>
+                        <td className="border border-gray-400 p-2">22,5</td>
+                        <td className="border border-gray-400 p-2 bg-gray-100" rowSpan={3}></td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-2 text-left font-medium">75% trabajo <br/> 25% descanso</td>
+                        <td className="border border-gray-400 p-2">30,5</td>
+                        <td className="border border-gray-400 p-2">28,5</td>
+                        <td className="border border-gray-400 p-2">27,5</td>
+                        <td className="border border-gray-400 p-2">29</td>
+                        <td className="border border-gray-400 p-2">26,5</td>
+                        <td className="border border-gray-400 p-2">24,5</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-2 text-left font-medium">50% trabajo <br/> 50% descanso</td>
+                        <td className="border border-gray-400 p-2">31,5</td>
+                        <td className="border border-gray-400 p-2">29,5</td>
+                        <td className="border border-gray-400 p-2">28,5</td>
+                        <td className="border border-gray-400 p-2">27,5</td>
+                        <td className="border border-gray-400 p-2">30</td>
+                        <td className="border border-gray-400 p-2">28</td>
+                        <td className="border border-gray-400 p-2">26,5</td>
+                        <td className="border border-gray-400 p-2">25</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-gray-400 p-2 text-left font-medium">25% trabajo <br/> 75% descanso</td>
+                        <td className="border border-gray-400 p-2">32,5</td>
+                        <td className="border border-gray-400 p-2">31</td>
+                        <td className="border border-gray-400 p-2">30</td>
+                        <td className="border border-gray-400 p-2">29,5</td>
+                        <td className="border border-gray-400 p-2">31</td>
+                        <td className="border border-gray-400 p-2">29</td>
+                        <td className="border border-gray-400 p-2">28</td>
+                        <td className="border border-gray-400 p-2">26,5</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <ul className="list-disc pl-5 space-y-2">
+            <li>Los valores TGBH están expresados en ºC y representan los umbrales próximos al límite superior de la categoría del gasto energético.</li>
+            <li>Si los ambientes en las zonas de trabajo y descanso son diferentes, se debe calcular y utilizar el tiempo medio horario ponderado. Este debe usarse también para cuando hay variación en las demandas de trabajo entre horas.</li>
+            <li>Los valores tabulados se aplican en relación con la sección de "régimen de trabajo - descanso", asimilándose 8 horas de trabajo al día en 5 días a la semana con descansos convencionales.</li>
+            <li>No se dan valores de criterio para el trabajo continuo y para el trabajo con hasta un 25% de descanso en una hora, porque la tensión fisiológica asociada con el trabajo "muy pesado" para los trabajadores menos acostumbrados es independiente del índice TGBH. No se recomiendan criterios de selección y se debe realizar un análisis detallado y/o control fisiológico.</li>
+        </ul>
+    </div>
+  );
+
   const renderGenericProtocol = (type: MeasurementType, items: { sectorName: string; measurement: Measurement }[]) => (
      <div className="space-y-6">
        <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
@@ -362,6 +445,9 @@ export default function Report() {
 
        {/* Auto-injected Instructions for Noise */}
        {type === 'noise' && NOISE_INSTRUCTIONS}
+
+       {/* Auto-injected Reference Values for Thermal Load */}
+       {type === 'thermal_load' && THERMAL_LOAD_REFERENCE_VALUES}
      </div>
   );
 
