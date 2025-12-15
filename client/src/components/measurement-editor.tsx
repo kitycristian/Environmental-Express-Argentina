@@ -14,8 +14,15 @@ import { useToast } from "@/hooks/use-toast";
 // Configuration for fields per measurement type (Non-lighting)
 const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; options?: string[] }[]> = {
   noise: [
-    { key: 'db', label: 'Nivel (dBA)', type: 'number' },
-    { key: 'type', label: 'Tipo', type: 'select', options: ['Continuo', 'Impacto', 'Pico'] }
+    { key: 'puesto', label: 'Puesto / Tipo', type: 'text' },
+    { key: 'tiempo_exposicion', label: 'T. Expo (Te)', type: 'text' },
+    { key: 'tiempo_integracion', label: 'T. Integ', type: 'text' },
+    { key: 'caracteristicas', label: 'Tipo Ruido', type: 'select', options: ['Continuo', 'Intermitente', 'Impulso', 'Impacto'] },
+    { key: 'nivel_pico_c', label: 'Pico C (dBC)', type: 'text' },
+    { key: 'nivel_continuo_eq', label: 'LAeq,Te (dBA)', type: 'text' },
+    { key: 'suma_fracciones', label: 'Suma Fracc.', type: 'text' },
+    { key: 'dosis', label: 'Dosis %', type: 'text' },
+    { key: 'cumple', label: 'Cumple?', type: 'select', options: ['SI', 'NO'] }
   ],
   thermal_load: [
     { key: 'tbs', label: 'TBS (°C)', type: 'number' },

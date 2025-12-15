@@ -406,6 +406,62 @@ export default function Report() {
     </div>
   );
 
+  const renderNoiseProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-6">
+       <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
+          Protocolo de Medición de RUIDO en el Ambiente Laboral (Res. 295/03)
+       </div>
+       <div className="overflow-x-auto">
+       <table className="w-full text-[10px] border-collapse border border-gray-300">
+         <thead>
+           <tr className="bg-gray-50 text-gray-700 text-center align-middle h-12">
+             <th className="border border-gray-300 p-1 w-8">(23)<br/>Pto</th>
+             <th className="border border-gray-300 p-1 w-24">(24)<br/>Sector</th>
+             <th className="border border-gray-300 p-1">(25)<br/>Puesto / Tipo</th>
+             <th className="border border-gray-300 p-1 w-12">(26)<br/>T. Expo<br/>(Te)</th>
+             <th className="border border-gray-300 p-1 w-12">(27)<br/>T. Integ</th>
+             <th className="border border-gray-300 p-1 w-16">(28)<br/>Caract.<br/>Ruido</th>
+             <th className="border border-gray-300 p-1 w-16 bg-gray-50">
+                (29)<br/>RUIDO IMPULSO<br/>LC pico (dBC)
+             </th>
+             <th className="border border-gray-300 p-1 w-16 bg-gray-100">
+                (30)<br/>SONIDO CONT.<br/>LAeq,Te (dBA)
+             </th>
+             <th className="border border-gray-300 p-1 w-12">(31)<br/>Suma<br/>Fracc</th>
+             <th className="border border-gray-300 p-1 w-12">(32)<br/>Dosis %</th>
+             <th className="border border-gray-300 p-1 w-12">(33)<br/>Cumple?</th>
+           </tr>
+         </thead>
+         <tbody>
+           {items.flatMap(({ sectorName, measurement }) => {
+             return measurement.points.map((point, idx) => {
+               const values = point.values;
+               const isCompliant = values.cumple === 'SI';
+               return (
+                 <tr key={point.id} className="break-inside-avoid hover:bg-gray-50/50">
+                   <td className="border border-gray-300 p-1 text-center">{point.label || idx + 1}</td>
+                   <td className="border border-gray-300 p-1 text-center">{sectorName}</td>
+                   <td className="border border-gray-300 p-1">{values.puesto || '-'}</td>
+                   <td className="border border-gray-300 p-1 text-center">{values.tiempo_exposicion || '-'}</td>
+                   <td className="border border-gray-300 p-1 text-center">{values.tiempo_integracion || '-'}</td>
+                   <td className="border border-gray-300 p-1 text-center capitalize">{values.caracteristicas || '-'}</td>
+                   <td className="border border-gray-300 p-1 text-center">{values.nivel_pico_c || 'No Aplica'}</td>
+                   <td className="border border-gray-300 p-1 text-center font-bold">{values.nivel_continuo_eq || 'No Aplica'}</td>
+                   <td className="border border-gray-300 p-1 text-center">{values.suma_fracciones || 'No Aplica'}</td>
+                   <td className="border border-gray-300 p-1 text-center">{values.dosis || 'No Aplica'}</td>
+                   <td className={`border border-gray-300 p-1 text-center font-bold ${isCompliant ? 'text-green-700' : 'text-red-700'}`}>
+                     {values.cumple || '-'}
+                   </td>
+                 </tr>
+               );
+             });
+           })}
+         </tbody>
+       </table>
+       </div>
+    </div>
+  );
+
   const renderGenericProtocol = (type: MeasurementType, items: { sectorName: string; measurement: Measurement }[]) => (
      <div className="space-y-6">
        <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
@@ -654,7 +710,12 @@ export default function Report() {
           ) : (
             Object.entries(measurementsByType).map(([type, items]) => (
               <section key={type} className="break-before-page">
-                 {type === 'lighting' ? renderLightingProtocol(items!) : renderGenericProtocol(type as MeasurementType, items!)}
+                 {type === 'lighting' 
+                   ? renderLightingProtocol(items!) 
+                   : type === 'noise'
+                     ? renderNoiseProtocol(items!)
+                     : renderGenericProtocol(type as MeasurementType, items!)
+                 }
               </section>
             ))
           )}
