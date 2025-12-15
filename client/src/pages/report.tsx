@@ -250,6 +250,11 @@ export default function Report() {
                     <span className="font-bold mr-1">Conclusión:</span> {measurement.specificConclusions}
                   </div>
                )}
+               {measurement.analysisAndImprovements && (
+                  <div className="mt-2 text-xs bg-green-50 p-2 rounded border border-green-100 text-green-800">
+                    <span className="font-bold mr-1">Análisis y Mejoras:</span> {measurement.analysisAndImprovements}
+                  </div>
+               )}
                
                {/* Attached Documents Badge */}
                {(measurement.attachedDocuments?.calibrationCertificate || measurement.attachedDocuments?.sketch || measurement.attachedDocuments?.other) && (

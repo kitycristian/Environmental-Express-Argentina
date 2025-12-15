@@ -223,10 +223,20 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
                    <FileText className="h-3 w-3" /> Conclusión Específica
                  </h4>
                  <Textarea 
-                   className="min-h-[120px] text-xs resize-none bg-yellow-50/50 border-yellow-200 focus-visible:ring-yellow-500/50"
-                   placeholder="Escriba aquí la conclusión técnica específica para esta medición que aparecerá en el informe..."
+                   className="min-h-[80px] text-xs resize-none bg-yellow-50/50 border-yellow-200 focus-visible:ring-yellow-500/50"
+                   placeholder="Escriba aquí la conclusión técnica específica..."
                    value={measurement.specificConclusions || ''}
                    onChange={(e) => updateMeasurement(sectorId, measurement.id, { specificConclusions: e.target.value })}
+                 />
+
+                 <h4 className="text-xs font-bold uppercase text-gray-500 flex items-center gap-2 pt-2 border-t border-dashed">
+                   <FileText className="h-3 w-3" /> Análisis de datos y mejoras
+                 </h4>
+                 <Textarea 
+                   className="min-h-[80px] text-xs resize-none bg-green-50/50 border-green-200 focus-visible:ring-green-500/50"
+                   placeholder="Detalle el análisis de los datos obtenidos y las mejoras sugeridas..."
+                   value={measurement.analysisAndImprovements || ''}
+                   onChange={(e) => updateMeasurement(sectorId, measurement.id, { analysisAndImprovements: e.target.value })}
                  />
                </div>
             </div>

@@ -129,6 +129,7 @@ export interface Measurement {
 
   // Documentation & Report Extras
   specificConclusions?: string;
+  analysisAndImprovements?: string; // Análisis de datos y mejoras a realizar
   attachedDocuments?: {
     calibrationCertificate?: boolean;
     calibrationCertificateImage?: string; // Base64 Data URL
