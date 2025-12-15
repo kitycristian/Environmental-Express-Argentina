@@ -10,6 +10,7 @@ import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 
 import ClientsPage from "@/pages/clients";
+import ReportsList from "@/pages/reports-list";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/clients" component={ClientsPage} />
+        <Route path="/reports" component={ReportsList} />
         <Route path="/campaign/:type" component={MeasurementCampaign} />
         <Route path="/sector/:id" component={SectorDetail} />
         <Route path="/report" component={Report} />

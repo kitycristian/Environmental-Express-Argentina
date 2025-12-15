@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const establishment = useStore((state) => state.establishment);
@@ -17,11 +18,21 @@ export default function Dashboard() {
   const sectors = useStore((state) => state.sectors);
   const clients = useStore((state) => state.clients);
   const loadClientToEstablishment = useStore((state) => state.loadClientToEstablishment);
+  const saveInspection = useStore((state) => state.saveInspection);
   const [, setLocation] = useLocation();
   const [openClientSelect, setOpenClientSelect] = useState(false);
+  const { toast } = useToast();
 
   const getMeasurementCount = (type: MeasurementType) => {
     return sectors.filter(s => s.measurements.some(m => m.type === type)).length;
+  };
+
+  const handleSave = () => {
+      saveInspection();
+      toast({
+        title: "Inspección Guardada",
+        description: "Se ha guardado una copia en el historial local.",
+      });
   };
 
   const getIcon = (type: MeasurementType) => {
@@ -46,8 +57,19 @@ export default function Dashboard() {
           </p>
         </div>
         
-        {/* Client Selector */}
-        <div className="flex items-center gap-2">
+        {/* Actions & Client Selector */}
+        <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
+           <div className="flex gap-2">
+             <Button variant="outline" onClick={handleSave} className="gap-2">
+               <Save className="h-4 w-4" /> Guardar
+             </Button>
+             <Link href="/report">
+                <Button variant="default" className="gap-2">
+                    <FileText className="h-4 w-4" /> Generar Informe
+                </Button>
+             </Link>
+           </div>
+           
            <Popover open={openClientSelect} onOpenChange={setOpenClientSelect}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" aria-expanded={openClientSelect} className="justify-between w-[250px] shadow-sm">
@@ -92,6 +114,7 @@ export default function Dashboard() {
           </Popover>
         </div>
       </div>
+
 
       {/* Establishment Info Card - Compact */}
       <Card className="bg-muted/10 border-none shadow-none">

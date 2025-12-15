@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ClipboardList, Home, FileText, Menu, ChevronRight, Save, History, Trash2, RotateCcw, PlusCircle, Building2, Calendar, Users } from "lucide-react";
+import { ClipboardList, Home, FileText, Menu, ChevronRight, Save, History, Trash2, RotateCcw, PlusCircle, Building2, Calendar, Users, FileStack } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -15,38 +15,14 @@ import logoUrl from "@assets/image_1765761040646.png";
 import { Badge } from "@/components/ui/badge";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const establishment = useStore((state) => state.establishment);
-  const sectors = useStore((state) => state.sectors);
-  const history = useStore((state) => state.history);
   const saveInspection = useStore((state) => state.saveInspection);
-  const loadInspection = useStore((state) => state.loadInspection);
-  const deleteInspection = useStore((state) => state.deleteInspection);
   const resetStore = useStore((state) => state.resetStore);
   
   const [open, setOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [newInspectionOpen, setNewInspectionOpen] = useState(false);
   const { toast } = useToast();
-
-  const handleSave = () => {
-    saveInspection();
-    toast({
-      title: "Inspección Guardada",
-      description: "Se ha guardado una copia en el historial local.",
-    });
-  };
-
-  const handleLoad = (id: string) => {
-    if (confirm("¿Cargar esta inspección reemplazará los datos actuales. ¿Continuar?")) {
-      loadInspection(id);
-      setHistoryOpen(false);
-      toast({
-        title: "Inspección Cargada",
-        description: "Los datos históricos han sido restaurados.",
-      });
-    }
-  };
 
   const handleNewInspection = (saveFirst: boolean) => {
     if (saveFirst) {
@@ -59,24 +35,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     resetStore();
     setNewInspectionOpen(false);
     setOpen(false);
+    setLocation("/");
     toast({
       title: "Nueva Inspección",
       description: "Se ha limpiado el tablero para comenzar.",
     });
   };
-
-  // Group history by Company -> Year
-  const groupedHistory = history.reduce((acc, item) => {
-    const company = item.establishment.name || "Sin Nombre";
-    const dateObj = new Date(item.establishment.date || item.savedAt);
-    const year = dateObj.getFullYear().toString();
-
-    if (!acc[company]) acc[company] = {};
-    if (!acc[company][year]) acc[company][year] = [];
-    
-    acc[company][year].push(item);
-    return acc;
-  }, {} as Record<string, Record<string, typeof history>>);
 
   const NavContent = () => (
     <nav className="flex flex-col gap-2 p-4 h-full">
@@ -85,17 +49,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <span className="font-bold text-sm text-primary">Environmental Express Argentina</span>
       </div>
       
-      <Link href="/">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
-          <Home className="h-4 w-4" />
-          Tablero
-        </div>
-      </Link>
+      <div onClick={() => setNewInspectionOpen(true)} className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted cursor-pointer text-primary`}>
+          <PlusCircle className="h-4 w-4" />
+          Nueva Inspección
+      </div>
       
-      <Link href="/report">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/report' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
-          <FileText className="h-4 w-4" />
-          Reporte Final
+      <Link href="/reports">
+        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/reports' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+          <FileStack className="h-4 w-4" />
+          Informes
         </div>
       </Link>
 
@@ -107,95 +69,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </Link>
 
       <div className="mt-8 px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-        Gestión
+        Navegación
       </div>
+      
+      <Link href="/">
+        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+          <Home className="h-4 w-4" />
+          Tablero Activo
+        </div>
+      </Link>
 
-      <Button variant="ghost" className="justify-start px-3 text-muted-foreground hover:text-primary" onClick={handleSave}>
-        <Save className="mr-2 h-4 w-4" />
-        Guardar Estado Actual
-      </Button>
-
-      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-        <DialogTrigger asChild>
-          <Button variant="ghost" className="justify-start px-3 text-muted-foreground hover:text-primary">
-            <History className="mr-2 h-4 w-4" />
-            Historial ({history.length})
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Historial de Inspecciones</DialogTitle>
-            <DialogDescription>
-              Organizado por Empresa y Año.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
-            {history.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground py-12">No hay inspecciones guardadas.</p>
-            ) : (
-              <Accordion type="single" collapsible className="w-full">
-                {Object.entries(groupedHistory).map(([company, years]) => (
-                  <AccordionItem key={company} value={company}>
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-primary" />
-                        <span className="font-semibold">{company}</span>
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          {Object.values(years).flat().length}
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="pl-4 space-y-2">
-                        {Object.entries(years).sort((a, b) => Number(b[0]) - Number(a[0])).map(([year, items]) => (
-                          <div key={year} className="border-l-2 border-muted pl-4 py-2">
-                            <h4 className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1">
-                              <Calendar className="h-3 w-3" /> {year}
-                            </h4>
-                            <div className="space-y-2">
-                              {items.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()).map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
-                                  <div className="space-y-1">
-                                    <p className="font-medium text-sm">
-                                      {format(new Date(item.establishment.date || item.savedAt), "d 'de' MMMM", { locale: es })}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {item.sectors.length} sectores relevados
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleLoad(item.id)} title="Cargar">
-                                      <RotateCcw className="h-4 w-4" />
-                                    </Button>
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => deleteInspection(item.id)} title="Eliminar">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      <div className="mt-auto pt-4 border-t">
-         <Button 
-            variant="ghost" 
-            className="w-full justify-start px-3 text-primary hover:text-primary hover:bg-primary/10 font-medium" 
-            onClick={() => setNewInspectionOpen(true)}
-         >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nueva Inspección
-        </Button>
-      </div>
 
       <AlertDialog open={newInspectionOpen} onOpenChange={setNewInspectionOpen}>
         <AlertDialogContent>
@@ -253,3 +136,4 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
