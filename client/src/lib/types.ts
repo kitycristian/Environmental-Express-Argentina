@@ -53,8 +53,14 @@ export interface Measurement {
   // Specific fields for different types (shared structure for simplicity)
   config?: {
     method?: string;
-    limit?: number;
+    limit?: number; // Valor Legal (Lux)
     reference?: string;
+    
+    // Lighting specific
+    width?: number;
+    length?: number;
+    height?: number;
+    workPlaneHeight?: number;
   };
 }
 
