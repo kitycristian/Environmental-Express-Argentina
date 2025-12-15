@@ -292,7 +292,7 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
                          <Input 
                             id={`lux-input-${index}`}
                             type="number"
-                            className="h-9 text-center font-mono text-sm bg-white border-gray-200 focus:border-blue-500 transition-colors"
+                            className="h-9 text-center font-mono text-sm bg-white border-gray-200 focus:border-blue-500 transition-colors px-1"
                             placeholder="-"
                             value={point.values.lux || ''}
                             onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, lux: e.target.value } })}
