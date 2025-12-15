@@ -1,0 +1,14 @@
+	Hay que proveer a los trabajadores de ropa aislante seca adecuada para mantener la temperatura del cuerpo por encima de los 36º C
+	A temperaturas del aire de 2°C o menos es imperativo que si el trabajador tiene vestimenta húmeda o mojada en zona fría, deberá cambiarse y ponerse ropa seca. 
+	Usar manoplas aislantes del frío y evitar que la piel al descubierto entre en contacto con el ambiente frío. 
+	Los trabajadores de más edad o aquellos que tiene problemas circulatorios, requieren especial protección preventiva contra las lesiones por el frío.
+	Si hay que realizar trabajos de precisión con las manos al descubierto durante más de 20 minutos en un ambiente por debajo de los 16º C, se deben tomar medidas adecuadas para mantener las manos calientes (aire caliente, aparatos de calefacción, placas calientes, etc.)
+	Para trabajos sedentarios para temperaturas menores de 16°C, trabajos ligeros con temperaturas menores de 4°C, los trabajadores deben usar guantes.
+	En las cámaras frigoríficas, la velocidad del aire se debe minimizar cuando sea posible, no sobrepasando el valor de 1m/seg en el lugar de trabajo, lo cual se puede conseguir mediante sistemas de distribución de aire diseñados de manera apropiada.
+	En todo lugar de trabajo en que la temperatura esté por debajo de los 16°C se debe disponer de termometría adecuada, para cumplir con los requisitos de los valores limites por temperatura.
+	Siempre que la temperatura del aire en un lugar de trabajo descienda por debajo de –1º C, cada 4 horas, por lo menos, se deberá medir y registrar la temperatura del bulbo seco.
+	Si el trabajo se realiza en un medio ambiente a o por debajo de 4º C, hay que proveer protección corporal adicional. Los trabajadores llevarán ropa protectora adecuada para el nivel de frío y la actividad física cuando:
+
+1.	La velocidad del aire en el lugar de trabajo aumenta con el viento, corrientes de aire o equipos de ventilación artificial, el efecto del enfriamiento por el viento se reducirá protegiendo (apantallando) la zona de trabajo o bien usando una prenda exterior de capas cortaviento fácil de quitar.
+2.	Los trabajadores se cambiarán a intervalos diarios regulares de medias y de todas las plantillas de fieltro que se puedan quitar, o bien se usarán botas impermeables que eviten la absorción de la humedad.
+3.	La frecuencia óptima del cambio de ropa se determinar de manera empírica, variando con el individuo y según el tipo de calzado que se use y la cantidad de sudoración de los pies del individuo.

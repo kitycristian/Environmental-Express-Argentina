@@ -153,6 +153,50 @@ export default function Report() {
     </div>
   );
 
+  const COLD_STRESS_RECOMMENDATIONS = (
+    <div className="mt-8 p-6 bg-blue-50/50 border border-blue-100 rounded-lg text-xs leading-relaxed text-gray-700 break-inside-avoid">
+        <h3 className="font-bold text-blue-800 text-sm uppercase mb-3 border-b border-blue-200 pb-2">Recomendaciones Para Prevenir el Estrés por Frío</h3>
+        <ul className="list-disc pl-5 space-y-2 mb-4">
+            <li>Hay que proveer a los trabajadores de ropa aislante seca adecuada para mantener la temperatura del cuerpo por encima de los 36º C.</li>
+            <li>A temperaturas del aire de 2°C o menos es imperativo que si el trabajador tiene vestimenta húmeda o mojada en zona fría, deberá cambiarse y ponerse ropa seca.</li>
+            <li>Usar manoplas aislantes del frío y evitar que la piel al descubierto entre en contacto con el ambiente frío.</li>
+            <li>Los trabajadores de más edad o aquellos que tiene problemas circulatorios, requieren especial protección preventiva contra las lesiones por el frío.</li>
+            <li>Si hay que realizar trabajos de precisión con las manos al descubierto durante más de 20 minutos en un ambiente por debajo de los 16º C, se deben tomar medidas adecuadas para mantener las manos calientes (aire caliente, aparatos de calefacción, placas calientes, etc.).</li>
+            <li>Para trabajos sedentarios para temperaturas menores de 16°C, trabajos ligeros con temperaturas menores de 4°C, los trabajadores deben usar guantes.</li>
+            <li>En las cámaras frigoríficas, la velocidad del aire se debe minimizar cuando sea posible, no sobrepasando el valor de 1m/seg en el lugar de trabajo, lo cual se puede conseguir mediante sistemas de distribución de aire diseñados de manera apropiada.</li>
+            <li>En todo lugar de trabajo en que la temperatura esté por debajo de los 16°C se debe disponer de termometría adecuada, para cumplir con los requisitos de los valores limites por temperatura.</li>
+            <li>Siempre que la temperatura del aire en un lugar de trabajo descienda por debajo de –1º C, cada 4 horas, por lo menos, se deberá medir y registrar la temperatura del bulbo seco.</li>
+            <li>Si el trabajo se realiza en un medio ambiente a o por debajo de 4º C, hay que proveer protección corporal adicional. Los trabajadores llevarán ropa protectora adecuada para el nivel de frío y la actividad física cuando:
+                <ol className="list-decimal pl-5 mt-2 space-y-1 text-gray-600">
+                    <li>La velocidad del aire en el lugar de trabajo aumenta con el viento, corrientes de aire o equipos de ventilación artificial, el efecto del enfriamiento por el viento se reducirá protegiendo (apantallando) la zona de trabajo o bien usando una prenda exterior de capas cortaviento fácil de quitar.</li>
+                    <li>Los trabajadores se cambiarán a intervalos diarios regulares de medias y de todas las plantillas de fieltro que se puedan quitar, o bien se usarán botas impermeables que eviten la absorción de la humedad.</li>
+                    <li>La frecuencia óptima del cambio de ropa se determinar de manera empírica, variando con el individuo y según el tipo de calzado que se use y la cantidad de sudoración de los pies del individuo.</li>
+                </ol>
+            </li>
+            <li>Para los trabajos a una temperatura equivalente de enfriamiento (TEE) de o por debajo de -12°C (10,4°F) se aplicará lo siguiente:
+                <ol start={4} className="list-decimal pl-5 mt-2 space-y-1 text-gray-600">
+                    <li>El trabajador estará constantemente en observación a efectos de protección (sistema de parejas o supervisión).</li>
+                    <li>El ritmo de trabajo no debe ser tan elevado que haga sudar fuertemente, lo que daría lugar a que la ropa se humedeciera. Si hay que hacer un trabajo pesado, deben establecerse períodos de descanso, dando a los trabajadores oportunidad para que se cambien y pongan ropa seca.</li>
+                    <li>A los empleados de nuevo ingreso no se les exigirá, en los primeros días, que trabajen la jornada completa expuesta al frío hasta que se acostumbren a las condiciones de trabajo y la vestimenta protectora que se requiera.</li>
+                    <li>Al calcular el rendimiento laboral exigido y los pesos que deberá levantar el trabajador, se incluirán el peso y el volumen de la ropa.</li>
+                    <li>El trabajo se dispondrá de tal manera que la permanencia de pie o sentando completamente quieto se reduzca al mínimo. Al trabajador se le debe proteger de las corrientes cuanto sea posible.</li>
+                    <li>A los trabajadores se les instruirá en los procedimientos de seguridad y sanidad. El programa de formación incluirá, como mínimo, instrucción en:
+                        <ul className="list-[lower-alpha] pl-5 mt-1 space-y-0.5">
+                            <li>Procedimientos apropiados de entrada en calor de nuevo y tratamiento adecuado de primeros auxilios.</li>
+                            <li>Uso de ropa adecuada.</li>
+                            <li>Hábitos apropiados de comidas y bebidas.</li>
+                            <li>Reconocimiento de la congelación, inminente.</li>
+                            <li>Reconocimiento de las señales y los síntomas de hipotermia inminente o enfriamiento excesivo del cuerpo, aun cuando no se llegue a tiritar.</li>
+                            <li>Prácticas de trabajo seguro.</li>
+                            <li>Prohibir el ingreso a la Cámara sin los Elementos Adecuados de Protección contra el Frío: Campera, Ropa de Trabajo (de algodón), Medias adecuadas, Calzado de Seguridad, Guantes adecuados.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+    </div>
+  );
+
   const renderGenericProtocol = (type: MeasurementType, items: { sectorName: string; measurement: Measurement }[]) => (
      <div className="space-y-6">
        <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
@@ -249,6 +293,9 @@ export default function Report() {
             </div>
          </div>
        ))}
+       
+       {/* Auto-injected Recommendations for Cold Stress */}
+       {type === 'cold_stress' && COLD_STRESS_RECOMMENDATIONS}
      </div>
   );
 
