@@ -120,6 +120,7 @@ export interface Measurement {
     measurementDate?: string;
     startTime?: string;
     endTime?: string;
+    duration?: string; // Duración de la medición
 
     // Work Conditions
     workShifts?: string; // Horarios/turnos habituales

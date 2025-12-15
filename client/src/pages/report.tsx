@@ -272,6 +272,9 @@ export default function Report() {
                    <tr className="border-b border-gray-100 text-left text-gray-500 uppercase">
                      <th className="pb-2 w-24">Punto</th>
                      <th className="pb-2">Valores</th>
+                     {(measurement.type === 'noise' || measurement.type === 'thermal_load') && measurement.details?.duration && (
+                         <th className="pb-2">Duración</th>
+                     )}
                      <th className="pb-2">Notas</th>
                    </tr>
                  </thead>
@@ -287,6 +290,9 @@ export default function Report() {
                            </span>
                          ))}
                        </td>
+                       {(measurement.type === 'noise' || measurement.type === 'thermal_load') && measurement.details?.duration && (
+                         <td className="py-2 text-gray-600">{measurement.details.duration}</td>
+                       )}
                        <td className="py-2 italic text-gray-500">{p.notes}</td>
                      </tr>
                    ))}

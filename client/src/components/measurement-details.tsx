@@ -287,7 +287,7 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
             {/* Time & Date */}
             <div className="space-y-3 border-b pb-4">
               <h4 className="text-xs font-bold uppercase text-gray-500">Fecha y Hora de Medición</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs">Fecha</Label>
                   <Input 
@@ -315,6 +315,17 @@ export function MeasurementDetails({ measurement, sectorId }: MeasurementDetails
                     className="h-8 text-xs"
                   />
                 </div>
+                {(measurement.type === 'noise' || measurement.type === 'thermal_load') && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Duración</Label>
+                    <Input 
+                      value={measurement.details?.duration || ''} 
+                      onChange={(e) => updateDetails('duration', e.target.value)}
+                      className="h-8 text-xs"
+                      placeholder="Ej. 15 min"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
