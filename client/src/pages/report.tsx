@@ -975,6 +975,92 @@ export default function Report() {
             )}
         </div>
 
+        {/* Anexo 3: Evidencia Fotográfica de Mediciones */}
+        <div className="break-before-page mt-8">
+            <h2 className="text-xl font-bold text-primary mb-6 uppercase tracking-wide border-b-2 border-primary pb-2">
+                Anexo 3: Evidencia Fotográfica de Mediciones
+            </h2>
+            
+            {Object.keys(measurementsByType).length === 0 ? (
+                <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
+                    No hay mediciones registradas.
+                </div>
+            ) : (
+                 <div className="space-y-8">
+                    {sectors.map(sector => {
+                        const measurementsWithImages = sector.measurements.filter(m => 
+                            m.attachedDocuments?.measurementProofImage || 
+                            (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0)
+                        );
+                        
+                        if (measurementsWithImages.length === 0) return null;
+
+                        return (
+                            <div key={sector.id} className="break-inside-avoid">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4 bg-gray-50 p-2 border-l-4 border-gray-400">
+                                    Sector: {sector.name}
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {measurementsWithImages.map(m => (
+                                        <div key={m.id} className="border rounded-lg p-4 bg-white shadow-sm break-inside-avoid">
+                                            <div className="mb-2 pb-2 border-b">
+                                                <span className="font-bold text-sm text-primary uppercase block">
+                                                    {MEASUREMENT_LABELS[m.type]}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {m.details?.measurementDate ? format(new Date(m.details.measurementDate), "d/MM/yyyy") : ''} 
+                                                    {m.details?.startTime ? ` - ${m.details.startTime}` : ''}
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="space-y-4">
+                                                {m.attachedDocuments?.measurementProofImage && (
+                                                    <div className="flex flex-col gap-2">
+                                                        <span className="text-xs font-semibold bg-green-50 text-green-700 px-2 py-1 rounded w-fit">
+                                                            Prueba de Medición
+                                                        </span>
+                                                        <div className="rounded border bg-gray-50 overflow-hidden">
+                                                            <img 
+                                                                src={m.attachedDocuments.measurementProofImage} 
+                                                                alt={`Prueba ${sector.name} - ${MEASUREMENT_LABELS[m.type]}`}
+                                                                className="w-full h-auto object-contain max-h-[300px]"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {m.attachedDocuments?.otherImages?.map((img, idx) => (
+                                                    <div key={idx} className="flex flex-col gap-2">
+                                                        <span className="text-xs font-semibold bg-gray-100 text-gray-700 px-2 py-1 rounded w-fit">
+                                                            Imagen Adicional {idx + 1}
+                                                        </span>
+                                                        <div className="rounded border bg-gray-50 overflow-hidden">
+                                                            <img 
+                                                                src={img} 
+                                                                alt={`Extra ${idx}`}
+                                                                className="w-full h-auto object-contain max-h-[300px]"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                    
+                    {/* Fallback if no images found anywhere */}
+                    {!sectors.some(s => s.measurements.some(m => m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0))) && (
+                        <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
+                            No se han adjuntado imágenes de prueba o adicionales a las mediciones.
+                        </div>
+                    )}
+                 </div>
+            )}
+        </div>
+
         <footer className="mt-16 pt-6 border-t border-gray-200 flex flex-col items-center text-xs text-gray-400 print:fixed print:bottom-0 print:left-0 print:w-full print:bg-white print:px-8 print:pb-4">
           <div className="flex justify-between w-full mb-8">
              <div className="text-left">
