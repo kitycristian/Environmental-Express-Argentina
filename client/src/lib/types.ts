@@ -64,6 +64,8 @@ export interface Establishment {
   responsible: string;
   conditions?: AtmosphericConditions;
   instruments?: Instrument[];
+  conclusions?: string;
+  recommendations?: string;
 }
 
 export interface Sector {

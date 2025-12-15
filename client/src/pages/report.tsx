@@ -1,19 +1,80 @@
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Printer, ArrowLeft, Download, FileJson } from "lucide-react";
+import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil } from "lucide-react";
 import { Link } from "wouter";
 import { MEASUREMENT_LABELS, Measurement, MeasurementType } from "@/lib/types";
 import logoUrl from "@assets/image_1765761040646.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ReportConfigDialog } from "@/components/report-config-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Report() {
   const establishment = useStore((state) => state.establishment);
+  const updateEstablishment = useStore((state) => state.updateEstablishment);
   const sectors = useStore((state) => state.sectors);
+  const { toast } = useToast();
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const generateAIContent = () => {
+    let conclusions = [];
+    let recommendations = [];
+    let compliantCount = 0;
+    let nonCompliantCount = 0;
+
+    // Introduction
+    conclusions.push(`Se ha realizado el relevamiento de agentes de riesgo en el establecimiento ${establishment.name || 'declarado'}, con el objetivo de verificar el cumplimiento de la normativa vigente (Ley 19.587, Dec. 351/79 y Res. SRT 84/12).`);
+
+    sectors.forEach(sector => {
+      sector.measurements.forEach(m => {
+        const typeLabel = MEASUREMENT_LABELS[m.type];
+        
+        if (m.status === 'non_compliant') {
+            nonCompliantCount++;
+            conclusions.push(`- En el sector "${sector.name}", la medición de ${typeLabel} arrojó valores que NO CUMPLEN con los límites establecidos.`);
+            
+            // Specific recommendations based on type
+            if (m.type === 'lighting') {
+                recommendations.push(`- Sector "${sector.name}" (${typeLabel}): Se recomienda revisar el sistema de iluminación, realizar limpieza de luminarias o adicionar fuentes de luz para alcanzar los niveles requeridos de ${m.config?.limit || '?'} Lux.`);
+            } else if (m.type === 'noise') {
+                recommendations.push(`- Sector "${sector.name}" (${typeLabel}): Se sugiere implementar medidas de ingeniería para reducción de ruido o verificar el uso correcto de EPP auditivos.`);
+            } else {
+                recommendations.push(`- Sector "${sector.name}" (${typeLabel}): Se recomienda evaluar medidas correctivas para adecuar los niveles a la normativa.`);
+            }
+
+        } else if (m.status === 'compliant') {
+            compliantCount++;
+            conclusions.push(`- En el sector "${sector.name}", los valores de ${typeLabel} se encuentran DENTRO de los parámetros legales permitidos.`);
+        }
+      });
+    });
+
+    // General Summary
+    if (nonCompliantCount === 0 && compliantCount > 0) {
+        conclusions.push("En conclusión, todos los sectores relevados CUMPLEN con los requerimientos legales vigentes al momento de la medición.");
+        recommendations.push("Se recomienda mantener las condiciones actuales y realizar mediciones periódicas según lo estipulado por ley (anual).");
+    } else if (nonCompliantCount > 0) {
+        conclusions.push(`Se detectaron ${nonCompliantCount} desviaciones normativas que requieren atención inmediata.`);
+        recommendations.push("Se sugiere realizar un plan de adecuación para los sectores afectados y repetir las mediciones una vez implementadas las mejoras.");
+    } else {
+        conclusions.push("No hay suficientes datos procesados para emitir una conclusión definitiva.");
+    }
+
+    updateEstablishment({
+        conclusions: conclusions.join("\n"),
+        recommendations: recommendations.join("\n")
+    });
+
+    toast({
+        title: "Análisis Completado",
+        description: "Se han generado conclusiones y recomendaciones basadas en los datos.",
+    });
   };
 
   // Group measurements by type for the report
@@ -152,6 +213,9 @@ export default function Report() {
           <ReportConfigDialog />
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={generateAIContent} className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200">
+            <Sparkles className="mr-2 h-4 w-4" /> Analizar y Generar Conclusiones
+          </Button>
           <Button variant="outline" onClick={() => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ establishment, sectors }, null, 2));
             const downloadAnchorNode = document.createElement('a');
@@ -161,10 +225,10 @@ export default function Report() {
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
           }}>
-            <FileJson className="mr-2 h-4 w-4" /> Exportar Datos (JSON)
+            <FileJson className="mr-2 h-4 w-4" /> Exportar JSON
           </Button>
           <Button onClick={handlePrint} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Download className="mr-2 h-4 w-4" /> Exportar Informe Legal (PDF)
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
           </Button>
         </div>
       </div>
@@ -216,7 +280,7 @@ export default function Report() {
             </div>
           </div>
 
-          {/* Environmental Conditions & Instruments (New Section) */}
+          {/* Environmental Conditions & Instruments */}
           {(establishment.conditions || (establishment.instruments && establishment.instruments.length > 0)) && (
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               {establishment.conditions && (
@@ -254,7 +318,7 @@ export default function Report() {
         </header>
 
         {/* Content by Protocol */}
-        <div className="space-y-12">
+        <div className="space-y-12 mb-12">
           {Object.keys(measurementsByType).length === 0 ? (
             <p className="text-center italic text-gray-500 py-12">No hay datos registrados para generar el informe.</p>
           ) : (
@@ -264,6 +328,37 @@ export default function Report() {
               </section>
             ))
           )}
+        </div>
+
+        {/* Conclusions and Recommendations Section */}
+        <div className="break-inside-avoid mt-8 border-t-2 border-primary/20 pt-6">
+            <h2 className="text-xl font-bold text-primary mb-4 uppercase tracking-wide flex items-center gap-2">
+                <FileText className="h-5 w-5" /> Conclusiones y Recomendaciones
+            </h2>
+            
+            <div className="grid grid-cols-1 gap-8">
+                <div className="space-y-2">
+                    <Label htmlFor="conclusions" className="text-sm font-bold text-gray-700 uppercase">Conclusiones Técnicas</Label>
+                    <Textarea 
+                        id="conclusions"
+                        value={establishment.conclusions || ""} 
+                        onChange={(e) => updateEstablishment({ conclusions: e.target.value })}
+                        placeholder="Generar automáticamente o escribir conclusiones..."
+                        className="min-h-[150px] font-sans text-sm resize-none print:border-none print:p-0 print:resize-none print:bg-transparent"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="recommendations" className="text-sm font-bold text-gray-700 uppercase">Recomendaciones de Adecuación</Label>
+                    <Textarea 
+                        id="recommendations"
+                        value={establishment.recommendations || ""} 
+                        onChange={(e) => updateEstablishment({ recommendations: e.target.value })}
+                        placeholder="Generar automáticamente o escribir recomendaciones..."
+                        className="min-h-[150px] font-sans text-sm resize-none print:border-none print:p-0 print:resize-none print:bg-transparent"
+                    />
+                </div>
+            </div>
         </div>
 
         <footer className="mt-16 pt-6 border-t border-gray-200 flex flex-col items-center text-xs text-gray-400 print:fixed print:bottom-0 print:left-0 print:w-full print:bg-white print:px-8 print:pb-4">
