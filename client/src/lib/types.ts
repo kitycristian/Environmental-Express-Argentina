@@ -29,7 +29,8 @@ export type MeasurementType =
   | 'cold_stress'
   | 'particulate_matter'
   | 'chemical_agents'
-  | 'ventilation';
+  | 'ventilation'
+  | 'grounding';
 
 export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   lighting: 'Iluminación',
@@ -39,6 +40,7 @@ export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   particulate_matter: 'Material Particulado',
   chemical_agents: 'Agentes Químicos',
   ventilation: 'Ventilación',
+  grounding: 'Puesta a Tierra',
 };
 
 export interface Instrument {

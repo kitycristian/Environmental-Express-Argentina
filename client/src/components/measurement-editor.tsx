@@ -54,6 +54,13 @@ const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; o
     { key: 'area', label: 'Área (m²)', type: 'number' },
     { key: 'flow', label: 'Caudal (m³/h)', type: 'number' },
     { key: 'renovations', label: 'Renov/h', type: 'number' }
+  ],
+  grounding: [
+    { key: 'point', label: 'Punto de Medición', type: 'text' },
+    { key: 'resistance', label: 'Resistencia (Ω)', type: 'number' },
+    { key: 'continuity', label: 'Continuidad', type: 'select', options: ['SI', 'NO'] },
+    { key: 'differential_protection', label: 'Prot. Diferencial', type: 'select', options: ['SI', 'NO'] },
+    { key: 'visual_inspection', label: 'Insp. Visual', type: 'select', options: ['Aprobada', 'Desaprobada'] }
   ]
 };
 
