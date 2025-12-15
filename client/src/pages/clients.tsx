@@ -6,21 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail } from "lucide-react";
+import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail, FileText, Calendar, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function ClientsPage() {
   const clients = useStore((state) => state.clients);
   const addClient = useStore((state) => state.addClient);
   const updateClient = useStore((state) => state.updateClient);
   const deleteClient = useStore((state) => state.deleteClient);
+  const history = useStore((state) => state.history);
+  const loadInspection = useStore((state) => state.loadInspection);
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [selectedClientHistory, setSelectedClientHistory] = useState<Client | null>(null);
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -69,6 +75,26 @@ export default function ClientsPage() {
       deleteClient(id);
       toast({ title: "Cliente Eliminado", variant: "destructive" });
     }
+  };
+
+  const handleViewHistory = (client: Client) => {
+    setSelectedClientHistory(client);
+    setIsHistoryDialogOpen(true);
+  };
+
+  const handleLoadInspection = (id: string) => {
+    if (confirm("¿Cargar esta inspección reemplazará los datos actuales del tablero. ¿Continuar?")) {
+      loadInspection(id);
+      setIsHistoryDialogOpen(false);
+      toast({
+        title: "Inspección Cargada",
+        description: "Los datos históricos han sido restaurados en el tablero.",
+      });
+    }
+  };
+
+  const getClientHistory = (clientName: string) => {
+    return history.filter(h => h.establishment.name === clientName).sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
   };
 
   return (
@@ -148,6 +174,15 @@ export default function ClientsPage() {
                     <span className="font-semibold text-gray-600">Contacto:</span> {client.contactName}
                   </div>
                 )}
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-4 gap-2 text-primary border-primary/20 hover:bg-primary/5"
+                  onClick={() => handleViewHistory(client)}
+                >
+                  <FileText className="h-4 w-4" /> Ver Informes Realizados
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -243,6 +278,53 @@ export default function ClientsPage() {
               <Button type="submit">Guardar Cliente</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Informes de {selectedClientHistory?.name}</DialogTitle>
+            <DialogDescription>
+              Historial de relevamientos realizados para este cliente.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            {selectedClientHistory && getClientHistory(selectedClientHistory.name).length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 italic">
+                No hay informes guardados para este cliente.
+              </p>
+            ) : (
+              selectedClientHistory && getClientHistory(selectedClientHistory.name).map((inspection) => (
+                <div key={inspection.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <span className="font-medium">
+                        {format(new Date(inspection.establishment.date || inspection.savedAt), "d 'de' MMMM, yyyy", { locale: es })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-6">
+                      {inspection.sectors.length} sectores relevados
+                    </p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={() => handleLoadInspection(inspection.id)}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Cargar al Tablero
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsHistoryDialogOpen(false)}>Cerrar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
