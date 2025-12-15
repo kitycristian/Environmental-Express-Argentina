@@ -184,7 +184,7 @@ export default function Dashboard() {
                </div>
                <CardHeader className="pb-2">
                  <div className="flex items-center gap-3">
-                   <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                   <div className="p-2 rounded-lg bg-primary/10 text-green-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                      {getIcon(type)}
                    </div>
                    <CardTitle className="text-lg">{label}</CardTitle>
