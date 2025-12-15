@@ -15,14 +15,38 @@ export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   chemical_agents: 'Agentes Químicos',
 };
 
+export interface Instrument {
+  id: string;
+  type: MeasurementType | 'generic';
+  brand: string;
+  model: string;
+  serialNumber: string;
+  calibrationCertificate: string;
+  calibrationDate: string;
+}
+
+export interface AtmosphericConditions {
+  temperature?: string;
+  humidity?: string;
+  pressure?: string;
+  windSpeed?: string;
+}
+
 export interface Establishment {
   id: string;
   name: string;
   razonSocial: string;
   cuit: string;
   address: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
   date: string;
+  startTime?: string;
+  endTime?: string;
   responsible: string;
+  conditions?: AtmosphericConditions;
+  instruments?: Instrument[];
 }
 
 export interface Sector {

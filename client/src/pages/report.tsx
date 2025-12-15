@@ -6,6 +6,7 @@ import { MEASUREMENT_LABELS, Measurement, MeasurementType } from "@/lib/types";
 import logoUrl from "@assets/image_1765761040646.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ReportConfigDialog } from "@/components/report-config-dialog";
 
 export default function Report() {
   const establishment = useStore((state) => state.establishment);
@@ -142,11 +143,14 @@ export default function Report() {
     <div className="bg-white min-h-screen text-black p-8 max-w-5xl mx-auto">
       {/* No-print controls */}
       <div className="print:hidden flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4 gap-4">
-        <Link href="/">
-          <Button variant="outline">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al Tablero
-          </Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver al Tablero
+            </Button>
+          </Link>
+          <ReportConfigDialog />
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ establishment, sectors }, null, 2));
@@ -203,9 +207,50 @@ export default function Report() {
               <div className="flex flex-col col-span-2">
                 <span className="font-bold text-gray-500 text-xs uppercase">Dirección del Establecimiento</span>
                 <span>{establishment.address || '-'}</span>
+                <span className="text-gray-500 font-normal ml-2">
+                  {establishment.city && `${establishment.city}, `}
+                  {establishment.province && `${establishment.province}`}
+                  {establishment.postalCode && ` (CP: ${establishment.postalCode})`}
+                </span>
               </div>
             </div>
           </div>
+
+          {/* Environmental Conditions & Instruments (New Section) */}
+          {(establishment.conditions || (establishment.instruments && establishment.instruments.length > 0)) && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {establishment.conditions && (
+                <div className="border border-gray-200 rounded p-3 text-xs">
+                   <h3 className="font-bold text-gray-700 uppercase mb-2 border-b pb-1">Condiciones Ambientales</h3>
+                   <div className="grid grid-cols-2 gap-2">
+                     <div><span className="font-semibold text-gray-500">Hora Inicio:</span> {establishment.startTime || '-'}</div>
+                     <div><span className="font-semibold text-gray-500">Hora Fin:</span> {establishment.endTime || '-'}</div>
+                     <div><span className="font-semibold text-gray-500">Temperatura:</span> {establishment.conditions.temperature ? `${establishment.conditions.temperature}°C` : '-'}</div>
+                     <div><span className="font-semibold text-gray-500">Humedad:</span> {establishment.conditions.humidity ? `${establishment.conditions.humidity}%` : '-'}</div>
+                     <div><span className="font-semibold text-gray-500">Presión:</span> {establishment.conditions.pressure ? `${establishment.conditions.pressure} mmHg` : '-'}</div>
+                     <div><span className="font-semibold text-gray-500">Viento:</span> {establishment.conditions.windSpeed ? `${establishment.conditions.windSpeed} km/h` : '-'}</div>
+                   </div>
+                </div>
+              )}
+              
+              {establishment.instruments && establishment.instruments.length > 0 && (
+                <div className="border border-gray-200 rounded p-3 text-xs">
+                   <h3 className="font-bold text-gray-700 uppercase mb-2 border-b pb-1">Instrumental Utilizado</h3>
+                   <div className="space-y-2">
+                     {establishment.instruments.map(inst => (
+                       <div key={inst.id} className="grid grid-cols-2 gap-x-2 border-b border-gray-100 last:border-0 pb-1 last:pb-0">
+                         <div className="font-semibold text-primary">{inst.brand} {inst.model}</div>
+                         <div className="text-right text-gray-500">S/N: {inst.serialNumber}</div>
+                         <div className="col-span-2 text-[10px] text-gray-400">
+                           Calibración: {inst.calibrationDate || '-'} ({inst.calibrationCertificate || 'S/D'})
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                </div>
+              )}
+            </div>
+          )}
         </header>
 
         {/* Content by Protocol */}
@@ -222,9 +267,17 @@ export default function Report() {
         </div>
 
         <footer className="mt-16 pt-6 border-t border-gray-200 flex flex-col items-center text-xs text-gray-400 print:fixed print:bottom-0 print:left-0 print:w-full print:bg-white print:px-8 print:pb-4">
-          <div className="flex justify-between w-full mb-2">
-             <span>Generado el {new Date().toLocaleDateString()}</span>
-             <span className="font-bold text-primary">Environmental Express Argentina</span>
+          <div className="flex justify-between w-full mb-8">
+             <div className="text-left">
+               <span>Generado el {new Date().toLocaleDateString()}</span>
+               <div className="mt-1 font-bold text-primary">Environmental Express Argentina</div>
+             </div>
+             {establishment.responsible && (
+               <div className="text-center border-t border-gray-400 pt-1 px-8">
+                 <div className="font-bold text-black">{establishment.responsible}</div>
+                 <div className="text-[10px]">Responsable Técnico</div>
+               </div>
+             )}
           </div>
           <p className="text-[10px] text-center max-w-2xl">
             Este informe es un documento técnico generado digitalmente. Los valores consignados corresponden a las mediciones realizadas in situ según los protocolos vigentes de la SRT.
