@@ -290,11 +290,23 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
                      {points.map((point, index) => (
                        <div key={point.id} className="relative group">
                          <Input 
+                            id={`lux-input-${index}`}
                             type="number"
                             className="h-9 text-center font-mono text-sm bg-white border-gray-200 focus:border-blue-500 transition-colors"
                             placeholder="-"
                             value={point.values.lux || ''}
                             onChange={(e) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, lux: e.target.value } })}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const nextInput = document.getElementById(`lux-input-${index + 1}`);
+                                    if (nextInput) {
+                                        nextInput.focus();
+                                        // Optional: Select content of next input if needed
+                                        // (nextInput as HTMLInputElement).select(); 
+                                    }
+                                }
+                            }}
                          />
                          <span className="absolute -top-2 -left-1 text-[9px] font-bold text-gray-400 bg-white px-1 border rounded shadow-sm z-10 pointer-events-none">
                             {index + 1}
