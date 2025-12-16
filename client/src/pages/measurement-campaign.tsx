@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search, Building2, ListPlus, Settings, Save } from "lucide-react";
-import { MeasurementEditor } from "@/components/measurement-editor";
+import { MeasurementEditor, LightingGridEditor } from "@/components/measurement-editor";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -381,7 +381,11 @@ export default function MeasurementCampaign() {
                       </div>
 
                       {/* The Editor */}
-                      <MeasurementEditor measurement={measurement} />
+                      {measurement.type === 'lighting' ? (
+                          <LightingGridEditor measurement={measurement} />
+                      ) : (
+                          <MeasurementEditor measurement={measurement} />
+                      )}
                     </div>
                   </CollapsibleContent>
                 </Card>

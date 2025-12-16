@@ -540,8 +540,8 @@ export default function Report() {
 
   const renderNoiseProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
     <div className="space-y-8">
-       {items.map(({ sectorName, measurement }) => (
-         <div key={measurement.id} className="break-inside-avoid mb-12">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`break-inside-avoid mb-12 ${index > 0 ? 'break-before-page' : ''}`}>
             <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL (Res. 295/03)" />
             
             <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
@@ -576,21 +576,21 @@ export default function Report() {
                         <tbody>
                             {measurement.points.map((point, idx) => {
                                 const values = point.values;
-                                const isCompliant = measurement.status === 'compliant'; // Simplify status check
+                                const isCompliant = values.cumple === 'SI';
                                 return (
                                 <tr key={point.id} className="bg-white hover:bg-gray-50 text-center">
                                     <td className="border border-black p-1 font-bold">{point.label.replace('Punto ', '')}</td>
                                     <td className="border border-black p-1">{sectorName}</td>
-                                    <td className="border border-black p-1 text-left pl-2">{point.notes || '-'}</td>
-                                    <td className="border border-black p-1">{measurement.details?.duration || '-'}</td>
-                                    <td className="border border-black p-1">20 min</td>
-                                    <td className="border border-black p-1 capitalize">Continuo</td>
-                                    <td className="border border-black p-1">-</td>
-                                    <td className="border border-black p-1 font-bold bg-gray-50">{point.values.dBA || '-'}</td>
-                                    <td className="border border-black p-1">-</td>
-                                    <td className="border border-black p-1">-</td>
-                                    <td className={`border border-black p-1 font-bold ${isCompliant ? 'text-black' : 'text-black'}`}>
-                                        {isCompliant ? 'SI' : 'NO'}
+                                    <td className="border border-black p-1 text-left pl-2">{values.puesto || point.notes || '-'}</td>
+                                    <td className="border border-black p-1">{values.tiempo_exposicion || '-'}</td>
+                                    <td className="border border-black p-1">{values.tiempo_integracion || '-'}</td>
+                                    <td className="border border-black p-1 capitalize">{values.caracteristicas || '-'}</td>
+                                    <td className="border border-black p-1">{values.nivel_pico_c || '-'}</td>
+                                    <td className="border border-black p-1 font-bold bg-gray-50">{values.nivel_continuo_eq || '-'}</td>
+                                    <td className="border border-black p-1">{values.suma_fracciones || '-'}</td>
+                                    <td className="border border-black p-1">{values.dosis || '-'}</td>
+                                    <td className={`border border-black p-1 font-bold ${isCompliant ? 'text-black' : 'text-red-600'}`}>
+                                        {values.cumple || '-'}
                                     </td>
                                 </tr>
                                 );
@@ -720,8 +720,8 @@ export default function Report() {
 
   const renderThermalLoadProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
     <div className="space-y-8">
-       {items.map(({ sectorName, measurement }) => (
-         <div key={measurement.id} className="break-inside-avoid mb-12">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`break-inside-avoid mb-12 ${index > 0 ? 'break-before-page' : ''}`}>
             <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE CARGA TÉRMICA EN EL AMBIENTE LABORAL" />
             
             <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
@@ -858,13 +858,349 @@ export default function Report() {
     </div>
   );
 
+  const renderGroundingProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`break-inside-avoid mb-12 ${index > 0 ? 'break-before-page' : ''}`}>
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE PUESTA A TIERRA Y CONTINUIDAD DE MASAS (Res. 900/2015)" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
+
+            <MeasurementDataBlock measurement={measurement} />
+
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[10px] border-collapse border border-black">
+                        <thead>
+                            <tr className="bg-gray-100 text-black font-bold uppercase text-center align-middle">
+                                <th className="border border-black p-1">N° Toma</th>
+                                <th className="border border-black p-1">Ubicación</th>
+                                <th className="border border-black p-1">Cond. Terreno</th>
+                                <th className="border border-black p-1">Uso</th>
+                                <th className="border border-black p-1">Esquema</th>
+                                <th className="border border-black p-1">Resistencia (Ω)</th>
+                                <th className="border border-black p-1">Continuidad</th>
+                                <th className="border border-black p-1">Cap. Carga</th>
+                                <th className="border border-black p-1">Protección</th>
+                                <th className="border border-black p-1">Desc. Auto.</th>
+                                <th className="border border-black p-1">Cumple</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {measurement.points.map((point) => {
+                                const v = point.values;
+                                const isCompliant = v.complies_resistance === 'SI';
+                                return (
+                                    <tr key={point.id} className="bg-white hover:bg-gray-50 text-center">
+                                        <td className="border border-black p-1 font-bold">{v.grounding_number || point.label}</td>
+                                        <td className="border border-black p-1 text-left">{v.sector_name || sectorName}</td>
+                                        <td className="border border-black p-1">{v.terrain_condition || '-'}</td>
+                                        <td className="border border-black p-1">{v.usage || '-'}</td>
+                                        <td className="border border-black p-1">{v.scheme || '-'}</td>
+                                        <td className="border border-black p-1 font-bold">{v.resistance || '-'}</td>
+                                        <td className="border border-black p-1">{v.continuity_permanent || '-'}</td>
+                                        <td className="border border-black p-1">{v.capacity_charge || '-'}</td>
+                                        <td className="border border-black p-1">{v.protection_type || '-'}</td>
+                                        <td className="border border-black p-1">{v.automatic_disconnection || '-'}</td>
+                                        <td className={`border border-black p-1 font-bold ${isCompliant ? 'text-black' : 'text-red-600'}`}>
+                                            {v.complies_resistance || '-'}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
+                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
+                <p className="text-xs text-justify leading-relaxed">
+                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
+                </p>
+                {measurement.analysisAndImprovements && (
+                    <>
+                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
+                        <p className="text-xs text-justify leading-relaxed">
+                            {measurement.analysisAndImprovements}
+                        </p>
+                    </>
+                )}
+            </div>
+         </div>
+       ))}
+    </div>
+  );
+
+  const renderVentilationProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`break-inside-avoid mb-12 ${index > 0 ? 'break-before-page' : ''}`}>
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE VENTILACIÓN (Res. 295/03)" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
+
+            <MeasurementDataBlock measurement={measurement} />
+
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[10px] border-collapse border border-black">
+                        <thead>
+                            <tr className="bg-gray-100 text-black font-bold uppercase text-center align-middle">
+                                <th className="border border-black p-1">Punto / Identificación</th>
+                                <th className="border border-black p-1">Tipo</th>
+                                <th className="border border-black p-1">Velocidad (m/s)</th>
+                                <th className="border border-black p-1">Área (m²)</th>
+                                <th className="border border-black p-1">Caudal (m³/h)</th>
+                                <th className="border border-black p-1">Renovaciones/h</th>
+                                <th className="border border-black p-1">Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {measurement.points.map((point) => {
+                                const v = point.values;
+                                return (
+                                    <tr key={point.id} className="bg-white hover:bg-gray-50 text-center">
+                                        <td className="border border-black p-1 font-bold">{v.identification || point.label}</td>
+                                        <td className="border border-black p-1">{v.type || '-'}</td>
+                                        <td className="border border-black p-1">{v.velocity || '-'}</td>
+                                        <td className="border border-black p-1">{v.area || '-'}</td>
+                                        <td className="border border-black p-1 font-bold bg-gray-50">{v.flow || '-'}</td>
+                                        <td className="border border-black p-1 font-bold">{v.renovations || '-'}</td>
+                                        <td className="border border-black p-1 text-left italic">{point.notes || '-'}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
+                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
+                <p className="text-xs text-justify leading-relaxed">
+                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
+                </p>
+                {measurement.analysisAndImprovements && (
+                    <>
+                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
+                        <p className="text-xs text-justify leading-relaxed">
+                            {measurement.analysisAndImprovements}
+                        </p>
+                    </>
+                )}
+            </div>
+         </div>
+       ))}
+    </div>
+  );
+
+  const renderColdStressProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`break-inside-avoid mb-12 ${index > 0 ? 'break-before-page' : ''}`}>
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE ESTRÉS POR FRÍO" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
+
+            <MeasurementDataBlock measurement={measurement} />
+
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[10px] border-collapse border border-black">
+                        <thead>
+                            <tr className="bg-gray-100 text-black font-bold uppercase text-center align-middle">
+                                <th className="border border-black p-1">Punto</th>
+                                <th className="border border-black p-1">Temperatura (°C)</th>
+                                <th className="border border-black p-1">Viento (km/h)</th>
+                                <th className="border border-black p-1">Cumple</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {measurement.points.map((point) => {
+                                const v = point.values;
+                                const isCompliant = measurement.status === 'compliant';
+                                return (
+                                    <tr key={point.id} className="bg-white hover:bg-gray-50 text-center">
+                                        <td className="border border-black p-1 font-bold">{point.label}</td>
+                                        <td className="border border-black p-1">{v.temp || '-'}</td>
+                                        <td className="border border-black p-1">{v.wind || '-'}</td>
+                                        <td className={`border border-black p-1 font-bold ${isCompliant ? 'text-black' : 'text-red-600'}`}>
+                                            {isCompliant ? 'SI' : 'NO'}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
+                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
+                <p className="text-xs text-justify leading-relaxed">
+                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
+                </p>
+                {measurement.analysisAndImprovements && (
+                    <>
+                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
+                        <p className="text-xs text-justify leading-relaxed">
+                            {measurement.analysisAndImprovements}
+                        </p>
+                    </>
+                )}
+            </div>
+         </div>
+       ))}
+    </div>
+  );
+
+  const renderParticulateMatterProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`break-inside-avoid mb-12 ${index > 0 ? 'break-before-page' : ''}`}>
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE MATERIAL PARTICULADO (Res. 295/03)" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
+
+            <MeasurementDataBlock measurement={measurement} />
+
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[10px] border-collapse border border-black">
+                        <thead>
+                            <tr className="bg-gray-100 text-black font-bold uppercase text-center align-middle">
+                                <th className="border border-black p-1">Punto</th>
+                                <th className="border border-black p-1">Tipo</th>
+                                <th className="border border-black p-1">Concentración (mg/m³)</th>
+                                <th className="border border-black p-1">Límite</th>
+                                <th className="border border-black p-1">Cumple</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {measurement.points.map((point) => {
+                                const v = point.values;
+                                const isCompliant = measurement.status === 'compliant';
+                                return (
+                                    <tr key={point.id} className="bg-white hover:bg-gray-50 text-center">
+                                        <td className="border border-black p-1 font-bold">{point.label}</td>
+                                        <td className="border border-black p-1">{v.type || '-'}</td>
+                                        <td className="border border-black p-1 font-bold">{v.concentration || '-'}</td>
+                                        <td className="border border-black p-1">{measurement.config?.limit || '-'}</td>
+                                        <td className={`border border-black p-1 font-bold ${isCompliant ? 'text-black' : 'text-red-600'}`}>
+                                            {isCompliant ? 'SI' : 'NO'}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
+                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
+                <p className="text-xs text-justify leading-relaxed">
+                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
+                </p>
+                {measurement.analysisAndImprovements && (
+                    <>
+                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
+                        <p className="text-xs text-justify leading-relaxed">
+                            {measurement.analysisAndImprovements}
+                        </p>
+                    </>
+                )}
+            </div>
+         </div>
+       ))}
+    </div>
+  );
+
+  const renderChemicalAgentsProtocol = (items: { sectorName: string; measurement: Measurement }[]) => (
+    <div className="space-y-8">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`break-inside-avoid mb-12 ${index > 0 ? 'break-before-page' : ''}`}>
+            <ProtocolHeader title="PROTOCOLO DE MEDICIÓN DE CONTAMINANTES QUÍMICOS (Res. 295/03)" />
+            
+            <div className="mb-2 font-bold text-lg text-primary uppercase border-b border-primary pb-1">
+                Sector: {sectorName}
+            </div>
+
+            <MeasurementDataBlock measurement={measurement} />
+
+            <div className="mt-6">
+                <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Datos de la Medición</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[10px] border-collapse border border-black">
+                        <thead>
+                            <tr className="bg-gray-100 text-black font-bold uppercase text-center align-middle">
+                                <th className="border border-black p-1">Punto</th>
+                                <th className="border border-black p-1">Sustancia</th>
+                                <th className="border border-black p-1">Concentración</th>
+                                <th className="border border-black p-1">Límite (CMP)</th>
+                                <th className="border border-black p-1">Cumple</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {measurement.points.map((point) => {
+                                const v = point.values;
+                                const isCompliant = measurement.status === 'compliant';
+                                return (
+                                    <tr key={point.id} className="bg-white hover:bg-gray-50 text-center">
+                                        <td className="border border-black p-1 font-bold">{point.label}</td>
+                                        <td className="border border-black p-1">{v.substance || '-'}</td>
+                                        <td className="border border-black p-1 font-bold">{v.concentration || '-'}</td>
+                                        <td className="border border-black p-1">{measurement.config?.limit || '-'}</td>
+                                        <td className={`border border-black p-1 font-bold ${isCompliant ? 'text-black' : 'text-red-600'}`}>
+                                            {isCompliant ? 'SI' : 'NO'}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div className="mt-6 border border-black p-4 bg-gray-50 break-inside-avoid">
+                <h4 className="font-bold text-sm uppercase mb-2 underline">Conclusión:</h4>
+                <p className="text-xs text-justify leading-relaxed">
+                    {measurement.specificConclusions || "Sin conclusión específica registrada."}
+                </p>
+                {measurement.analysisAndImprovements && (
+                    <>
+                        <h4 className="font-bold text-sm uppercase mt-4 mb-2 underline">Recomendaciones:</h4>
+                        <p className="text-xs text-justify leading-relaxed">
+                            {measurement.analysisAndImprovements}
+                        </p>
+                    </>
+                )}
+            </div>
+         </div>
+       ))}
+    </div>
+  );
+
   const renderGenericProtocol = (type: MeasurementType, items: { sectorName: string; measurement: Measurement }[]) => (
      <div className="space-y-6">
        <div className="bg-gray-100 p-2 border-y-2 border-primary/20 font-bold text-center text-sm uppercase tracking-wider mb-4">
           Protocolo de {MEASUREMENT_LABELS[type]}
        </div>
-       {items.map(({ sectorName, measurement }) => (
-         <div key={measurement.id} className="mb-6 break-inside-avoid border border-gray-200 rounded-lg overflow-hidden">
+       {items.map(({ sectorName, measurement }, index) => (
+         <div key={measurement.id} className={`mb-6 break-inside-avoid border border-gray-200 rounded-lg overflow-hidden ${index > 0 ? 'break-before-page' : ''}`}>
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
               <span className="font-bold text-sm">{sectorName}</span>
               <span className={`text-xs font-bold px-2 py-1 rounded border ${
@@ -1131,7 +1467,17 @@ export default function Report() {
                      ? renderNoiseProtocol(items!)
                      : type === 'thermal_load'
                        ? renderThermalLoadProtocol(items!)
-                       : renderGenericProtocol(type as MeasurementType, items!)
+                       : type === 'grounding'
+                         ? renderGroundingProtocol(items!)
+                         : type === 'ventilation'
+                           ? renderVentilationProtocol(items!)
+                           : type === 'cold_stress'
+                             ? renderColdStressProtocol(items!)
+                             : type === 'particulate_matter'
+                               ? renderParticulateMatterProtocol(items!)
+                               : type === 'chemical_agents'
+                                 ? renderChemicalAgentsProtocol(items!)
+                                 : renderGenericProtocol(type as MeasurementType, items!)
                  }
               </section>
             ))

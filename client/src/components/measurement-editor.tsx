@@ -30,6 +30,7 @@ const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; o
     { key: 'tbs', label: 'TBS (°C)', type: 'number' },
     { key: 'tbh', label: 'TBH (°C)', type: 'number' },
     { key: 'tg', label: 'TG (°C)', type: 'number' },
+    { key: 'tgbh', label: 'TGBH (°C)', type: 'number' },
     { key: 'mb', label: 'MB (W)', type: 'number' },
     { key: 'mi', label: 'MI (W)', type: 'number' },
     { key: 'mii', label: 'MII (W)', type: 'number' },
@@ -72,7 +73,7 @@ const FIELD_CONFIG: Record<string, { key: string; label: string; type: string; o
 
 import { DebouncedInput } from "@/components/ui/debounced-input";
 
-function LightingGridEditor({ measurement }: { measurement: Measurement }) {
+export function LightingGridEditor({ measurement }: { measurement: Measurement }) {
   const updateMeasurement = useStore((state) => state.updateMeasurement);
   const updatePoint = useStore((state) => state.updatePoint);
   const addPoint = useStore((state) => state.addPoint);
@@ -341,36 +342,60 @@ function LightingGridEditor({ measurement }: { measurement: Measurement }) {
                     </div>
                 </div>
 
-                {/* The Grid */}
-                <div className="flex-1 bg-gray-100/50 rounded border p-4 overflow-y-auto max-h-[300px]">
-                   <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-9 gap-2">
-                     {points.map((point, index) => (
-                       <div key={point.id} className="relative group">
-                         <DebouncedInput 
-                            id={`lux-input-${index}`}
-                            type="number"
-                            className="h-9 text-center font-mono text-sm bg-white border-gray-200 focus:border-blue-500 transition-colors px-1"
-                            placeholder="-"
-                            value={point.values.lux || ''}
-                            onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, lux: val } })}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    const nextInput = document.getElementById(`lux-input-${index + 1}`);
-                                    if (nextInput) {
-                                        nextInput.focus();
-                                        // Optional: Select content of next input if needed
-                                        // (nextInput as HTMLInputElement).select(); 
-                                    }
-                                }
-                            }}
-                         />
-                         <span className="absolute -top-2 -left-1 text-[9px] font-bold text-gray-400 bg-white px-1 border rounded shadow-sm z-10 pointer-events-none">
-                            {index + 1}
-                         </span>
-                       </div>
-                     ))}
-                   </div>
+                {/* The Grid - IMPROVED: Row-based Input */}
+                <div className="flex-1 bg-gray-100/50 rounded border p-4 overflow-y-auto max-h-[400px]">
+                  <div className="space-y-4">
+                     {/* Rows Container */}
+                     <div className="space-y-2">
+                        {Array.from({ length: Math.ceil(points.length / 5) }).map((_, rowIndex) => (
+                           <div key={rowIndex} className="flex gap-2">
+                              {/* Row Index Indicator (Optional) */}
+                              <div className="flex items-center justify-center w-6 text-xs text-gray-400 font-mono">
+                                 R{rowIndex + 1}
+                              </div>
+                              
+                              {/* Points in this row (Chunk of 5) */}
+                              {points.slice(rowIndex * 5, (rowIndex + 1) * 5).map((point, colIndex) => {
+                                 const absoluteIndex = rowIndex * 5 + colIndex;
+                                 return (
+                                    <div key={point.id} className="relative group flex-1">
+                                      <DebouncedInput 
+                                         id={`lux-input-${absoluteIndex}`}
+                                         type="number"
+                                         className="h-9 text-center font-mono text-sm bg-white border-gray-200 focus:border-blue-500 transition-colors px-1 w-full"
+                                         placeholder="-"
+                                         value={point.values.lux || ''}
+                                         onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, lux: val } })}
+                                         onKeyDown={(e) => {
+                                             if (e.key === 'Enter') {
+                                                 e.preventDefault();
+                                                 const nextInput = document.getElementById(`lux-input-${absoluteIndex + 1}`);
+                                                 if (nextInput) {
+                                                     nextInput.focus();
+                                                 } else {
+                                                     // If last input, maybe add a new row? 
+                                                     // For now just blur or stay
+                                                 }
+                                             }
+                                         }}
+                                      />
+                                      <span className="absolute -top-2 -left-1 text-[9px] font-bold text-gray-400 bg-white px-1 border rounded shadow-sm z-10 pointer-events-none">
+                                         {absoluteIndex + 1}
+                                      </span>
+                                    </div>
+                                 );
+                              })}
+                           </div>
+                        ))}
+                     </div>
+                     
+                     {/* Quick Actions */}
+                     <div className="flex gap-2 justify-end pt-2">
+                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleGridResize(gridSize + 5)}>
+                            <Plus className="h-3 w-3 mr-1" /> Agregar Fila
+                         </Button>
+                     </div>
+                  </div>
                 </div>
 
                 {/* Footer: Observations */}
@@ -535,7 +560,31 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
             <Plus className="mr-2 h-4 w-4" /> Agregar Punto
           </Button>
           
-          <div className="w-full md:w-1/2 space-y-2">
+          <div className="w-full md:w-1/2 space-y-4">
+             {/* Configuration Fields for specific types */}
+             {(measurement.type === 'particulate_matter' || measurement.type === 'chemical_agents' || measurement.type === 'thermal_load') && (
+               <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground block">Límite Legal / CMP</Label>
+                    <DebouncedInput 
+                      className="h-8 text-sm bg-white" 
+                      placeholder={measurement.type === 'thermal_load' ? "Ej. 29.5" : "Ej. 10"}
+                      value={measurement.config?.limit || ''}
+                      onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, limit: val as number } })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground block">Metodología / Ref</Label>
+                    <DebouncedInput 
+                      className="h-8 text-sm bg-white" 
+                      placeholder="Ej. NIOSH 0500 / Res. 295/03"
+                      value={measurement.config?.method || ''}
+                      onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, method: val as string } })}
+                    />
+                  </div>
+               </div>
+             )}
+
              <div className="space-y-1">
                <Label className="text-xs text-muted-foreground block">Observaciones Generales</Label>
                <Textarea 
