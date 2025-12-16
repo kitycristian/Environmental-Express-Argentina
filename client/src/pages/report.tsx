@@ -11,12 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Report() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
   const sectors = useStore((state) => state.sectors);
   const { toast } = useToast();
+  
+  // State for filtering
+  const [selectedType, setSelectedType] = useState<MeasurementType | 'all'>('all');
 
   const handlePrint = () => {
     window.print();
@@ -991,8 +995,25 @@ export default function Report() {
           <ReportConfigDialog />
         </div>
         <div className="flex gap-2">
+          <Select 
+            value={selectedType} 
+            onValueChange={(val) => setSelectedType(val as MeasurementType | 'all')}
+          >
+            <SelectTrigger className="w-[200px] h-9">
+               <SelectValue placeholder="Filtrar por tipo" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">Ver Todos</SelectItem>
+                {Object.keys(measurementsByType).map((type) => (
+                    <SelectItem key={type} value={type}>
+                        {MEASUREMENT_LABELS[type as MeasurementType]}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+
           <Button variant="secondary" onClick={generateAIContent} className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200">
-            <Sparkles className="mr-2 h-4 w-4" /> Analizar y Generar Conclusiones
+            <Sparkles className="mr-2 h-4 w-4" /> Analizar
           </Button>
           <Button variant="outline" onClick={() => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ establishment, sectors }, null, 2));
@@ -1100,7 +1121,9 @@ export default function Report() {
           {Object.keys(measurementsByType).length === 0 ? (
             <p className="text-center italic text-gray-500 py-12">No hay datos registrados para generar el informe.</p>
           ) : (
-            Object.entries(measurementsByType).map(([type, items]) => (
+            Object.entries(measurementsByType)
+              .filter(([type]) => selectedType === 'all' || type === selectedType)
+              .map(([type, items]) => (
               <section key={type} className="break-before-page">
                  {type === 'lighting' 
                    ? renderLightingProtocol(items!) 
