@@ -123,16 +123,48 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
+  const topSpacerRef = useRef<HTMLDivElement>(null);
+
+  // Sync scroll widths precisely
+  useEffect(() => {
+      const syncWidth = () => {
+          if (tableContainerRef.current && topSpacerRef.current) {
+              // Get the real scroll width from the table container
+              const realScrollWidth = tableContainerRef.current.scrollWidth;
+              // Force top spacer to match exactly
+              topSpacerRef.current.style.width = `${realScrollWidth}px`;
+          }
+      };
+
+      // Initial sync
+      syncWidth();
+      
+      // Sync on resize
+      window.addEventListener('resize', syncWidth);
+      
+      // Sync after a short delay to allow layout to settle
+      const timer = setTimeout(syncWidth, 100);
+
+      return () => {
+          window.removeEventListener('resize', syncWidth);
+          clearTimeout(timer);
+      };
+  }, [visiblePoints, sectors.length]); // Re-sync when structure changes
 
   const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (topScrollRef.current && topScrollRef.current.scrollLeft !== e.currentTarget.scrollLeft) {
-        topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    if (topScrollRef.current) {
+        // Only update if difference is significant to avoid loops/jitter
+        if (Math.abs(topScrollRef.current.scrollLeft - e.currentTarget.scrollLeft) > 1) {
+            topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }
     }
   };
 
   const handleTopScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (tableContainerRef.current && tableContainerRef.current.scrollLeft !== e.currentTarget.scrollLeft) {
-        tableContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    if (tableContainerRef.current) {
+         if (Math.abs(tableContainerRef.current.scrollLeft - e.currentTarget.scrollLeft) > 1) {
+            tableContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }
     }
   };
 
@@ -175,9 +207,9 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         <div 
             ref={topScrollRef}
             onScroll={handleTopScroll}
-            className="overflow-x-auto border-x border-t rounded-t-lg bg-gray-50 h-5 custom-scrollbar"
+            className="overflow-x-auto border-x border-t rounded-t-lg bg-gray-50 h-6 custom-scrollbar"
         >
-            <div style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
+            <div ref={topSpacerRef} style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
         </div>
 
         <div 
