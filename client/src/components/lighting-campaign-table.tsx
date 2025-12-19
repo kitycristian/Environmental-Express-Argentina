@@ -79,53 +79,56 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
       </div>
 
       <div className="border rounded-lg shadow-sm bg-white overflow-x-auto">
-        <Table className="min-w-[1500px]"> {/* Ensure generic width for horizontal scroll */}
-          <TableHeader className="bg-gray-50">
-            <TableRow className="h-20"> {/* Taller header for grouped columns */}
-              <TableHead className="w-[50px] text-center font-bold border-r">#</TableHead>
-              <TableHead className="w-[200px] font-bold border-r">Sector / Subsector</TableHead>
+        <Table className="min-w-[1600px] border-collapse"> {/* Increased min-width to accommodate fixed cols */}
+          <TableHeader className="bg-gray-50 border-b-2 border-gray-200">
+            <TableRow className="h-20"> 
+              {/* Index */}
+              <TableHead className="w-[50px] text-center font-bold border-r bg-gray-100 text-gray-700">#</TableHead>
               
-              {/* Dimensiones */}
-              <TableHead className="p-0 border-r text-center bg-blue-50/50">
-                  <div className="border-b py-1 text-xs font-semibold text-blue-700">Dimensiones</div>
-                  <div className="grid grid-cols-3 h-full">
-                      <div className="px-2 py-2 text-xs border-r flex items-center justify-center">Ancho</div>
-                      <div className="px-2 py-2 text-xs border-r flex items-center justify-center">Largo</div>
-                      <div className="px-2 py-2 text-xs flex items-center justify-center">Alto</div>
+              {/* Sector Name */}
+              <TableHead className="w-[250px] font-bold border-r bg-gray-50 text-gray-700 px-4 text-left">Sector / Subsector</TableHead>
+              
+              {/* Dimensiones - 3 cols of 60px = 180px */}
+              <TableHead className="p-0 border-r text-center bg-blue-50/50 w-[180px]">
+                  <div className="border-b py-2 text-xs font-bold text-blue-800 uppercase tracking-wider bg-blue-100/50">Dimensiones</div>
+                  <div className="flex h-10 w-full">
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-blue-700 border-r border-blue-100">ANCHO</div>
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-blue-700 border-r border-blue-100">LARGO</div>
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-blue-700">ALTO</div>
                   </div>
               </TableHead>
               
-              {/* Cálculos */}
-              <TableHead className="p-0 border-r text-center bg-orange-50/50">
-                  <div className="border-b py-1 text-xs font-semibold text-orange-700">Cálculos</div>
-                  <div className="grid grid-cols-3 h-full">
-                      <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-12">Indice K</div>
-                      <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-12">Ptos Min</div>
-                      <div className="px-1 py-2 text-[10px] flex items-center justify-center w-12">Ptos</div>
+              {/* Cálculos - 3 cols of 60px = 180px */}
+              <TableHead className="p-0 border-r text-center bg-orange-50/50 w-[180px]">
+                  <div className="border-b py-2 text-xs font-bold text-orange-800 uppercase tracking-wider bg-orange-100/50">Cálculos</div>
+                  <div className="flex h-10 w-full">
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 border-r border-orange-100 leading-3">INDICE<br/>K</div>
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 border-r border-orange-100 leading-3">PTOS<br/>MIN</div>
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 leading-3">PTOS<br/>ACT</div>
                   </div>
               </TableHead>
 
-              {/* Puntos de Medición - 1 to 15 */}
-              <TableHead className="p-0 border-r text-center bg-yellow-50/50">
-                  <div className="border-b py-1 text-xs font-semibold text-yellow-700">Iluminancia por Punto (LUX)</div>
-                  <div className="flex h-full">
+              {/* Puntos de Medición - 15 cols of 40px = 600px */}
+              <TableHead className="p-0 border-r text-center bg-yellow-50/50 w-[600px]">
+                  <div className="border-b py-2 text-xs font-bold text-yellow-800 uppercase tracking-wider bg-yellow-100/50">Iluminancia por Punto (LUX)</div>
+                  <div className="flex h-10 w-full">
                       {Array.from({ length: 15 }).map((_, i) => (
-                          <div key={i} className="w-12 border-r last:border-r-0 flex items-center justify-center text-[10px] text-gray-500 font-mono">
+                          <div key={i} className="flex-1 border-r border-yellow-100 last:border-r-0 flex items-center justify-center text-[10px] text-yellow-700 font-mono font-bold">
                               {i + 1}
                           </div>
                       ))}
                   </div>
               </TableHead>
 
-              {/* Resultados */}
-              <TableHead className="p-0 text-center bg-green-50/50">
-                  <div className="border-b py-1 text-xs font-semibold text-green-700">Resultados</div>
-                  <div className="flex h-full">
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[80px]">E min ≥ Em/2</div>
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[80px]">E media</div>
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[80px]">Límite</div>
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[100px]">Cumple Uniform.</div>
-                       <div className="px-1 py-2 text-[10px] flex items-center justify-center w-[100px]">Cumple Límite</div>
+              {/* Resultados - 5 cols of 80px = 400px */}
+              <TableHead className="p-0 text-center bg-green-50/50 w-[400px]">
+                  <div className="border-b py-2 text-xs font-bold text-green-800 uppercase tracking-wider bg-green-100/50">Resultados</div>
+                  <div className="flex h-10 w-full">
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3 px-1">E min<br/>≥ Em/2</div>
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">E<br/>MEDIA</div>
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">LIMITE<br/>LEGAL</div>
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">CUMPLE<br/>UNIF.</div>
+                       <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">CUMPLE<br/>LIMITE</div>
                   </div>
               </TableHead>
             </TableRow>
@@ -163,110 +166,106 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
               const limitCheck = limit > 0 ? eAvg >= limit : true;
 
               return (
-                <TableRow key={sector.id} className="hover:bg-muted/30">
+                <TableRow key={sector.id} className="hover:bg-blue-50/30 transition-colors border-b border-gray-100">
                   {/* Index */}
-                  <TableCell className="text-center font-medium text-xs border-r bg-gray-50/30">
+                  <TableCell className="text-center font-bold text-xs border-r bg-gray-50/50 text-gray-500 w-[50px]">
                     {rowIndex + 1}
                   </TableCell>
                   
                   {/* Sector Name */}
-                  <TableCell className="border-r p-1 align-top">
+                  <TableCell className="border-r p-1 align-top w-[250px]">
                      <DebouncedInput
                         id={`input-${rowIndex}-0-name`}
-                        className="h-full min-h-[40px] text-xs border-transparent hover:border-input focus:border-primary px-2" 
+                        className="h-10 min-h-[40px] text-sm font-medium border-transparent hover:border-input focus:border-primary px-3 bg-transparent w-full" 
                         value={sector.name}
+                        placeholder="Nombre del sector..."
                         onDebouncedChange={(val) => updateSector(sector.id, { name: val as string })}
                         onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'name')}
                      />
                   </TableCell>
 
-                  {/* Dimensions */}
-                  <TableCell className="p-0 border-r align-top">
-                     <div className="grid grid-cols-3 h-full">
-                        <div className="border-r h-full p-1">
+                  {/* Dimensions - 3 cols */}
+                  <TableCell className="p-0 border-r align-top w-[180px]">
+                     <div className="flex h-full w-full">
+                        <div className="border-r h-full flex-1">
                             <DebouncedInput
                                 type="number"
-                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0"
+                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
                                 value={width || ''}
-                                placeholder="An"
+                                placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('width', parseFloat(v as string))}
                             />
                         </div>
-                        <div className="border-r h-full p-1">
+                        <div className="border-r h-full flex-1">
                             <DebouncedInput
                                 type="number"
-                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0"
+                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
                                 value={length || ''}
-                                placeholder="L"
+                                placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('length', parseFloat(v as string))}
                             />
                         </div>
-                        <div className="h-full p-1">
+                        <div className="h-full flex-1">
                             <DebouncedInput
                                 type="number"
-                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0"
+                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
                                 value={height || ''}
-                                placeholder="Al"
+                                placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('height', parseFloat(v as string))}
                             />
                         </div>
                      </div>
                   </TableCell>
 
-                  {/* Calculations */}
-                  <TableCell className="p-0 border-r align-top bg-orange-50/10">
-                     <div className="grid grid-cols-3 h-full">
-                        <div className="border-r flex items-center justify-center text-xs text-muted-foreground w-12">
+                  {/* Calculations - 3 cols */}
+                  <TableCell className="p-0 border-r align-top bg-orange-50/5 w-[180px]">
+                     <div className="flex h-full w-full">
+                        <div className="border-r flex-1 flex items-center justify-center text-xs font-mono text-muted-foreground bg-gray-50/50">
                             {roomIndex}
                         </div>
-                        <div className="border-r flex items-center justify-center text-xs text-muted-foreground w-12">
+                        <div className="border-r flex-1 flex items-center justify-center text-xs font-mono text-muted-foreground bg-gray-50/50">
                             {minPoints}
                         </div>
-                        <div className="flex items-center justify-center text-xs font-bold w-12">
+                        <div className="flex-1 flex items-center justify-center text-xs font-bold text-orange-700">
                             {points.length}
                         </div>
                      </div>
                   </TableCell>
 
-                  {/* Points Grid */}
-                  <TableCell className="p-0 border-r align-top bg-yellow-50/10">
-                      <div className="flex h-full">
+                  {/* Points Grid - 15 cols */}
+                  <TableCell className="p-0 border-r align-top bg-yellow-50/5 w-[600px]">
+                      <div className="flex h-full w-full">
                           {Array.from({ length: 15 }).map((_, colIndex) => {
                               const point = points[colIndex];
-                              // If point exists, show input. If not, and previous exists (or is first), allow adding?
-                              // To simplify: if point exists render input.
-                              // If point doesn't exist but is next in line (index === points.length), render placeholder input that creates it.
                               
                               const isEditable = colIndex < points.length;
                               const isNext = colIndex === points.length;
                               
                               return (
-                                  <div key={colIndex} className="w-12 h-full border-r last:border-r-0 flex items-center justify-center p-0.5">
+                                  <div key={colIndex} className="flex-1 h-full border-r border-gray-100 last:border-r-0 flex items-center justify-center p-0">
                                       {isEditable ? (
                                           <DebouncedInput 
                                               id={`input-${rowIndex}-${colIndex}-${colIndex}`}
                                               type="number"
-                                              className="h-8 w-full text-center text-xs p-0 border-transparent hover:border-input focus:bg-white bg-transparent"
+                                              className="h-full w-full text-center text-xs font-mono p-0 border-transparent hover:border-blue-300 focus:border-blue-500 focus:bg-white bg-transparent rounded-none transition-colors"
                                               value={point.values.lux || ''}
                                               onDebouncedChange={(val) => updatePoint(sector.id, measurement.id, point.id, { values: { ...point.values, lux: val } })}
                                               onKeyDown={(e) => {
                                                   if (e.key === 'Backspace' && (!point.values.lux || point.values.lux === '')) {
-                                                      // Optional: Delete point if empty and backspace hit? 
-                                                      // deletePoint(sector.id, measurement.id, point.id);
+                                                      // Optional: behavior on delete
                                                   }
                                               }}
                                           />
                                       ) : isNext ? (
                                           <Input 
-                                              className="h-8 w-full text-center text-xs p-0 border-dashed border-gray-300 opacity-50 focus:opacity-100 hover:opacity-100 bg-transparent"
+                                              className="h-full w-full text-center text-xs p-0 border-none bg-transparent hover:bg-gray-100 cursor-pointer text-gray-300 hover:text-gray-500 transition-colors rounded-none"
                                               placeholder="+"
                                               onFocus={() => {
-                                                  // Automatically add point when focused
                                                   addPoint(sector.id, measurement.id, { values: { lux: '' } });
                                               }}
                                           />
                                       ) : (
-                                          <div className="w-full h-full bg-gray-50/50"></div>
+                                          <div className="w-full h-full bg-gray-50/30"></div>
                                       )}
                                   </div>
                               );
@@ -274,46 +273,46 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                       </div>
                   </TableCell>
 
-                  {/* Results */}
-                  <TableCell className="p-0 align-top bg-green-50/10">
-                       <div className="flex h-full">
+                  {/* Resultados - 5 cols */}
+                  <TableCell className="p-0 align-top bg-green-50/5 w-[400px]">
+                       <div className="flex h-full w-full">
                            {/* E min >= Emed/2 */}
-                           <div className="border-r flex items-center justify-center text-xs w-[80px] px-1">
-                               <div className="flex flex-col items-center">
-                                   <span className="font-mono">{eMin}</span>
-                                   <div className="h-px w-full bg-gray-300 my-0.5"></div>
-                                   <span className="font-mono text-[10px] text-gray-500">{Math.round(eAvg/2)}</span>
+                           <div className="flex-1 border-r flex items-center justify-center text-xs bg-white px-1">
+                               <div className="flex flex-col items-center w-full">
+                                   <span className="font-mono text-xs">{eMin}</span>
+                                   <div className="h-px w-full bg-gray-200 my-0.5"></div>
+                                   <span className="font-mono text-[10px] text-gray-400">{Math.round(eAvg/2)}</span>
                                </div>
                            </div>
                            
                            {/* E Media */}
-                           <div className="border-r flex items-center justify-center font-bold text-xs w-[80px]">
+                           <div className="flex-1 border-r flex items-center justify-center font-bold text-xs bg-white">
                                {eAvg}
                            </div>
 
                            {/* Limit */}
-                           <div className="border-r p-1 w-[80px]">
+                           <div className="flex-1 border-r p-0 bg-white">
                                <DebouncedInput
                                    type="number"
-                                   className="h-full w-full text-center text-xs border-transparent hover:border-input p-0"
+                                   className="h-full w-full text-center text-xs font-bold text-blue-700 border-transparent hover:border-input p-0 bg-transparent focus:bg-white"
                                    value={limit || ''}
-                                   placeholder="Min"
+                                   placeholder="-"
                                    onDebouncedChange={(v) => updateConfig('limit', parseFloat(v as string))}
                                />
                            </div>
 
                            {/* Compliance Uniformity */}
                            <div className={cn(
-                               "border-r flex items-center justify-center font-bold text-xs w-[100px]",
-                               uniformityCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                               "flex-1 border-r flex items-center justify-center font-bold text-xs",
+                               uniformityCheck ? "bg-green-100 text-green-700" : "bg-red-50 text-red-700"
                            )}>
                                {uniformityCheck ? "SI" : "NO"}
                            </div>
 
                            {/* Compliance Limit */}
                            <div className={cn(
-                               "flex items-center justify-center font-bold text-xs w-[100px]",
-                               limitCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                               "flex-1 flex items-center justify-center font-bold text-xs",
+                               limitCheck ? "bg-green-100 text-green-700" : "bg-red-50 text-red-700"
                            )}>
                                {limitCheck ? "SI" : "NO"}
                            </div>
