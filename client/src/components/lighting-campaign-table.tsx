@@ -141,8 +141,6 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
       return parseFloat(k.toFixed(2));
   };
 
-  const [visiblePoints, setVisiblePoints] = useState(15); // Removed duplicate declaration
-
   const handleAddRow = () => {
     addSectorWithMeasurement({
         name: `Nuevo Sector ${sectors.length + 1}`,
