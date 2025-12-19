@@ -120,12 +120,12 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
               {/* Resultados */}
               <TableHead className="p-0 text-center bg-green-50/50">
                   <div className="border-b py-1 text-xs font-semibold text-green-700">Resultados</div>
-                  <div className="grid grid-cols-5 h-full">
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-16">E min ≥ Em/2</div>
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-16">E media</div>
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-16">Límite</div>
-                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-16">Cumple Uniform.</div>
-                       <div className="px-1 py-2 text-[10px] flex items-center justify-center w-16">Cumple Límite</div>
+                  <div className="flex h-full">
+                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[80px]">E min ≥ Em/2</div>
+                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[80px]">E media</div>
+                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[80px]">Límite</div>
+                       <div className="px-1 py-2 text-[10px] border-r flex items-center justify-center w-[100px]">Cumple Uniform.</div>
+                       <div className="px-1 py-2 text-[10px] flex items-center justify-center w-[100px]">Cumple Límite</div>
                   </div>
               </TableHead>
             </TableRow>
@@ -170,22 +170,14 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                   </TableCell>
                   
                   {/* Sector Name */}
-                  <TableCell className="border-r p-1">
+                  <TableCell className="border-r p-1 align-top">
                      <DebouncedInput
                         id={`input-${rowIndex}-0-name`}
-                        className="h-8 text-xs border-transparent hover:border-input focus:border-primary" 
+                        className="h-full min-h-[40px] text-xs border-transparent hover:border-input focus:border-primary px-2" 
                         value={sector.name}
                         onDebouncedChange={(val) => updateSector(sector.id, { name: val as string })}
                         onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'name')}
                      />
-                     <div className="px-2">
-                        <DebouncedInput
-                            className="h-6 text-[10px] text-muted-foreground border-transparent hover:border-input focus:border-primary px-0"
-                            placeholder="Descripción / Actividad..."
-                            value={sector.activity || ''}
-                            onDebouncedChange={(val) => updateSector(sector.id, { activity: val as string })}
-                        />
-                     </div>
                   </TableCell>
 
                   {/* Dimensions */}
@@ -284,9 +276,9 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
                   {/* Results */}
                   <TableCell className="p-0 align-top bg-green-50/10">
-                       <div className="grid grid-cols-5 h-full">
+                       <div className="flex h-full">
                            {/* E min >= Emed/2 */}
-                           <div className="border-r flex items-center justify-center text-xs w-16 px-1">
+                           <div className="border-r flex items-center justify-center text-xs w-[80px] px-1">
                                <div className="flex flex-col items-center">
                                    <span className="font-mono">{eMin}</span>
                                    <div className="h-px w-full bg-gray-300 my-0.5"></div>
@@ -295,12 +287,12 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                            </div>
                            
                            {/* E Media */}
-                           <div className="border-r flex items-center justify-center font-bold text-xs w-16">
+                           <div className="border-r flex items-center justify-center font-bold text-xs w-[80px]">
                                {eAvg}
                            </div>
 
                            {/* Limit */}
-                           <div className="border-r p-1 w-16">
+                           <div className="border-r p-1 w-[80px]">
                                <DebouncedInput
                                    type="number"
                                    className="h-full w-full text-center text-xs border-transparent hover:border-input p-0"
@@ -312,7 +304,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
                            {/* Compliance Uniformity */}
                            <div className={cn(
-                               "border-r flex items-center justify-center font-bold text-xs w-16",
+                               "border-r flex items-center justify-center font-bold text-xs w-[100px]",
                                uniformityCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                            )}>
                                {uniformityCheck ? "SI" : "NO"}
@@ -320,7 +312,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
                            {/* Compliance Limit */}
                            <div className={cn(
-                               "flex items-center justify-center font-bold text-xs w-16",
+                               "flex items-center justify-center font-bold text-xs w-[100px]",
                                limitCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                            )}>
                                {limitCheck ? "SI" : "NO"}
