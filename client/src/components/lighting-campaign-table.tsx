@@ -280,7 +280,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         <div 
             ref={topScrollRef}
             onScroll={handleTopScroll}
-            className="overflow-x-auto border-x border-t rounded-t-lg bg-gray-50 h-6 custom-scrollbar"
+            className="sticky top-0 z-20 overflow-x-auto border-x border-t rounded-t-lg bg-gray-100 h-6 custom-scrollbar shadow-sm"
         >
             <div ref={topSpacerRef} style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
         </div>
