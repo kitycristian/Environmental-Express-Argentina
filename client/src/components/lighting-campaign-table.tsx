@@ -4,7 +4,8 @@ import { useStore } from "@/lib/store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, Calculator, ArrowRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2, Save, Calculator, ArrowRight, Minus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DebouncedInput } from "@/components/ui/debounced-input";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,54 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
   const deletePoint = useStore((state) => state.deletePoint);
   const deleteMeasurement = useStore((state) => state.deleteMeasurement);
   const addSectorWithMeasurement = useStore((state) => state.addSectorWithMeasurement);
+
+  // Selection state
+  const [selectedSectorIds, setSelectedSectorIds] = useState<string[]>([]);
+  const [visiblePoints, setVisiblePoints] = useState(15);
+  
+  // Selection handlers
+  const toggleSelectAll = () => {
+      if (selectedSectorIds.length === sectors.length) {
+          setSelectedSectorIds([]);
+      } else {
+          setSelectedSectorIds(sectors.map(s => s.id));
+      }
+  };
+
+  const toggleSelectSector = (id: string) => {
+      if (selectedSectorIds.includes(id)) {
+          setSelectedSectorIds(selectedSectorIds.filter(sid => sid !== id));
+      } else {
+          setSelectedSectorIds([...selectedSectorIds, id]);
+      }
+  };
+
+  const handleBulkDelete = () => {
+      if (confirm(`¿Está seguro de eliminar ${selectedSectorIds.length} sectores seleccionados?`)) {
+          selectedSectorIds.forEach(sectorId => {
+              const sector = sectors.find(s => s.id === sectorId);
+              if (sector) {
+                  const measurement = sector.measurements.find(m => m.type === type);
+                  if (measurement) {
+                      deleteMeasurement(sectorId, measurement.id);
+                  }
+              }
+          });
+          setSelectedSectorIds([]);
+      }
+  };
+
+  const handleBulkAddPoint = () => {
+      selectedSectorIds.forEach(sectorId => {
+          const sector = sectors.find(s => s.id === sectorId);
+          if (sector) {
+              const measurement = sector.measurements.find(m => m.type === type);
+              if (measurement) {
+                  addPoint(sectorId, measurement.id, { values: { lux: '' } });
+              }
+          }
+      });
+  };
 
   // Focus management for grid navigation
   const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, colIndex: number, field: string) => {
@@ -92,7 +141,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
       return parseFloat(k.toFixed(2));
   };
 
-  const [visiblePoints, setVisiblePoints] = useState(15);
+  const [visiblePoints, setVisiblePoints] = useState(15); // Removed duplicate declaration
 
   const handleAddRow = () => {
     addSectorWithMeasurement({
@@ -168,12 +217,38 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
     }
   };
 
-  const totalTableWidth = 50 + 250 + 180 + 180 + (visiblePoints * 40) + 400 + 50;
+  const totalTableWidth = 40 + 50 + 250 + 180 + 180 + (visiblePoints * 40) + 400 + 50; // Added 40px for checkbox col
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center bg-white p-2 rounded-lg border shadow-sm">
-        <h3 className="font-semibold text-lg px-2">Planilla de Campo - Iluminación</h3>
+        <div className="flex items-center gap-4">
+            <h3 className="font-semibold text-lg px-2">Planilla de Campo - Iluminación</h3>
+            {selectedSectorIds.length > 0 && (
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <div className="h-6 w-px bg-gray-200 mx-2" />
+                    <span className="text-xs font-medium text-muted-foreground">{selectedSectorIds.length} seleccionados</span>
+                    <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs"
+                        onClick={handleBulkDelete}
+                    >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Borrar
+                    </Button>
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                        onClick={handleBulkAddPoint}
+                    >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Punto
+                    </Button>
+                </div>
+            )}
+        </div>
         <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-gray-100 rounded-md p-1 mr-2">
                 <Button 
@@ -220,6 +295,17 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
             <Table className="border-collapse" style={{ minWidth: `${totalTableWidth}px` }}>
             <TableHeader className="bg-gray-50 border-b-2 border-gray-200">
             <TableRow className="h-20"> 
+              {/* Checkbox */}
+              <TableHead className="w-[40px] text-center border-r bg-gray-100 p-0">
+                  <div className="flex items-center justify-center w-full h-full">
+                      <Checkbox 
+                        checked={selectedSectorIds.length === sectors.length && sectors.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                  </div>
+              </TableHead>
+
               {/* Index */}
               <TableHead className="w-[50px] text-center font-bold border-r bg-gray-100 text-gray-700">#</TableHead>
               
@@ -307,7 +393,21 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
               const limitCheck = limit > 0 ? eAvg >= limit : true;
 
               return (
-                <TableRow key={sector.id} className="hover:bg-blue-50/30 transition-colors border-b border-gray-100">
+                <TableRow key={sector.id} className={cn(
+                    "hover:bg-blue-50/30 transition-colors border-b border-gray-100",
+                    selectedSectorIds.includes(sector.id) && "bg-blue-50/40"
+                )}>
+                  {/* Checkbox */}
+                  <TableCell className="text-center border-r bg-gray-50/50 p-0 w-[40px]">
+                      <div className="flex items-center justify-center w-full h-full">
+                          <Checkbox 
+                            checked={selectedSectorIds.includes(sector.id)}
+                            onCheckedChange={() => toggleSelectSector(sector.id)}
+                            aria-label={`Select sector ${sector.name}`}
+                          />
+                      </div>
+                  </TableCell>
+
                   {/* Index */}
                   <TableCell className="text-center font-bold text-xs border-r bg-gray-50/50 text-gray-500 w-[50px]">
                     {rowIndex + 1}
@@ -491,7 +591,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
             
             {sectors.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground"> {/* Increased colSpan */}
                         No hay sectores. Haga click en "Agregar Sector" para comenzar.
                     </TableCell>
                 </TableRow>
