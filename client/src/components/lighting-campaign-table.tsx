@@ -206,6 +206,9 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                        <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">CUMPLE<br/>LIMITE</div>
                   </div>
               </TableHead>
+              
+              {/* Actions */}
+              <TableHead className="w-[50px] text-center font-bold border-r bg-gray-50 text-gray-700"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -401,6 +404,23 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                                {limitCheck ? "SI" : "NO"}
                            </div>
                        </div>
+                  </TableCell>
+
+                  {/* Actions */}
+                  <TableCell className="text-center border-r bg-gray-50/30 p-0 align-middle">
+                      <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                              if (confirm(`¿Está seguro de eliminar el sector "${sector.name}" de esta planilla?`)) {
+                                  deleteMeasurement(sector.id, measurement.id);
+                              }
+                          }}
+                          title="Eliminar Sector"
+                      >
+                          <Trash2 className="h-4 w-4" />
+                      </Button>
                   </TableCell>
                 </TableRow>
               );
