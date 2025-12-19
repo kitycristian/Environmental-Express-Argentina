@@ -123,32 +123,16 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
-  const activeScrollRef = useRef<'top' | 'table' | null>(null);
 
   const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    // Only sync if we are the active driver or no one is (e.g. momentum scroll after mouse leave)
-    // Actually, momentum scroll can be tricky.
-    // If we are strictly 'top', we shouldn't listen to 'table'.
-    // But what if user flicks 'table' and leaves? 'active' might be null or 'table'.
-    // Safe bet: If active is 'top', IGNORE table scroll.
-    if (activeScrollRef.current === 'top') return;
-    
-    if (topScrollRef.current) {
-        // Avoid setting if already close to prevent jitter
-        if (Math.abs(topScrollRef.current.scrollLeft - e.currentTarget.scrollLeft) > 1) {
-            topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
-        }
+    if (topScrollRef.current && topScrollRef.current.scrollLeft !== e.currentTarget.scrollLeft) {
+        topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
     }
   };
 
   const handleTopScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    // If active is 'table', IGNORE top scroll.
-    if (activeScrollRef.current === 'table') return;
-
-    if (tableContainerRef.current) {
-        if (Math.abs(tableContainerRef.current.scrollLeft - e.currentTarget.scrollLeft) > 1) {
-            tableContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
-        }
+    if (tableContainerRef.current && tableContainerRef.current.scrollLeft !== e.currentTarget.scrollLeft) {
+        tableContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
     }
   };
 
@@ -191,8 +175,6 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         <div 
             ref={topScrollRef}
             onScroll={handleTopScroll}
-            onMouseEnter={() => activeScrollRef.current = 'top'}
-            onTouchStart={() => activeScrollRef.current = 'top'}
             className="overflow-x-auto border-x border-t rounded-t-lg bg-gray-50 h-5 custom-scrollbar"
         >
             <div style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
@@ -201,8 +183,6 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         <div 
             ref={tableContainerRef} 
             onScroll={handleTableScroll}
-            onMouseEnter={() => activeScrollRef.current = 'table'}
-            onTouchStart={() => activeScrollRef.current = 'table'}
             className="border rounded-b-lg shadow-sm bg-white overflow-x-auto rounded-t-none pb-2"
         >
             <Table className="border-collapse" style={{ minWidth: `${totalTableWidth}px` }}>
