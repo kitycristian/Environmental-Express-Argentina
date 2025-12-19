@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search, Building2, ListPlus, Settings, Save } from "lucide-react";
 import { MeasurementEditor, LightingGridEditor } from "@/components/measurement-editor";
+import { LightingCampaignTable } from "@/components/lighting-campaign-table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -301,7 +302,9 @@ export default function MeasurementCampaign() {
 
       {/* Content */}
       <div className="space-y-4">
-        {filteredSectors.length === 0 ? (
+        {type === 'lighting' ? (
+             <LightingCampaignTable sectors={filteredSectors} type={type} />
+        ) : filteredSectors.length === 0 ? (
           <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/5">
             <MapPin className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
             <h3 className="font-semibold text-lg">No hay sectores registrados</h3>
