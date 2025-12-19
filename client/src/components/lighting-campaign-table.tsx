@@ -27,23 +27,57 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
   const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, colIndex: number, field: string) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const nextInput = document.getElementById(`input-${rowIndex + 1}-${colIndex}-${field}`);
+      const nextInput = document.getElementById(`input-${rowIndex + 1}-${field}`);
       if (nextInput) nextInput.focus();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      const prevInput = document.getElementById(`input-${rowIndex - 1}-${colIndex}-${field}`);
+      const prevInput = document.getElementById(`input-${rowIndex - 1}-${field}`);
       if (prevInput) prevInput.focus();
     } else if (e.key === 'ArrowRight' && field.startsWith('point-')) {
        // Navigate points horizontally
        const pointIndex = parseInt(field.split('-')[1]);
-       const nextInput = document.getElementById(`input-${rowIndex}-${colIndex}-${pointIndex + 1}`);
+       const nextInput = document.getElementById(`input-${rowIndex}-point-${pointIndex + 1}`);
        // If next point doesn't exist but we are within 15 limit, maybe focus "add point"? 
        // For now, standard navigation
        if (nextInput) nextInput.focus();
     } else if (e.key === 'ArrowLeft' && field.startsWith('point-')) {
        const pointIndex = parseInt(field.split('-')[1]);
-       const prevInput = document.getElementById(`input-${rowIndex}-${colIndex}-${pointIndex - 1}`);
+       const prevInput = document.getElementById(`input-${rowIndex}-point-${pointIndex - 1}`);
        if (prevInput) prevInput.focus();
+    } else if (e.key === 'Enter') {
+       e.preventDefault();
+       
+       if (field === 'name') {
+           // Sector/Subsector: Move down
+           const nextInput = document.getElementById(`input-${rowIndex + 1}-${field}`);
+           if (nextInput) nextInput.focus();
+       } else {
+           // Other items: Move right (next cell)
+           let nextInputId = '';
+           
+           if (field === 'width') nextInputId = `input-${rowIndex}-length`;
+           else if (field === 'length') nextInputId = `input-${rowIndex}-height`;
+           else if (field === 'height') nextInputId = `input-${rowIndex}-point-0`;
+           else if (field.startsWith('point-')) {
+               const pointIndex = parseInt(field.split('-')[1]);
+               // If next point is within 14
+               if (pointIndex < 14) {
+                   nextInputId = `input-${rowIndex}-point-${pointIndex + 1}`;
+               } else {
+                   // Last point -> Go to limit
+                   nextInputId = `input-${rowIndex}-limit`;
+               }
+           }
+           else if (field === 'limit') {
+               // From limit -> Maybe next row Name? Or stay.
+               // User said "celda de al lado siguiente". After limit there is nothing sideways.
+               // Let's go to next row name for continuous entry.
+               nextInputId = `input-${rowIndex + 1}-name`;
+           }
+           
+           const nextInput = document.getElementById(nextInputId);
+           if (nextInput) nextInput.focus();
+       }
     }
   };
 
@@ -175,7 +209,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                   {/* Sector Name */}
                   <TableCell className="border-r p-1 align-top w-[250px]">
                      <DebouncedInput
-                        id={`input-${rowIndex}-0-name`}
+                        id={`input-${rowIndex}-name`}
                         className="h-10 min-h-[40px] text-sm font-medium border-transparent hover:border-input focus:border-primary px-3 bg-transparent w-full" 
                         value={sector.name}
                         placeholder="Nombre del sector..."
@@ -189,29 +223,35 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                      <div className="flex h-full w-full">
                         <div className="border-r h-full flex-1">
                             <DebouncedInput
+                                id={`input-${rowIndex}-width`}
                                 type="number"
                                 className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
                                 value={width || ''}
                                 placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('width', parseFloat(v as string))}
+                                onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'width')}
                             />
                         </div>
                         <div className="border-r h-full flex-1">
                             <DebouncedInput
+                                id={`input-${rowIndex}-length`}
                                 type="number"
                                 className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
                                 value={length || ''}
                                 placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('length', parseFloat(v as string))}
+                                onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'length')}
                             />
                         </div>
                         <div className="h-full flex-1">
                             <DebouncedInput
+                                id={`input-${rowIndex}-height`}
                                 type="number"
                                 className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
                                 value={height || ''}
                                 placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('height', parseFloat(v as string))}
+                                onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'height')}
                             />
                         </div>
                      </div>
@@ -245,12 +285,13 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                                   <div key={colIndex} className="flex-1 h-full border-r border-gray-100 last:border-r-0 flex items-center justify-center p-0">
                                       {isEditable ? (
                                           <DebouncedInput 
-                                              id={`input-${rowIndex}-${colIndex}-${colIndex}`}
+                                              id={`input-${rowIndex}-point-${colIndex}`}
                                               type="number"
                                               className="h-full w-full text-center text-xs font-mono p-0 border-transparent hover:border-blue-300 focus:border-blue-500 focus:bg-white bg-transparent rounded-none transition-colors"
                                               value={point.values.lux || ''}
                                               onDebouncedChange={(val) => updatePoint(sector.id, measurement.id, point.id, { values: { ...point.values, lux: val } })}
                                               onKeyDown={(e) => {
+                                                  handleKeyDown(e, rowIndex, colIndex, `point-${colIndex}`);
                                                   if (e.key === 'Backspace' && (!point.values.lux || point.values.lux === '')) {
                                                       // Optional: behavior on delete
                                                   }
@@ -293,11 +334,13 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                            {/* Limit */}
                            <div className="flex-1 border-r p-0 bg-white">
                                <DebouncedInput
+                                   id={`input-${rowIndex}-limit`}
                                    type="number"
                                    className="h-full w-full text-center text-xs font-bold text-blue-700 border-transparent hover:border-input p-0 bg-transparent focus:bg-white"
                                    value={limit || ''}
                                    placeholder="-"
                                    onDebouncedChange={(v) => updateConfig('limit', parseFloat(v as string))}
+                                   onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'limit')}
                                />
                            </div>
 
