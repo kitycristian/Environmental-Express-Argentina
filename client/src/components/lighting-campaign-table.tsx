@@ -477,6 +477,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
           </TableBody>
         </Table>
       </div>
+      </div>
       
       {/* Help / Legend */}
       <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded border">
