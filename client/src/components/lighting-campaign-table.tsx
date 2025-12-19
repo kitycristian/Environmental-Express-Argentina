@@ -123,33 +123,32 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
+  const isSyncingLeft = useRef(false);
+  const isSyncingRight = useRef(false);
 
-  useEffect(() => {
-    const tableContainer = tableContainerRef.current;
-    const topScroll = topScrollRef.current;
+  const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncingLeft.current) {
+        isSyncingLeft.current = false;
+        return;
+    }
+    
+    if (topScrollRef.current) {
+        isSyncingRight.current = true;
+        topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
 
-    if (!tableContainer || !topScroll) return;
+  const handleTopScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (isSyncingRight.current) {
+        isSyncingRight.current = false;
+        return;
+    }
 
-    const handleTableScroll = () => {
-        if (topScroll && tableContainer) {
-            topScroll.scrollLeft = tableContainer.scrollLeft;
-        }
-    };
-
-    const handleTopScroll = () => {
-        if (tableContainer && topScroll) {
-            tableContainer.scrollLeft = topScroll.scrollLeft;
-        }
-    };
-
-    tableContainer.addEventListener('scroll', handleTableScroll);
-    topScroll.addEventListener('scroll', handleTopScroll);
-
-    return () => {
-        tableContainer.removeEventListener('scroll', handleTableScroll);
-        topScroll.removeEventListener('scroll', handleTopScroll);
-    };
-  }, []);
+    if (tableContainerRef.current) {
+        isSyncingLeft.current = true;
+        tableContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
 
   const totalTableWidth = 50 + 250 + 180 + 180 + (visiblePoints * 40) + 400 + 50;
 
@@ -189,12 +188,17 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         {/* Top Scrollbar */}
         <div 
             ref={topScrollRef}
+            onScroll={handleTopScroll}
             className="overflow-x-auto border-x border-t rounded-t-lg bg-gray-50 h-4"
         >
             <div style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
         </div>
 
-        <div ref={tableContainerRef} className="border rounded-b-lg shadow-sm bg-white overflow-x-auto rounded-t-none">
+        <div 
+            ref={tableContainerRef} 
+            onScroll={handleTableScroll}
+            className="border rounded-b-lg shadow-sm bg-white overflow-x-auto rounded-t-none"
+        >
             <Table className="border-collapse" style={{ minWidth: `${totalTableWidth}px` }}>
             <TableHeader className="bg-gray-50 border-b-2 border-gray-200">
             <TableRow className="h-20"> 
