@@ -254,8 +254,15 @@ export default function MeasurementCampaign() {
                                     {selectedRubroSectors.length} seleccionados
                                 </div>
                                 <div className="space-x-2">
-                                    <Button variant="outline" size="sm" onClick={() => setSelectedRubroSectors(getRubroSectors(selectedRubro))}>
-                                        Todos
+                                    <Button variant="outline" size="sm" onClick={() => {
+                                        const allSectors = getRubroSectors(selectedRubro);
+                                        if (selectedRubroSectors.length === allSectors.length) {
+                                            setSelectedRubroSectors([]);
+                                        } else {
+                                            setSelectedRubroSectors(allSectors);
+                                        }
+                                    }}>
+                                        {selectedRubroSectors.length === getRubroSectors(selectedRubro).length ? 'Ninguno' : 'Todos'}
                                     </Button>
                                     <Button onClick={handleCreateRubroSectors} disabled={selectedRubroSectors.length === 0}>
                                         Importar

@@ -60,8 +60,8 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
            else if (field === 'height') nextInputId = `input-${rowIndex}-point-0`;
            else if (field.startsWith('point-')) {
                const pointIndex = parseInt(field.split('-')[1]);
-               // If next point is within 14
-               if (pointIndex < 14) {
+               // If next point is within visible limit
+               if (pointIndex < visiblePoints - 1) {
                    nextInputId = `input-${rowIndex}-point-${pointIndex + 1}`;
                } else {
                    // Last point -> Go to limit
@@ -92,6 +92,8 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
       return parseFloat(k.toFixed(2));
   };
 
+  const [visiblePoints, setVisiblePoints] = useState(15);
+
   const handleAddRow = () => {
     addSectorWithMeasurement({
         name: `Nuevo Sector ${sectors.length + 1}`,
@@ -101,15 +103,54 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         workersCount: 0
     }, type);
   };
+  
+  // Ensure measurements have at least 9 points on load
+  useEffect(() => {
+    sectors.forEach(sector => {
+      const measurement = sector.measurements.find(m => m.type === type);
+      if (measurement && measurement.points.length < 9) {
+          // We can't batch updates easily here without loop, but we can check individually
+          // Actually, best to do this lazily or let the render handle adding them?
+          // Store doesn't support batch addPoint.
+          // Let's do a quick loop if needed.
+          const needed = 9 - measurement.points.length;
+          for(let i=0; i<needed; i++) {
+              addPoint(sector.id, measurement.id, { values: { lux: '' } });
+          }
+      }
+    });
+  }, [sectors, type, addPoint]);
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center bg-white p-2 rounded-lg border shadow-sm">
         <h3 className="font-semibold text-lg px-2">Planilla de Campo - Iluminación</h3>
-        <Button onClick={handleAddRow} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar Sector (Fila)
-        </Button>
+        <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-gray-100 rounded-md p-1 mr-2">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6" 
+                    onClick={() => setVisiblePoints(Math.max(9, visiblePoints - 3))}
+                    disabled={visiblePoints <= 9}
+                >
+                    <span className="text-xs">-</span>
+                </Button>
+                <span className="text-xs font-mono w-12 text-center">{visiblePoints} Ptos</span>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6" 
+                    onClick={() => setVisiblePoints(visiblePoints + 3)}
+                >
+                    <span className="text-xs">+</span>
+                </Button>
+            </div>
+            <Button onClick={handleAddRow} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Sector (Fila)
+            </Button>
+        </div>
       </div>
 
       <div className="border rounded-lg shadow-sm bg-white overflow-x-auto">
@@ -142,11 +183,11 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                   </div>
               </TableHead>
 
-              {/* Puntos de Medición - 15 cols of 40px = 600px */}
-              <TableHead className="p-0 border-r text-center bg-yellow-50/50 w-[600px]">
+              {/* Puntos de Medición - Dynamic cols */}
+              <TableHead className="p-0 border-r text-center bg-yellow-50/50" style={{ width: `${visiblePoints * 40}px` }}>
                   <div className="border-b py-2 text-xs font-bold text-yellow-800 uppercase tracking-wider bg-yellow-100/50">Iluminancia por Punto (LUX)</div>
                   <div className="flex h-10 w-full">
-                      {Array.from({ length: 15 }).map((_, i) => (
+                      {Array.from({ length: visiblePoints }).map((_, i) => (
                           <div key={i} className="flex-1 border-r border-yellow-100 last:border-r-0 flex items-center justify-center text-[10px] text-yellow-700 font-mono font-bold">
                               {i + 1}
                           </div>
@@ -272,14 +313,14 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                      </div>
                   </TableCell>
 
-                  {/* Points Grid - 15 cols */}
-                  <TableCell className="p-0 border-r align-top bg-yellow-50/5 w-[600px]">
+                  {/* Points Grid - Dynamic cols */}
+                  <TableCell className="p-0 border-r align-top bg-yellow-50/5" style={{ width: `${visiblePoints * 40}px` }}>
                       <div className="flex h-full w-full">
-                          {Array.from({ length: 15 }).map((_, colIndex) => {
+                          {Array.from({ length: visiblePoints }).map((_, colIndex) => {
                               const point = points[colIndex];
                               
-                              const isEditable = colIndex < points.length;
-                              const isNext = colIndex === points.length;
+                              const isEditable = point !== undefined; // If point exists, it's editable
+                              const isNext = colIndex === points.length; // Next available slot to add
                               
                               return (
                                   <div key={colIndex} className="flex-1 h-full border-r border-gray-100 last:border-r-0 flex items-center justify-center p-0">
