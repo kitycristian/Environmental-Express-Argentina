@@ -121,6 +121,38 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
     });
   }, [sectors, type, addPoint]);
 
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const tableContainer = tableContainerRef.current;
+    const topScroll = topScrollRef.current;
+
+    if (!tableContainer || !topScroll) return;
+
+    const handleTableScroll = () => {
+        if (topScroll && tableContainer) {
+            topScroll.scrollLeft = tableContainer.scrollLeft;
+        }
+    };
+
+    const handleTopScroll = () => {
+        if (tableContainer && topScroll) {
+            tableContainer.scrollLeft = topScroll.scrollLeft;
+        }
+    };
+
+    tableContainer.addEventListener('scroll', handleTableScroll);
+    topScroll.addEventListener('scroll', handleTopScroll);
+
+    return () => {
+        tableContainer.removeEventListener('scroll', handleTableScroll);
+        topScroll.removeEventListener('scroll', handleTopScroll);
+    };
+  }, []);
+
+  const totalTableWidth = 50 + 250 + 180 + 180 + (visiblePoints * 40) + 400 + 50;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center bg-white p-2 rounded-lg border shadow-sm">
@@ -153,9 +185,18 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         </div>
       </div>
 
-      <div className="border rounded-lg shadow-sm bg-white overflow-x-auto">
-        <Table className="min-w-[1600px] border-collapse"> {/* Increased min-width to accommodate fixed cols */}
-          <TableHeader className="bg-gray-50 border-b-2 border-gray-200">
+      <div className="space-y-0">
+        {/* Top Scrollbar */}
+        <div 
+            ref={topScrollRef}
+            className="overflow-x-auto border-x border-t rounded-t-lg bg-gray-50 h-4"
+        >
+            <div style={{ width: `${totalTableWidth}px`, height: '1px' }}></div>
+        </div>
+
+        <div ref={tableContainerRef} className="border rounded-b-lg shadow-sm bg-white overflow-x-auto rounded-t-none">
+            <Table className="border-collapse" style={{ minWidth: `${totalTableWidth}px` }}>
+            <TableHeader className="bg-gray-50 border-b-2 border-gray-200">
             <TableRow className="h-20"> 
               {/* Index */}
               <TableHead className="w-[50px] text-center font-bold border-r bg-gray-100 text-gray-700">#</TableHead>
