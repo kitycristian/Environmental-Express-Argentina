@@ -304,7 +304,11 @@ export default function Dashboard() {
                         )}
                         onClick={(e) => {
                             e.stopPropagation(); // Prevent card click
-                            setActiveMeasurementType(type);
+                            if (type === 'lighting') {
+                                setLocation(`/campaign/${type}`);
+                            } else {
+                                setActiveMeasurementType(type);
+                            }
                         }}
                     >
                         {isActive ? "Carga Rápida" : "Comenzar"} 
