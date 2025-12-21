@@ -14,6 +14,7 @@ import { useEffect } from "react";
 
 import ClientsPage from "@/pages/clients";
 import ReportsList from "@/pages/reports-list";
+import BudgetGenerator from "@/pages/budget-generator";
 
 import InstrumentsPage from "@/pages/instruments";
 
@@ -51,6 +52,7 @@ function Router() {
         <Route path="/clients" component={() => <ProtectedRoute component={ClientsPage} adminOnly />} />
         <Route path="/reports" component={() => <ProtectedRoute component={ReportsList} adminOnly />} />
         <Route path="/instruments" component={() => <ProtectedRoute component={InstrumentsPage} />} />
+        <Route path="/budget-generator" component={() => <ProtectedRoute component={BudgetGenerator} adminOnly />} />
         <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} adminOnly />} />
         <Route path="/campaign/:type" component={() => <ProtectedRoute component={MeasurementCampaign} />} />
         <Route path="/sector/:id" component={() => <ProtectedRoute component={SectorDetail} />} />

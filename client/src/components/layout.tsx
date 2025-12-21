@@ -81,6 +81,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
 
+          <Link href="/budget-generator">
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/budget-generator' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+              <FileText className="h-4 w-4" />
+              Generador Presupuestos
+            </div>
+          </Link>
+
           <Link href="/clients">
             <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/clients' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
               <Users className="h-4 w-4" />
