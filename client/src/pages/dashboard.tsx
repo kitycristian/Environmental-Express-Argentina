@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2, Zap } from "lucide-react";
+import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, CheckCircle2 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
+import { MeasurementModal } from "@/components/measurement-modal";
 
 export default function Dashboard() {
   const establishment = useStore((state) => state.establishment);
@@ -21,27 +22,25 @@ export default function Dashboard() {
   const loadClientToEstablishment = useStore((state) => state.loadClientToEstablishment);
   const saveInspection = useStore((state) => state.saveInspection);
   
-  // Data Generation Actions
-  const addSector = useStore((state) => state.addSector);
-  const addMeasurement = useStore((state) => state.addMeasurement);
-  const updateMeasurement = useStore((state) => state.updateMeasurement);
-  const addPoint = useStore((state) => state.addPoint);
-  const addSectorWithMeasurement = useStore((state) => state.addSectorWithMeasurement);
-
   const [, setLocation] = useLocation();
   const [openClientSelect, setOpenClientSelect] = useState(false);
+  const [activeMeasurementType, setActiveMeasurementType] = useState<MeasurementType | null>(null);
   const { toast } = useToast();
   const user = useAuth((state) => state.user);
 
-  const getMeasurementCount = (type: MeasurementType) => {
-    return sectors.filter(s => s.measurements.some(m => m.type === type)).length;
+  const getMeasurementStats = (type: MeasurementType) => {
+    const measurements = sectors.flatMap(s => s.measurements.filter(m => m.type === type));
+    const count = measurements.length;
+    const completed = measurements.filter(m => m.status === 'compliant' || m.status === 'non_compliant').length;
+    const isFullyComplete = count > 0 && count === completed;
+    return { count, completed, isFullyComplete };
   };
 
   const handleSave = () => {
       saveInspection();
       toast({
         title: "Inspección Guardada",
-        description: "Se ha guardado una copia en el historial local.",
+        description: "Se ha guardado una copia en el historial local (Auto-guardado activo).",
       });
   };
 
@@ -69,20 +68,26 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+      <MeasurementModal 
+        isOpen={!!activeMeasurementType} 
+        onClose={() => setActiveMeasurementType(null)} 
+        type={activeMeasurementType}
+      />
+
       <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Tablero de Inspección</h1>
           <p className="text-muted-foreground">
-            Gestión de relevamientos de higiene y seguridad.
+            Gestión de relevamientos de higiene y seguridad en tiempo real.
           </p>
         </div>
         
         {/* Actions & Client Selector */}
         <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
            <div className="flex gap-2">
-             <Button variant="outline" onClick={handleSave} className="gap-2">
-               <Save className="h-4 w-4" /> Guardar
+             <Button variant="outline" onClick={handleSave} className="gap-2 text-green-700 border-green-200 bg-green-50 hover:bg-green-100">
+               <Save className="h-4 w-4" /> Auto-Guardado
              </Button>
              {user?.role === 'admin' && (
                <Link href="/report">
@@ -186,8 +191,8 @@ export default function Dashboard() {
           </div>
           
           <div className="col-span-full border-t pt-4 mt-2">
-            <div className="flex items-center gap-4">
-                <Label className="text-xs text-muted-foreground">Croquis del Establecimiento (Anexo 1)</Label>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Croquis del Establecimiento (Anexo 1)</Label>
                 {establishment.sketchImage ? (
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-green-600 font-medium flex items-center gap-1">
@@ -203,22 +208,35 @@ export default function Dashboard() {
                         </Button>
                     </div>
                 ) : (
-                    <div className="relative">
-                        <Button variant="outline" size="sm" className="h-7 text-xs gap-2">
-                            <ImageIcon className="h-3 w-3" /> Subir Croquis
+                    <div className="flex gap-2">
+                         <div className="relative">
+                            <Button variant="outline" size="sm" className="h-7 text-xs gap-2">
+                                <ImageIcon className="h-3 w-3" /> Subir Croquis
+                            </Button>
+                            <Input 
+                                type="file" 
+                                accept="image/*" 
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                onChange={(e) => e.target.files?.[0] && handleSketchUpload(e.target.files[0])}
+                            />
+                        </div>
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-2" onClick={() => toast({ title: "Función de dibujo próximamente", description: "El editor de croquis estará disponible en la próxima versión." })}>
+                            <PenTool className="h-3 w-3" /> Dibujar
                         </Button>
-                        <Input 
-                            type="file" 
-                            accept="image/*" 
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            onChange={(e) => e.target.files?.[0] && handleSketchUpload(e.target.files[0])}
-                        />
                     </div>
                 )}
             </div>
             {establishment.sketchImage && (
-                <div className="mt-2 border rounded-md p-2 bg-white w-fit max-w-xs">
+                <div className="mt-2 border rounded-md p-2 bg-white w-fit max-w-xs relative group">
                     <img src={establishment.sketchImage} alt="Croquis" className="max-h-32 object-contain" />
+                    <Button 
+                        size="icon" 
+                        variant="secondary" 
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => toast({ title: "Editar dibujo", description: "Función de anotación próximamente" })}
+                    >
+                        <PenTool className="h-3 w-3" />
+                    </Button>
                 </div>
             )}
           </div>
@@ -228,37 +246,64 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {Object.entries(MEASUREMENT_LABELS).map(([key, label]) => {
            const type = key as MeasurementType;
-           const count = getMeasurementCount(type);
+           const stats = getMeasurementStats(type);
+           const isActive = stats.count > 0;
            
            return (
              <Card 
                key={key} 
-               className="group cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all relative overflow-hidden"
-               onClick={() => setLocation(`/campaign/${type}`)}
+               className={cn(
+                 "group cursor-pointer transition-all relative overflow-hidden",
+                 isActive ? "border-green-500 shadow-md bg-green-50/10" : "hover:border-primary/50 hover:shadow-lg"
+               )}
+               onClick={() => setActiveMeasurementType(type)}
              >
                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                  {getIcon(type)}
                </div>
+               
+               {isActive && (
+                 <div className="absolute top-2 right-2 text-green-600 animate-in zoom-in duration-300">
+                    <CheckCircle2 className="h-5 w-5 fill-green-100" />
+                 </div>
+               )}
+
                <CardHeader className="pb-2">
                  <div className="flex items-center gap-3">
-                   <div className="p-2 rounded-lg bg-primary/10 text-green-600 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                   <div className={cn(
+                       "p-2 rounded-lg transition-colors", 
+                       isActive ? "bg-green-100 text-green-700" : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+                   )}>
                      {getIcon(type)}
                    </div>
-                   <CardTitle className="text-lg">{label}</CardTitle>
+                   <CardTitle className="text-lg leading-tight">{label}</CardTitle>
                  </div>
                </CardHeader>
                <CardContent>
-                 <div className="text-2xl font-bold">
-                   {count}
-                   <span className="text-sm font-normal text-muted-foreground ml-2">sectores</span>
+                 <div className="text-2xl font-bold flex items-baseline gap-2">
+                   {stats.count}
+                   <span className="text-sm font-normal text-muted-foreground">sectores</span>
                  </div>
-                 <p className="text-xs text-muted-foreground mt-1">
-                   {count > 0 ? "En progreso" : "Sin mediciones"}
-                 </p>
+                 <div className="flex items-center gap-2 mt-1">
+                    <div className="h-2 flex-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                            className={cn("h-full transition-all duration-500", isActive ? "bg-green-500" : "bg-primary")} 
+                            style={{ width: stats.count > 0 ? `${(stats.completed / stats.count) * 100}%` : '0%' }}
+                        />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{stats.completed}/{stats.count} completos</span>
+                 </div>
                </CardContent>
                <CardFooter className="pt-0">
-                  <Button variant="ghost" className="w-full justify-between group-hover:text-primary p-0 h-auto hover:bg-transparent">
-                    Ver Mediciones <ArrowRight className="h-4 w-4 ml-2" />
+                  <Button 
+                    variant={isActive ? "secondary" : "ghost"} 
+                    className={cn(
+                        "w-full justify-between p-0 h-auto hover:bg-transparent",
+                        isActive ? "text-green-700 hover:text-green-800 font-medium" : "group-hover:text-primary"
+                    )}
+                  >
+                    {isActive ? "Gestionar Mediciones" : "Comenzar Medición"} 
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                </CardFooter>
              </Card>

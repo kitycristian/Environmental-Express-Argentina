@@ -1,0 +1,47 @@
+"Necesito optimizar el Tablero de Inspección para asegurar que sea una herramienta de campo infalible y facilite la creación de informes. El objetivo es que el analista cargue datos en tiempo real y que estos se vinculen de forma indestructible al historial del cliente.
+
+1. Lógica de Persistencia y Seguridad (Anti-pérdida de datos):
+
+
+Auto-guardado en Tiempo Real: Implementa una función que guarde automáticamente cada dato ingresado en la base de datos (PostgreSQL/Supabase) sin necesidad de presionar 'Guardar'. Si hay un micro-corte de internet, usa localStorage para persistir los datos localmente y sincronizarlos apenas vuelva la conexión.
+
+
+Estructura de Histórico: Cada inspección debe generar un ID único vinculado al cliente, la fecha y el analista. Debe existir una tabla de 'Historial de Inspecciones' que permita buscar mediciones anteriores por empresa y fecha.
+
+
+
+
+2. Mejora del Flujo de Carga (User Experience en Campo):
+
+Modales de Medición Dinámicos: Al hacer clic en 'Ver Mediciones' en tarjetas como 'Iluminación' o 'Ruido', abre un formulario optimizado para tablets/móvil donde se pueda:
+
+Elegir el sector (ej: Planta General, Depósito).
+
+
+Ingresar los valores técnicos según la normativa (ej: dB para ruido, Lux para iluminación).
+
+
+
+
+Botón de Captura Rápida: Permitir tomar fotos de los instrumentos de medición directamente desde la app para adjuntarlas como evidencia al informe.
+
+
+Pre-carga de Datos Legales: Al abrir una medición (ej: Carga Térmica), el sistema debe mostrar automáticamente el 'Marco Legal' correspondiente (Res. 295/2003) para que el analista solo se enfoque en los valores medidos.
+
+3. Funcionalidades para el Analista (Facilitar el Informe):
+
+
+Generador de Conclusiones Automático: Basado en los valores cargados, el sistema debe indicar si la medición cumple o no con los límites legales (ej: si el ruido supera los 85dB).
+
+
+
+Sección de Croquis: El botón 'Subir Croquis' debe permitir también 'Dibujar' o marcar puntos de medición sobre una imagen cargada.
+
+
+Exportación Inteligente: Al presionar 'Generar Informe', el sistema debe combinar los datos del cliente, las mediciones del día, el marco legal y el croquis en un documento PDF profesional listo para la firma del matriculado.
+
+
+
+4. Interfaz Visual:
+
+Haz que las tarjetas de mediciones (Iluminación, Ruido, etc.) cambien de color o muestren un 'Check' verde cuando ya contengan datos cargados, para que el analista sepa de un vistazo qué le falta medir."
