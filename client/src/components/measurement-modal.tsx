@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, Save, Plus, FileText, CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { Camera, Save, Plus, FileText, CheckCircle2, AlertTriangle, Info, Building2, ListPlus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { MeasurementType, MEASUREMENT_LABELS } from "@/lib/types";
 import { MeasurementEditor, LightingGridEditor } from "@/components/measurement-editor";
@@ -32,6 +32,7 @@ const LEGAL_FRAMEWORKS: Record<string, string> = {
 
 export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProps) {
   const sectors = useStore((state) => state.sectors);
+  const rubros = useStore((state) => state.rubros);
   const addSectorWithMeasurement = useStore((state) => state.addSectorWithMeasurement);
   const addMeasurement = useStore((state) => state.addMeasurement);
   const { toast } = useToast();
@@ -39,6 +40,11 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
   const [selectedSectorId, setSelectedSectorId] = useState<string>("");
   const [isAddingSector, setIsAddingSector] = useState(false);
   const [newSectorName, setNewSectorName] = useState("");
+  
+  // Bulk Import State
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [selectedRubro, setSelectedRubro] = useState<string>("");
+  const [selectedRubroSectors, setSelectedRubroSectors] = useState<string[]>([]);
 
   // Reset state when type changes
   useEffect(() => {
@@ -46,6 +52,7 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
         setSelectedSectorId("");
         setIsAddingSector(false);
         setNewSectorName("");
+        setIsBulkImportOpen(false);
     }
   }, [isOpen, type]);
 
@@ -59,8 +66,6 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
         workersCount: 0
     }, type);
     
-    // Find the newly created sector (it's the last one)
-    // In a real app we'd get the ID back, but here we can rely on store update
     setTimeout(() => {
         const updatedSectors = useStore.getState().sectors;
         const newSector = updatedSectors[updatedSectors.length - 1];
@@ -72,6 +77,30 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
     setIsAddingSector(false);
     setNewSectorName("");
     toast({ title: "Sector creado", description: `Se ha creado el sector ${newSectorName}` });
+  };
+  
+  const handleBulkImport = () => {
+      if (!type || selectedRubroSectors.length === 0) return;
+      
+      selectedRubroSectors.forEach(sectorName => {
+        addSectorWithMeasurement({
+            name: sectorName,
+            description: "",
+            dimensions: "",
+            activity: "",
+            workersCount: 0
+        }, type);
+      });
+      
+      toast({ title: "Importación Exitosa", description: `Se han creado ${selectedRubroSectors.length} sectores.` });
+      setIsBulkImportOpen(false);
+      setSelectedRubro("");
+      setSelectedRubroSectors([]);
+  };
+
+  const getRubroSectors = (rubroId: string) => {
+    const rubro = rubros.find(r => r.id === rubroId);
+    return rubro ? rubro.sectors : [];
   };
 
   const selectedSector = sectors.find(s => s.id === selectedSectorId);
@@ -117,7 +146,7 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
             <div className="w-full md:w-64 border-r bg-gray-50 p-4 flex flex-col gap-4">
                 <div className="space-y-2">
                     <Label>Seleccionar Sector</Label>
-                    {!isAddingSector ? (
+                    {!isAddingSector && !isBulkImportOpen ? (
                         <div className="space-y-2">
                             <Select value={selectedSectorId} onValueChange={setSelectedSectorId}>
                                 <SelectTrigger className="bg-white">
@@ -129,12 +158,62 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button 
-                                variant="outline" 
-                                className="w-full gap-2 text-primary border-primary/20 hover:bg-primary/5"
-                                onClick={() => setIsAddingSector(true)}
-                            >
-                                <Plus className="h-4 w-4" /> Nuevo Sector
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full gap-1 text-primary border-primary/20 hover:bg-primary/5 text-xs px-2"
+                                    onClick={() => setIsAddingSector(true)}
+                                >
+                                    <Plus className="h-3 w-3" /> Nuevo
+                                </Button>
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full gap-1 text-blue-700 border-blue-200 hover:bg-blue-50 text-xs px-2"
+                                    onClick={() => setIsBulkImportOpen(true)}
+                                >
+                                    <ListPlus className="h-3 w-3" /> Masivo
+                                </Button>
+                            </div>
+                        </div>
+                    ) : isBulkImportOpen ? (
+                        <div className="space-y-3 animate-in fade-in slide-in-from-left-2 border rounded-lg p-3 bg-white shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Importar desde Rubro</span>
+                                <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setIsBulkImportOpen(false)}>
+                                    <Plus className="h-3 w-3 rotate-45" />
+                                </Button>
+                            </div>
+                            
+                            <Select value={selectedRubro} onValueChange={setSelectedRubro}>
+                                <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Seleccionar Rubro" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {rubros.map(r => (
+                                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {selectedRubro && (
+                                <div className="h-32 overflow-y-auto border rounded bg-gray-50 p-1">
+                                    {getRubroSectors(selectedRubro).map(sector => (
+                                        <div key={sector} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer" onClick={() => {
+                                            if (selectedRubroSectors.includes(sector)) {
+                                                setSelectedRubroSectors(selectedRubroSectors.filter(s => s !== sector));
+                                            } else {
+                                                setSelectedRubroSectors([...selectedRubroSectors, sector]);
+                                            }
+                                        }}>
+                                            <input type="checkbox" checked={selectedRubroSectors.includes(sector)} readOnly className="h-3 w-3 rounded border-gray-300" />
+                                            <span className="text-xs truncate">{sector}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            <Button size="sm" className="w-full text-xs" onClick={handleBulkImport} disabled={selectedRubroSectors.length === 0}>
+                                Importar ({selectedRubroSectors.length})
                             </Button>
                         </div>
                     ) : (
@@ -189,7 +268,7 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
                             </div>
                             <h3 className="text-lg font-medium mb-1">Seleccione un sector</h3>
                             <p className="text-sm max-w-xs">
-                                Elija un sector existente o cree uno nuevo para comenzar a cargar datos de la medición.
+                                Elija un sector existente, cree uno nuevo o importe desde rubros para comenzar.
                             </p>
                         </div>
                     )}

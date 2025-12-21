@@ -295,16 +295,33 @@ export default function Dashboard() {
                  </div>
                </CardContent>
                <CardFooter className="pt-0">
-                  <Button 
-                    variant={isActive ? "secondary" : "ghost"} 
-                    className={cn(
-                        "w-full justify-between p-0 h-auto hover:bg-transparent",
-                        isActive ? "text-green-700 hover:text-green-800 font-medium" : "group-hover:text-primary"
-                    )}
-                  >
-                    {isActive ? "Gestionar Mediciones" : "Comenzar Medición"} 
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                  <div className="flex gap-2 w-full">
+                    <Button 
+                        variant={isActive ? "secondary" : "ghost"} 
+                        className={cn(
+                            "flex-1 justify-between p-0 h-auto hover:bg-transparent",
+                            isActive ? "text-green-700 hover:text-green-800 font-medium" : "group-hover:text-primary"
+                        )}
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click
+                            setActiveMeasurementType(type);
+                        }}
+                    >
+                        {isActive ? "Carga Rápida" : "Comenzar"} 
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                    <Link href={`/campaign/${type}`}>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-muted-foreground hover:text-primary"
+                            onClick={(e) => e.stopPropagation()} 
+                            title="Ver Tablero Completo"
+                        >
+                            <Factory className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                  </div>
                </CardFooter>
              </Card>
            );
