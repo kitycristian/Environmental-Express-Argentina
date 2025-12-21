@@ -49,10 +49,8 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
     }
   }, [isOpen, type]);
 
-  if (!type) return null;
-
   const handleCreateSector = () => {
-    if (!newSectorName) return;
+    if (!newSectorName || !type) return;
     addSectorWithMeasurement({
         name: newSectorName,
         description: "",
@@ -61,8 +59,6 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
         workersCount: 0
     }, type);
     
-    // Find the newly created sector (it's the last one)
-    // In a real app we'd get the ID back, but here we can rely on store update
     setTimeout(() => {
         const updatedSectors = useStore.getState().sectors;
         const newSector = updatedSectors[updatedSectors.length - 1];
@@ -81,10 +77,12 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
 
   // If sector selected but no measurement of this type, create it
   useEffect(() => {
-      if (selectedSectorId && !measurement) {
+      if (selectedSectorId && !measurement && type) {
           addMeasurement(selectedSectorId, type);
       }
   }, [selectedSectorId, measurement, addMeasurement, type]);
+
+  if (!type) return null;
 
   const complianceStatus = measurement?.status === 'compliant' 
     ? { label: "CUMPLE", color: "text-green-600", icon: <CheckCircle2 className="h-5 w-5" /> }
