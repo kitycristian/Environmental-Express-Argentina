@@ -200,34 +200,35 @@ export default function BudgetGenerator() {
     doc.text(titleLines, pageWidth - margin, 20, { align: "right" });
 
     // Client Info Box
+    const clientBoxY = Math.max(45, 10 + imgHeight + 5); // Ensure box is below logo
     doc.setDrawColor(...secondaryColor);
     doc.setLineWidth(0.5);
     doc.setFillColor(250, 250, 250);
-    doc.rect(margin, 45, pageWidth - (margin * 2), 35, 'FD');
+    doc.rect(margin, clientBoxY, pageWidth - (margin * 2), 35, 'FD');
     
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text(`Cliente:`, margin + 5, 52);
+    doc.text(`Cliente:`, margin + 5, clientBoxY + 7);
     doc.setFont("helvetica", "normal");
-    doc.text(`${selectedClient.razonSocial || selectedClient.name}`, margin + 25, 52);
+    doc.text(`${selectedClient.razonSocial || selectedClient.name}`, margin + 25, clientBoxY + 7);
 
     doc.setFont("helvetica", "bold");
-    doc.text(`Dirección:`, margin + 5, 58);
+    doc.text(`Dirección:`, margin + 5, clientBoxY + 13);
     doc.setFont("helvetica", "normal");
-    doc.text(`${selectedClient.address}, ${selectedClient.city}`, margin + 25, 58);
+    doc.text(`${selectedClient.address}, ${selectedClient.city}`, margin + 25, clientBoxY + 13);
 
     doc.setFont("helvetica", "bold");
-    doc.text(`Contacto:`, margin + 5, 64);
+    doc.text(`Contacto:`, margin + 5, clientBoxY + 19);
     doc.setFont("helvetica", "normal");
-    doc.text(`${newClient.contactName || selectedClient.name}`, margin + 25, 64); // Use contact name if available
+    doc.text(`${newClient.contactName || selectedClient.name}`, margin + 25, clientBoxY + 19); // Use contact name if available
 
     doc.setFont("helvetica", "bold");
-    doc.text(`Fecha:`, pageWidth - margin - 35, 52);
+    doc.text(`Fecha:`, pageWidth - margin - 35, clientBoxY + 7);
     doc.setFont("helvetica", "normal");
-    doc.text(`${new Date().toLocaleDateString()}`, pageWidth - margin - 5, 52, { align: 'right' });
+    doc.text(`${new Date().toLocaleDateString()}`, pageWidth - margin - 5, clientBoxY + 7, { align: 'right' });
 
-    let currentY = 90;
+    let currentY = clientBoxY + 45;
 
     // --- Rubro 1: Objetivos ---
     doc.setFontSize(11);
