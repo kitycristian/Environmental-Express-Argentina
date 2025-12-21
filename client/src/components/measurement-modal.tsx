@@ -49,10 +49,8 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
     }
   }, [isOpen, type]);
 
-  if (!type) return null;
-
   const handleCreateSector = () => {
-    if (!newSectorName) return;
+    if (!newSectorName || !type) return;
     addSectorWithMeasurement({
         name: newSectorName,
         description: "",
@@ -81,7 +79,7 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
 
   // If sector selected but no measurement of this type, create it
   useEffect(() => {
-      if (selectedSectorId && !measurement) {
+      if (selectedSectorId && !measurement && type) {
           addMeasurement(selectedSectorId, type);
       }
   }, [selectedSectorId, measurement, addMeasurement, type]);
@@ -91,6 +89,8 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
     : measurement?.status === 'non_compliant'
     ? { label: "NO CUMPLE", color: "text-red-600", icon: <AlertTriangle className="h-5 w-5" /> }
     : { label: "PENDIENTE", color: "text-gray-500", icon: <Info className="h-5 w-5" /> };
+
+  if (!type) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
