@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2, Zap, Sparkles } from "lucide-react";
+import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2, Zap } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -35,71 +35,6 @@ export default function Dashboard() {
 
   const getMeasurementCount = (type: MeasurementType) => {
     return sectors.filter(s => s.measurements.some(m => m.type === type)).length;
-  };
-
-  const handleGenerateTestData = () => {
-    // 1. Setup Establishment
-    updateEstablishment({
-        name: "Industrias Metalúrgicas S.A.",
-        razonSocial: "Ind. Metalúrgicas Sociedad Anónima",
-        cuit: "30-71234567-8",
-        address: "Av. Industrial 1234, Parque Industrial",
-        city: "Córdoba",
-        province: "Córdoba",
-        postalCode: "5000",
-        responsible: "Ing. Juan Pérez",
-        conditions: {
-            temperature: "24",
-            humidity: "45",
-            pressure: "1013",
-            windSpeed: "12"
-        }
-    });
-
-    // 2. Add Production Sector with multiple measurements
-    const prodSector = { name: "Nave de Producción", dimensions: "50x20x8", workersCount: 15 };
-    addSector(prodSector);
-    
-    // We need to wait a tick or find the sector we just added. 
-    // Since state update might be async or we don't have the ID returned easily from the hook wrapper 
-    // (the store action doesn't return ID in the current implementation shown in read output),
-    // we might need to rely on the fact that it's added to the end.
-    // However, for safety in this "mockup" mode, let's just use a timeout or assume user refreshes.
-    // BETTER: Modify the store to return ID, but I can't modify store easily without potentially breaking things.
-    // ALTERNATIVE: Just tell the user "Datos generados" and rely on them seeing it.
-    // BUT wait, I need to add measurements TO the sector.
-    
-    // Let's grab the sectors from store immediately after? No, closure.
-    // I will trigger the adds, and the store will handle it. 
-    // Since I can't get the ID of the newly created sector easily without refactoring the store,
-    // I will implement a "Add Demo Data" action in the store if possible? No, I shouldn't touch store logic too much.
-    
-    // Hack: Generate ID here if I could, but store generates it.
-    // Let's verify store.ts again.
-    // addSector: (sector) => set(state => ({ sectors: [...state.sectors, { ...sector, id: uuidv4(), measurements: [] }] }))
-    
-    // Okay, I can't get the ID back. 
-    // I will modify this handler to just toast "Funcionalidad de demo requiere recarga" or similar? No that's bad.
-    
-    // Let's try to add a 'Demo' button that just fills the Establishment info for now, 
-    // OR I can use the `addSectorWithMeasurement` which I saw in the store!
-    // addSectorWithMeasurement: (sectorData, type) => ...
-    
-    // That creates a sector AND a measurement. That helps!
-    
-    // Sector 1: Producción - Iluminación
-    addSectorWithMeasurement({ name: "Nave de Producción", description: "Área de mecanizado y montaje" }, 'lighting');
-    // Sector 2: Producción - Ruido (I'll add another sector with same name? No that's confusing).
-    
-    // Okay, let's just add distinct sectors for the demo to make it robust without ID access.
-    addSectorWithMeasurement({ name: "Sector Mecanizado (Ruido)", description: "Tornos y Fresadoras" }, 'noise');
-    addSectorWithMeasurement({ name: "Fundición (Carga Térmica)", description: "Hornos de fundición" }, 'thermal_load');
-    addSectorWithMeasurement({ name: "Oficinas (Iluminación)", description: "Administración" }, 'lighting');
-
-    toast({
-        title: "Datos de Prueba Generados",
-        description: "Se han cargado sectores y datos de ejemplo. Edite las mediciones para ver los detalles.",
-    });
   };
 
   const handleSave = () => {
@@ -146,9 +81,6 @@ export default function Dashboard() {
         {/* Actions & Client Selector */}
         <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
            <div className="flex gap-2">
-             <Button variant="secondary" onClick={handleGenerateTestData} className="gap-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300">
-               <Sparkles className="h-4 w-4" /> Demo
-             </Button>
              <Button variant="outline" onClick={handleSave} className="gap-2">
                <Save className="h-4 w-4" /> Guardar
              </Button>
