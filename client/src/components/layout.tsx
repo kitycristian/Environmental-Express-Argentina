@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import logoUrl from "@assets/image_1765761040646.png";
+import logoUrl from "@assets/logo-eea.png";
 import { Badge } from "@/components/ui/badge";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -51,9 +51,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const NavContent = () => (
     <nav className="flex flex-col gap-2 p-4 h-full">
-      <div className="mb-6 px-2 flex flex-col items-start gap-3">
-        <img src={logoUrl} alt="Environmental Express Argentina" className="h-16 w-auto object-contain" />
-        <span className="font-bold text-sm text-primary">Environmental Express Argentina</span>
+      <div className="mb-6 px-2 flex flex-col items-center text-center gap-3">
+        <img src={logoUrl} alt="Environmental Express Argentina" className="h-28 w-auto object-contain hover:scale-105 transition-transform duration-300" />
       </div>
 
       {user && (

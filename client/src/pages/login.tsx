@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldCheck, User } from "lucide-react";
-import logoUrl from "@assets/image_1765761040646.png";
+import logoUrl from "@assets/logo-eea.png";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -35,7 +35,7 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 flex flex-col items-center text-center">
-          <div className="w-24 h-24 mb-2">
+          <div className="w-48 h-48 mb-4">
             <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold text-primary">Sistema de Gestión</CardTitle>
