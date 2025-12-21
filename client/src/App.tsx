@@ -38,6 +38,8 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
 
 import SettingsPage from "@/pages/settings";
 
+import HistoryPage from "@/pages/history";
+
 function Router() {
   const [location] = useLocation();
 
@@ -49,6 +51,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
+        <Route path="/history" component={() => <ProtectedRoute component={HistoryPage} />} />
         <Route path="/clients" component={() => <ProtectedRoute component={ClientsPage} adminOnly />} />
         <Route path="/reports" component={() => <ProtectedRoute component={ReportsList} adminOnly />} />
         <Route path="/instruments" component={() => <ProtectedRoute component={InstrumentsPage} />} />

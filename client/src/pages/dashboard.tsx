@@ -86,8 +86,13 @@ export default function Dashboard() {
         {/* Actions & Client Selector */}
         <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
            <div className="flex gap-2">
-             <Button variant="outline" onClick={handleSave} className="gap-2 text-green-700 border-green-200 bg-green-50 hover:bg-green-100">
-               <Save className="h-4 w-4" /> Auto-Guardado
+             <Link href="/history">
+                <Button variant="outline" className="gap-2 text-muted-foreground hover:text-primary">
+                    <History className="h-4 w-4" /> Historial
+                </Button>
+             </Link>
+             <Button variant="outline" onClick={handleSave} className="gap-2 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100">
+               <Save className="h-4 w-4" /> Guardar Todo
              </Button>
              {user?.role === 'admin' && (
                <Link href="/report">
