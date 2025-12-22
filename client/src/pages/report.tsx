@@ -40,7 +40,12 @@ export default function Report() {
 
   const handlePrint = () => {
     toast({ title: "Generando PDF...", description: "Espere un momento mientras se procesa el documento." });
-    generatePDFReport(establishment, sectors);
+    generatePDFReport(establishment, sectors, undefined, 'download');
+  };
+
+  const handlePreview = () => {
+    toast({ title: "Generando Vista Previa...", description: "Se abrirá en una nueva pestaña." });
+    generatePDFReport(establishment, sectors, undefined, 'preview');
   };
 
   // Add print styles dynamically
@@ -1562,15 +1567,23 @@ export default function Report() {
           </Button>
           <Button 
              variant="outline" 
-             onClick={handleDocxExport} 
+             onClick={handlePreview} 
              className="gap-2 border-blue-800 text-blue-800 hover:bg-blue-50 no-print"
           >
              <FileText className="h-4 w-4" />
+             Vista Previa
+          </Button>
+          <Button 
+             variant="outline" 
+             onClick={handleDocxExport} 
+             className="gap-2 border-blue-800 text-blue-800 hover:bg-blue-50 no-print"
+          >
+             <Download className="h-4 w-4" />
              Exportar DOCX
           </Button>
           <Button onClick={handlePrint} className="bg-primary text-primary-foreground hover:bg-primary/90 no-print">
             <Printer className="mr-2 h-4 w-4" />
-            Imprimir / PDF
+            Descargar PDF
           </Button>
         </div>
       </div>

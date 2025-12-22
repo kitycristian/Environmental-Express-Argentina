@@ -31,7 +31,7 @@ const loadAsset = (url: string): Promise<string> => {
   });
 };
 
-export const generatePDFReport = async (establishment: Establishment, sectors: Sector[], logoDataUrl?: string) => {
+export const generatePDFReport = async (establishment: Establishment, sectors: Sector[], logoDataUrl?: string, action: 'download' | 'preview' = 'download') => {
   // 1. Initialize Document
   const doc = new jsPDF({
     orientation: "portrait",
@@ -508,6 +508,12 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
       }
   }
 
-  // Save
-  doc.save(`Informe_Tecnico_${establishment.name || "EEA"}.pdf`);
+  // Save or Preview
+  if (action === 'preview') {
+      const pdfBlob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      window.open(blobUrl, '_blank');
+  } else {
+      doc.save(`Informe_Tecnico_${establishment.name || "EEA"}.pdf`);
+  }
 };
