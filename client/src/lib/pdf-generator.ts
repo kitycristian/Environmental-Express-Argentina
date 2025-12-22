@@ -44,30 +44,18 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
   const addHeader = (doc: any) => {
     // Logo
     if (logo) {
-      doc.addImage(logo, "PNG", 10, 10, 40, 15);
+      const pageWidth = doc.internal.pageSize.width;
+      const logoWidth = 60; // Bigger logo
+      const logoHeight = 22.5; 
+      const x = (pageWidth - logoWidth) / 2; // Centered
+      doc.addImage(logo, "PNG", x, 10, logoWidth, logoHeight);
     }
-    
-    // Header Table (Right Side)
-    // @ts-ignore
-    autoTable(doc, {
-      startY: 10,
-      margin: { left: 100 },
-      head: [["Razón Social", "CUIT", "Fecha", "Informe N°"]],
-      body: [[
-        establishment.razonSocial || establishment.name,
-        establishment.cuit || "-",
-        format(new Date(), "dd/MM/yyyy"),
-        `INF-${format(new Date(), "yyyyMMdd")}-001`
-      ]],
-      theme: 'grid',
-      styles: { fontSize: 7, cellPadding: 1, lineColor: [0, 0, 0], lineWidth: 0.1 },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
-    });
   };
 
   const addFooter = (doc: any) => {
     const pageHeight = doc.internal.pageSize.height || 297;
     doc.setFontSize(8);
+    doc.setFont("times", "normal");
     doc.setTextColor(100);
     doc.text(
       "Documento técnico generado según protocolos vigentes de la SRT - Environmental Express Argentina",
@@ -78,7 +66,7 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
     
     // Page Number
     const pageStr = `Página ${doc.internal.getCurrentPageInfo().pageNumber}`;
-    doc.text(pageStr, doc.internal.pageSize.width - 20, pageHeight - 10);
+    doc.text(pageStr, doc.internal.pageSize.width - 25, pageHeight - 10);
   };
 
   // Override addPage to include header/footer automatically? 
@@ -87,32 +75,71 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
   // --- PAGE 1: COVER ---
   addHeader(doc);
   
-  doc.setFontSize(22);
-  doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
-  doc.text("INFORME TÉCNICO", 105, 60, { align: "center" });
+  const pageWidth = doc.internal.pageSize.width;
   
-  doc.setFontSize(14);
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
+  doc.text("INFORME TÉCNICO", pageWidth / 2, 80, { align: "center" });
+  
+  doc.setFontSize(18);
   doc.setTextColor(0, 0, 0);
-  doc.text("Relevamiento de Agentes de Riesgo", 105, 70, { align: "center" });
-  doc.setFontSize(10);
-  doc.text("LEY 19.587 / DEC. 351/79", 105, 76, { align: "center" });
+  doc.text("RELEVAMIENTO DE AGENTES DE RIESGO", pageWidth / 2, 95, { align: "center" });
+  
+  doc.setFontSize(12);
+  doc.text("LEY 19.587 / DEC. 351/79", pageWidth / 2, 105, { align: "center" });
 
-  // Client Data Table
-  // @ts-ignore
-  autoTable(doc, {
-    startY: 90,
-    head: [[{ content: "DATOS DEL ESTABLECIMIENTO", colSpan: 2, styles: { fillColor: COMPANY_COLOR, textColor: 255, halign: 'center' } }]],
-    body: [
-      [{ content: "Razón Social:", styles: { fontStyle: 'bold' } }, establishment.razonSocial || establishment.name],
-      [{ content: "Dirección:", styles: { fontStyle: 'bold' } }, establishment.address || "-"],
-      [{ content: "Localidad:", styles: { fontStyle: 'bold' } }, `${establishment.city || "-"}, ${establishment.province || "-"}`],
-      [{ content: "C.P.:", styles: { fontStyle: 'bold' } }, establishment.postalCode || "-"],
-      [{ content: "Responsable:", styles: { fontStyle: 'bold' } }, establishment.responsible || "-"],
-    ],
-    theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.1 },
-    columnStyles: { 0: { cellWidth: 50 } }
-  });
+  // Data Box at bottom
+  const boxY = 200;
+  const boxHeight = 50;
+  const boxWidth = 160;
+  const boxX = (pageWidth - boxWidth) / 2;
+  
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.5);
+  doc.rect(boxX, boxY, boxWidth, boxHeight); // Outer box
+  
+  // Inner text
+  doc.setFontSize(11);
+  doc.setFont("times", "normal");
+  
+  const textMargin = 10;
+  let textY = boxY + 12;
+  
+  doc.setFont("times", "bold");
+  doc.text("Razón Social:", boxX + textMargin, textY);
+  doc.setFont("times", "normal");
+  doc.text(establishment.razonSocial || establishment.name, boxX + 50, textY);
+  
+  textY += 10;
+  doc.setFont("times", "bold");
+  doc.text("CUIT:", boxX + textMargin, textY);
+  doc.setFont("times", "normal");
+  doc.text(establishment.cuit || "-", boxX + 50, textY);
+  
+  textY += 10;
+  doc.setFont("times", "bold");
+  doc.text("Dirección:", boxX + textMargin, textY);
+  doc.setFont("times", "normal");
+  doc.text(establishment.address || "-", boxX + 50, textY);
+  
+  textY += 10;
+  doc.setFont("times", "bold");
+  doc.text("Fecha:", boxX + textMargin, textY);
+  doc.setFont("times", "normal");
+  doc.text(format(new Date(), "dd/MM/yyyy"), boxX + 50, textY);
+
+  addFooter(doc);
+
+  // --- PAGE 2: INSTRUMENTS ---
+  doc.addPage();
+  addHeader(doc);
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
+  doc.text("INSTRUMENTAL UTILIZADO", 25, 45);
 
   // Instruments Table
   const instrumentsBody = (establishment.instruments || []).map(inst => [
@@ -127,15 +154,30 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
 
   // @ts-ignore
   autoTable(doc, {
-    // @ts-ignore
-    startY: doc.lastAutoTable.finalY + 20,
-    head: [[{ content: "INSTRUMENTAL UTILIZADO", colSpan: 3, styles: { fillColor: ACCENT_COLOR, textColor: 255, halign: 'center' } }]],
-    body: [
-      [{ content: "Marca y Modelo", styles: { fontStyle: 'bold' } }, { content: "Serie", styles: { fontStyle: 'bold' } }, { content: "Calibración", styles: { fontStyle: 'bold' } }],
-      ...instrumentsBody
-    ],
-    theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.1 },
+    startY: 50,
+    margin: { left: 25, right: 25 },
+    head: [["Marca y Modelo", "Serie", "Calibración"]],
+    body: instrumentsBody,
+    theme: 'plain',
+    styles: { 
+        fontSize: 10, 
+        cellPadding: 3, 
+        lineColor: [0, 0, 0], 
+        lineWidth: { bottom: 0.1, top: 0, left: 0, right: 0 },
+        font: "helvetica",
+        textColor: 0
+    },
+    headStyles: { 
+        fillColor: [240, 240, 240], 
+        textColor: 0, 
+        fontStyle: 'bold',
+        lineWidth: { bottom: 0.1, top: 0.1 } 
+    },
+    columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+        2: { halign: 'center' }
+    }
   });
 
   addFooter(doc);
@@ -158,9 +200,10 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
      addHeader(doc);
      
      // Section Title
+     doc.setFont("helvetica", "bold");
      doc.setFontSize(14);
      doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
-     doc.text(`PROTOCOLO DE ${MEASUREMENT_LABELS[type as MeasurementType].toUpperCase()}`, 10, 35);
+     doc.text(`PROTOCOLO DE ${MEASUREMENT_LABELS[type as MeasurementType].toUpperCase()}`, 25, 45);
      
      // Build specific table columns based on type
      let head: any[] = [];
@@ -179,10 +222,7 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
              const status = m.status === 'compliant' ? 'CUMPLE' : 'NO CUMPLE';
              
              return [[
-                 { content: "1", rowSpan: 1 }, // Simplification: assuming 1 row per measurement for summary, or listing points?
-                 // Let's list points if detailed, or summary if summary. The user asked for "Tabla de Valores de Iluminación"
-                 // usually summary per "Sector/Puesto" is better unless detailed points are required in main table.
-                 // Let's do summary per measurement.
+                 { content: "1", rowSpan: 1 }, 
                  item.sectorName,
                  m.name || item.sectorName,
                  m.config?.lightingSystemType || "General",
@@ -195,7 +235,6 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
          });
          
          // If points are needed, we map points instead.
-         // Let's map points for detail as per previous HTML table
          body = items.flatMap((item, idx) => {
              const m = item.measurement;
              const values = m.points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
@@ -243,15 +282,29 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
 
      // @ts-ignore
      autoTable(doc, {
-        startY: 40,
+        startY: 50,
+        margin: { left: 25, right: 25 }, // 2.5cm margins
         head: head,
         body: body,
-        theme: 'grid',
-        styles: { fontSize: 8, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
-        headStyles: { fillColor: COMPANY_COLOR, textColor: 255, fontStyle: 'bold' },
+        theme: 'plain',
+        styles: { 
+            fontSize: 9, 
+            cellPadding: 3, 
+            lineColor: [0, 0, 0], 
+            lineWidth: { bottom: 0.1, top: 0, left: 0, right: 0 },
+            halign: 'center',
+            font: "helvetica",
+            textColor: 0
+        },
+        headStyles: { 
+            fillColor: [240, 240, 240], 
+            textColor: 0, 
+            fontStyle: 'bold',
+            lineWidth: { bottom: 0.1, top: 0.1 } 
+        },
         columnStyles: {
-            0: { cellWidth: 10 },
-            1: { cellWidth: 25 },
+            0: { cellWidth: 15 },
+            1: { cellWidth: 30, halign: 'left' },
             // Adjust others automatically
         },
         didParseCell: function(data: any) {
@@ -273,36 +326,36 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
   // --- CONCLUSIONS ---
   doc.addPage();
   addHeader(doc);
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
-  doc.text("CONCLUSIONES Y RECOMENDACIONES", 10, 35);
+  doc.text("CONCLUSIONES Y RECOMENDACIONES", 25, 45);
   
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
   
-  let currentY = 45;
+  let currentY = 55;
+  const margin = 25;
   
-  const textOptions = { maxWidth: 180, align: 'justify' };
-  
-  doc.setFont(undefined, 'bold');
-  doc.text("Conclusiones Técnicas:", 10, currentY);
-  currentY += 5;
-  doc.setFont(undefined, 'normal');
+  doc.setFont("times", "bold");
+  doc.text("Conclusiones Técnicas:", margin, currentY);
+  currentY += 6;
+  doc.setFont("times", "normal");
   
   // Auto-generate detailed conclusions text if not provided
   const conclusionsText = establishment.conclusions || "Se procedió a realizar las mediciones según los protocolos establecidos.";
-  const splitConclusions = doc.splitTextToSize(conclusionsText, 180);
-  doc.text(splitConclusions, 10, currentY);
+  const splitConclusions = doc.splitTextToSize(conclusionsText, 160); // Width 160mm (A4 210 - 25*2)
+  doc.text(splitConclusions, margin, currentY);
   currentY += (splitConclusions.length * 5) + 10;
 
-  doc.setFont(undefined, 'bold');
-  doc.text("Recomendaciones:", 10, currentY);
-  currentY += 5;
-  doc.setFont(undefined, 'normal');
+  doc.setFont("times", "bold");
+  doc.text("Recomendaciones:", margin, currentY);
+  currentY += 6;
+  doc.setFont("times", "normal");
   
   const recommendationsText = establishment.recommendations || "No se registran recomendaciones específicas.";
-  const splitRecommendations = doc.splitTextToSize(recommendationsText, 180);
-  doc.text(splitRecommendations, 10, currentY);
+  const splitRecommendations = doc.splitTextToSize(recommendationsText, 160);
+  doc.text(splitRecommendations, margin, currentY);
   
   addFooter(doc);
 
@@ -310,31 +363,37 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
   if (establishment.sketchImage) {
       doc.addPage();
       addHeader(doc);
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
       doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
-      doc.text("ANEXO 1: CROQUIS DEL ESTABLECIMIENTO", 10, 35);
+      doc.text("ANEXO 1: CROQUIS DEL ESTABLECIMIENTO", 25, 45);
       
       try {
         // Fit image
         const imgProps = doc.getImageProperties(establishment.sketchImage);
-        const pageWidth = doc.internal.pageSize.width - 20;
-        const pageHeight = doc.internal.pageSize.height - 60;
+        const pageWidth = doc.internal.pageSize.width - 50; // 25mm margin each side
+        const pageHeight = doc.internal.pageSize.height - 80;
         const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
         const w = imgProps.width * ratio;
         const h = imgProps.height * ratio;
         
-        doc.addImage(establishment.sketchImage, "PNG", 10, 45, w, h);
+        doc.addImage(establishment.sketchImage, "PNG", 25, 55, w, h);
+        
+        // Border for sketch
+        doc.setDrawColor(0);
+        doc.setLineWidth(0.2);
+        doc.rect(25, 55, w, h);
+        
       } catch (e) {
         doc.setFontSize(10);
         doc.setTextColor(200, 0, 0);
-        doc.text("Error al cargar la imagen del croquis.", 10, 50);
+        doc.text("Error al cargar la imagen del croquis.", 25, 60);
       }
       
       addFooter(doc);
   }
 
-  // --- ANEXO 3: FOTOGRAFÍAS (Nueva sección solicitada) ---
-  // Recopilar todas las imágenes adjuntas a mediciones
+  // --- ANEXO 3: FOTOGRAFÍAS ---
   const photoEvidence: { sector: string; title: string; image: string }[] = [];
   
   sectors.forEach(sector => {
@@ -361,82 +420,62 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
   if (photoEvidence.length > 0) {
       doc.addPage();
       addHeader(doc);
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
       doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
-      doc.text("ANEXO 3: EVIDENCIA FOTOGRÁFICA", 10, 35);
+      doc.text("ANEXO 3: EVIDENCIA FOTOGRÁFICA", 25, 45);
 
-      let yPos = 45;
+      let yPos = 55;
       const pageWidth = doc.internal.pageSize.width;
-      const margin = 10;
-      const maxImgHeight = 110; // Max height for 2 photos per page approx
+      const margin = 25;
+      const availableWidth = pageWidth - (margin * 2);
+      const maxImgHeight = 100; 
       
       photoEvidence.forEach((item, index) => {
-          // Check if we need a new page (every 2 photos, or if space runs out)
-          if (yPos + maxImgHeight > doc.internal.pageSize.height - 20) {
+          if (yPos + maxImgHeight + 10 > doc.internal.pageSize.height - 30) {
               addFooter(doc);
               doc.addPage();
               addHeader(doc);
+              doc.setFont("helvetica", "bold");
               doc.setFontSize(14);
               doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
-              doc.text("ANEXO 3: EVIDENCIA FOTOGRÁFICA (Cont.)", 10, 35);
-              yPos = 45;
+              doc.text("ANEXO 3: EVIDENCIA FOTOGRÁFICA (Cont.)", 25, 45);
+              yPos = 55;
           }
 
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
-          doc.setFont(undefined, 'bold');
-          doc.text(`${item.sector}: ${item.title}`, margin, yPos);
-          yPos += 5;
-
           try {
-              // Convert base64 to image explicitly if needed, but addImage supports it.
-              // jsPDF usually needs format hint if it can't detect it.
-              // We'll pass format 'PNG' or 'JPEG' if we can guess, but let's try a safer addImage first.
+              // Image logic
+              let w = 100;
+              let h = 75; 
               
-              // const imgProps = doc.getImageProperties(item.image); 
-              // getImageProperties can fail if format is not supported synchronously.
-              
-              const availableWidth = pageWidth - (margin * 2);
-              const maxH = maxImgHeight;
-              
-              // We'll try to add the image directly. If we need dimensions, we'll assume a standard ratio or handle async loading
-              // But since we already have base64, we can create an Image element to get dimensions if getImageProperties fails.
-              // However, since we are in async function, we can await an image loader.
-              
-              const img = new Image();
-              img.src = item.image;
-              
-              // Note: This waiting is synchronous for the loop inside async function? No, we need to promisify getting dimensions if doc.getImageProperties fails.
-              // But doc.getImageProperties is synchronous for Data URLs usually.
-              // The error suggests the string might be missing prefix or have issues.
-              
-              // Check if image string has data prefix
-              if (!item.image.startsWith('data:image/')) {
-                  throw new Error("Invalid image format");
+              if (item.image.startsWith('data:image/')) {
+                  const props = doc.getImageProperties(item.image);
+                  const ratio = Math.min(availableWidth / props.width, maxImgHeight / props.height);
+                  w = props.width * ratio;
+                  h = props.height * ratio;
               }
-              
-              const props = doc.getImageProperties(item.image);
-              const ratio = Math.min(availableWidth / props.width, maxH / props.height);
-              const w = props.width * ratio;
-              const h = props.height * ratio;
-              
+
               const xPos = margin + (availableWidth - w) / 2;
+              
               doc.addImage(item.image, "PNG", xPos, yPos, w, h);
-              yPos += h + 15;
+              
+              // Border
+              doc.setDrawColor(0);
+              doc.setLineWidth(0.2);
+              doc.rect(xPos, yPos, w, h);
+              
+              // Caption
+              yPos += h + 5;
+              doc.setFontSize(9);
+              doc.setFont("times", "italic");
+              doc.setTextColor(0, 0, 0);
+              doc.text(`${item.sector}: ${item.title}`, xPos, yPos, { maxWidth: w });
+              
+              yPos += 15; // Space for next photo
           } catch (e) {
-              // Fallback: try adding as JPEG if PNG failed, or generic
-              try {
-                  // Sometimes properties fail but adding works? Unlikely.
-                  // Try to just add it with fixed width if props failed
-                  // doc.addImage(item.image, xPos, yPos, 100, 100); 
-                  doc.setTextColor(200, 0, 0);
-                  doc.text("[Error: Formato de imagen no soportado]", margin, yPos);
-                  yPos += 20;
-              } catch (e2) {
-                  doc.setTextColor(200, 0, 0);
-                  doc.text("[Error al procesar imagen]", margin, yPos);
-                  yPos += 20;
-              }
+              doc.setTextColor(200, 0, 0);
+              doc.text("[Error al procesar imagen]", margin, yPos);
+              yPos += 20;
           }
       });
       

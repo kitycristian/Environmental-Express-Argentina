@@ -1,0 +1,65 @@
+"Necesito que rediseñes la exportación del informe para que tenga una estética editorial profesional, eliminando cualquier rastro de 'aplicación web'. El diseño debe basarse en la identidad de Environmental Express Argentina  y seguir estas pautas:
+
+1. Tipografía y Jerarquía:
+
+Cuerpo del texto: Usa una fuente Serif (como Times New Roman o Georgia) para los bloques de texto legal y Sans-Serif (como Arial o Roboto) para los títulos y tablas. Esto le da un aire de 'documento oficial'.
+
+
+Títulos: Azul marino (#003366), en negrita y todo en mayúsculas para las secciones principales (ej. 'PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN').
+
+
+
+
+
+2. Tablas de Datos (Estilo Minimalista Técnico):
+
+Bordes: Elimina las sombras y los bordes redondeados. Usa líneas negras finas horizontales para separar datos.
+
+Sombreado: Solo sombrea la fila de encabezado en gris muy claro o azul muy suave.
+
+Alineación: Valores numéricos centrados; descripciones de sectores alineadas a la izquierda.
+
+3. Diseño de la Portada:
+
+
+Logo: Centrado en la parte superior con un tamaño generoso y alta resolución.
+
+
+Título del Informe: En el centro de la página, con una fuente grande y clara: 'INFORME TÉCNICO: RELEVAMIENTO DE AGENTES DE RIESGO'.
+
+
+Cuadro de Datos: Un cuadro elegante en la parte inferior con los datos del cliente (Razón Social, CUIT, Dirección) y la fecha de medición.
+
+
+
+4. Gestión de Espacios y Saltos:
+
+
+Aislamiento de Secciones: Cada agente (Ruido, Iluminación, etc.) DEBE comenzar en una hoja nueva.
+
+
+
+
+
+Márgenes: Asegura márgenes de seguridad de 2.5 cm en todos los lados para que el informe se pueda encuadernar o abrochar sin tapar información.
+
+5. Tratamiento de Fotos y Anexos:
+
+
+Grilla de Evidencia: Las fotos deben aparecer con un borde fino negro y un epígrafe debajo indicando el sector y el punto de medición (ej. 'Foto 1: Depósito de Agroquímicos I').
+
+
+
+Certificados: Escala los certificados de calibración para que ocupen media página cada uno, evitando que se vean borrosos o estirados."
+
+
+¿Qué corregirá esto específicamente?
+
+Limpieza Visual: Quitará esos cuadros celestes y botones que se ven en tu PDF actual.
+
+
+
+Seriedad: Al usar tipografía mixta (Serif/Sans-Serif), el informe pasa de parecer un "borrador de app" a un peritaje técnico.
+
+
+Legibilidad: Las tablas de "Memoria de Cálculo"  dejarán de ser un caos de números y se convertirán en cuadrículas claras y fáciles de auditar por la SRT.
