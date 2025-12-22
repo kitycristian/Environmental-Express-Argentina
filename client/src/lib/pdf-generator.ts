@@ -1,6 +1,6 @@
 // @ts-ignore
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Establishment, Sector, MEASUREMENT_LABELS, MeasurementType, Measurement } from "./types";
@@ -48,7 +48,8 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
     }
     
     // Header Table (Right Side)
-    doc.autoTable({
+    // @ts-ignore
+    autoTable(doc, {
       startY: 10,
       margin: { left: 100 },
       head: [["Razón Social", "CUIT", "Fecha", "Informe N°"]],
@@ -97,7 +98,8 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
   doc.text("LEY 19.587 / DEC. 351/79", 105, 76, { align: "center" });
 
   // Client Data Table
-  doc.autoTable({
+  // @ts-ignore
+  autoTable(doc, {
     startY: 90,
     head: [[{ content: "DATOS DEL ESTABLECIMIENTO", colSpan: 2, styles: { fillColor: COMPANY_COLOR, textColor: 255, halign: 'center' } }]],
     body: [
@@ -123,7 +125,9 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
       instrumentsBody.push(["No se declararon instrumentos", "-", "-"]);
   }
 
-  doc.autoTable({
+  // @ts-ignore
+  autoTable(doc, {
+    // @ts-ignore
     startY: doc.lastAutoTable.finalY + 20,
     head: [[{ content: "INSTRUMENTAL UTILIZADO", colSpan: 3, styles: { fillColor: ACCENT_COLOR, textColor: 255, halign: 'center' } }]],
     body: [
@@ -237,7 +241,8 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
          });
      }
 
-     doc.autoTable({
+     // @ts-ignore
+     autoTable(doc, {
         startY: 40,
         head: head,
         body: body,
@@ -249,7 +254,7 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
             1: { cellWidth: 25 },
             // Adjust others automatically
         },
-        didParseCell: function(data) {
+        didParseCell: function(data: any) {
             // Conditional formatting for status
             if (data.section === 'body' && (data.column.index === data.table.columns.length - 1)) {
                  if (data.cell.raw === 'NO CUMPLE') {
