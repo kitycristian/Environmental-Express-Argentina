@@ -81,6 +81,7 @@ export interface Establishment {
   conditions?: AtmosphericConditions;
   instruments?: Instrument[];
   sketchImage?: string; // Base64 Data URL for the establishment sketch (Anexo 1)
+  evidenceImages?: string[]; // Array of Base64 Data URLs for general evidence (Anexo 3)
   conclusions?: string;
   recommendations?: string;
 }

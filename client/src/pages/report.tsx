@@ -1730,7 +1730,69 @@ export default function Report() {
             <h2 className="text-xl font-bold text-primary mb-6 uppercase tracking-wide border-b-2 border-primary pb-2">
                 Anexo 3: Evidencia Fotográfica de Mediciones
             </h2>
+
+            {/* Global Evidence Upload Section */}
+            <div className="mb-8 break-inside-avoid">
+                 <h3 className="font-bold text-lg text-gray-800 mb-4 pl-2 border-l-4 border-primary">
+                    Evidencia General del Establecimiento
+                 </h3>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                     {establishment.evidenceImages && establishment.evidenceImages.map((img, idx) => (
+                         <div key={idx} className="relative group border rounded-lg bg-white p-2 shadow-sm break-inside-avoid">
+                             <img src={img} alt={`Evidencia General ${idx + 1}`} className="w-full h-auto object-contain max-h-[400px]" />
+                             <Button 
+                                variant="destructive" 
+                                size="icon" 
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                onClick={() => {
+                                    const newImages = establishment.evidenceImages?.filter((_, i) => i !== idx);
+                                    updateEstablishment({ evidenceImages: newImages });
+                                }}
+                             >
+                                 <Trash2 className="h-4 w-4" />
+                             </Button>
+                         </div>
+                     ))}
+                     
+                     {/* Upload Placeholder */}
+                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center text-center bg-gray-50 min-h-[200px] no-print">
+                         <div className="relative">
+                             <Button variant="outline" className="gap-2">
+                                 <ImageIcon className="h-4 w-4" /> Agregar Foto General
+                             </Button>
+                             <Input 
+                                 type="file" 
+                                 accept="image/*" 
+                                 className="absolute inset-0 opacity-0 cursor-pointer"
+                                 onChange={(e) => {
+                                     if (e.target.files?.[0]) {
+                                         const reader = new FileReader();
+                                         reader.onloadend = () => {
+                                             const currentImages = establishment.evidenceImages || [];
+                                             updateEstablishment({ evidenceImages: [...currentImages, reader.result as string] });
+                                             toast({ title: "Imagen agregada correctamente" });
+                                         };
+                                         reader.readAsDataURL(e.target.files[0]);
+                                     }
+                                 }}
+                             />
+                         </div>
+                         <p className="text-xs text-muted-foreground mt-2">Formatos: JPG, PNG</p>
+                     </div>
+                 </div>
+                 
+                 {(!establishment.evidenceImages || establishment.evidenceImages.length === 0) && (
+                     <div className="hidden print:block p-4 text-center text-gray-400 italic border border-dashed rounded-lg mb-6">
+                         No se han adjuntado imágenes generales.
+                     </div>
+                 )}
+            </div>
             
+            <h3 className="font-bold text-lg text-gray-800 mb-4 pl-2 border-l-4 border-gray-400">
+                Evidencia Específica por Mediciones
+            </h3>
+
             {Object.keys(measurementsByType).length === 0 ? (
                 <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
                     No hay mediciones registradas.
@@ -1747,9 +1809,9 @@ export default function Report() {
 
                         return (
                             <div key={sector.id} className="break-inside-avoid">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 bg-gray-50 p-2 border-l-4 border-gray-400">
+                                <h4 className="font-bold text-md text-gray-700 mb-2 bg-gray-50 p-2 border-b">
                                     Sector: {sector.name}
-                                </h3>
+                                </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {measurementsWithImages.map(m => (
                                         <div key={m.id} className="border rounded-lg p-4 bg-white shadow-sm break-inside-avoid">
@@ -1801,10 +1863,10 @@ export default function Report() {
                         );
                     })}
                     
-                    {/* Fallback if no images found anywhere */}
+                    {/* Fallback if no specific images found anywhere */}
                     {!sectors.some(s => s.measurements.some(m => m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0))) && (
                         <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
-                            No se han adjuntado imágenes de prueba o adicionales a las mediciones.
+                            No se han adjuntado imágenes específicas a las mediciones.
                         </div>
                     )}
                  </div>
