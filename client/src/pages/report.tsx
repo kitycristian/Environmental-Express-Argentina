@@ -27,47 +27,70 @@ export default function Report() {
   };
 
   const generateAIContent = () => {
-    let conclusions = [];
-    let recommendations = [];
+    let conclusions: string[] = [];
+    let recommendations: string[] = [];
     let compliantCount = 0;
     let nonCompliantCount = 0;
+    let totalMeasurements = 0;
 
     // Introduction
     conclusions.push(`Se ha realizado el relevamiento de agentes de riesgo en el establecimiento ${establishment.name || 'declarado'}, con el objetivo de verificar el cumplimiento de la normativa vigente (Ley 19.587, Dec. 351/79 y Res. SRT 84/12).`);
 
     sectors.forEach(sector => {
       sector.measurements.forEach(m => {
+        totalMeasurements++;
         const typeLabel = MEASUREMENT_LABELS[m.type];
         
-        if (m.status === 'non_compliant') {
+        // Calculate status on the fly if pending for lighting to ensure we have data
+        let currentStatus = m.status;
+        if (m.type === 'lighting' && m.points.length > 0) {
+             const values = m.points.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
+             if (values.length > 0) {
+                 const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                 const limit = m.config?.limit || 0;
+                 if (limit > 0) {
+                     currentStatus = avg >= limit ? 'compliant' : 'non_compliant';
+                 }
+             }
+        }
+        
+        if (currentStatus === 'non_compliant') {
             nonCompliantCount++;
             conclusions.push(`- En el sector "${sector.name}", la medición de ${typeLabel} arrojó valores que NO CUMPLEN con los límites establecidos.`);
             
             // Specific recommendations based on type
             if (m.type === 'lighting') {
-                recommendations.push(`- Sector "${sector.name}" (${typeLabel}): Se recomienda revisar el sistema de iluminación, realizar limpieza de luminarias o adicionar fuentes de luz para alcanzar los niveles requeridos de ${m.config?.limit || '?'} Lux.`);
+                recommendations.push(`- Sector "${sector.name}" (${typeLabel}): Se recomienda revisar el sistema de iluminación, realizar limpieza de luminarias, verificar el estado de las lámparas o adicionar fuentes de luz para alcanzar los niveles requeridos de ${m.config?.limit || '?'} Lux.`);
             } else if (m.type === 'noise') {
                 recommendations.push(`- Sector "${sector.name}" (${typeLabel}): Se sugiere implementar medidas de ingeniería para reducción de ruido o verificar el uso correcto de EPP auditivos.`);
             } else {
                 recommendations.push(`- Sector "${sector.name}" (${typeLabel}): Se recomienda evaluar medidas correctivas para adecuar los niveles a la normativa.`);
             }
 
-        } else if (m.status === 'compliant') {
+        } else if (currentStatus === 'compliant') {
             compliantCount++;
             conclusions.push(`- En el sector "${sector.name}", los valores de ${typeLabel} se encuentran DENTRO de los parámetros legales permitidos.`);
+        } else if (m.points.length > 0) {
+             // Has points but status not explicitly set or limit missing
+             conclusions.push(`- En el sector "${sector.name}" se han registrado mediciones de ${typeLabel}, pendientes de validación final contra normativa.`);
         }
       });
     });
 
-    // General Summary
-    if (nonCompliantCount === 0 && compliantCount > 0) {
-        conclusions.push("En conclusión, todos los sectores relevados CUMPLEN con los requerimientos legales vigentes al momento de la medición.");
-        recommendations.push("Se recomienda mantener las condiciones actuales y realizar mediciones periódicas según lo estipulado por ley (anual).");
+    // General Summary Logic
+    if (totalMeasurements === 0) {
+         conclusions.push("No se han registrado mediciones en los sectores declarados.");
+         recommendations.push("Se sugiere realizar un relevamiento general de iluminación y condiciones ambientales para asegurar el cumplimiento normativo.");
+    } else if (nonCompliantCount === 0 && compliantCount > 0) {
+        conclusions.push("En conclusión, todos los sectores evaluados con referencia normativa CUMPLEN con los requerimientos legales vigentes.");
+        recommendations.push("Se recomienda mantener las condiciones actuales y realizar mediciones periódicas según lo estipulado por ley (anual) para asegurar la continuidad del cumplimiento.");
     } else if (nonCompliantCount > 0) {
-        conclusions.push(`Se detectaron ${nonCompliantCount} desviaciones normativas que requieren atención inmediata.`);
-        recommendations.push("Se sugiere realizar un plan de adecuación para los sectores afectados y repetir las mediciones una vez implementadas las mejoras.");
+        conclusions.push(`Se detectaron ${nonCompliantCount} desviaciones normativas que requieren atención para garantizar la seguridad y salud ocupacional.`);
+        recommendations.push("Se sugiere implementar un plan de mejoras enfocado en los sectores críticos mencionados y volver a verificar los niveles una vez realizadas las adecuaciones.");
     } else {
-        conclusions.push("No hay suficientes datos procesados para emitir una conclusión definitiva.");
+        // Fallback for partial data
+        conclusions.push("Se han relevado los datos de campo correctamente. Se sugiere verificar los límites normativos aplicables para emitir un dictamen final de cumplimiento.");
+        recommendations.push("Completar la configuración de límites legales en los sectores relevados para obtener un diagnóstico preciso.");
     }
 
     updateEstablishment({
@@ -77,7 +100,7 @@ export default function Report() {
 
     toast({
         title: "Análisis Completado",
-        description: "Se han generado conclusiones y recomendaciones basadas en los datos.",
+        description: "Se han generado conclusiones y recomendaciones basadas en los datos disponibles.",
     });
   };
 
