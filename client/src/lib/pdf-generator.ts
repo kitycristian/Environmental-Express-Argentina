@@ -328,6 +328,83 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
       addFooter(doc);
   }
 
+  // --- ANEXO 3: FOTOGRAFÍAS (Nueva sección solicitada) ---
+  // Recopilar todas las imágenes adjuntas a mediciones
+  const photoEvidence: { sector: string; title: string; image: string }[] = [];
+  
+  sectors.forEach(sector => {
+      sector.measurements.forEach(m => {
+          if (m.attachedDocuments?.measurementProofImage) {
+              photoEvidence.push({
+                  sector: sector.name,
+                  title: `Prueba de Medición - ${m.name || sector.name} (${MEASUREMENT_LABELS[m.type]})`,
+                  image: m.attachedDocuments.measurementProofImage
+              });
+          }
+          if (m.attachedDocuments?.otherImages) {
+              m.attachedDocuments.otherImages.forEach((img, idx) => {
+                   photoEvidence.push({
+                      sector: sector.name,
+                      title: `Evidencia Adicional ${idx + 1} - ${m.name || sector.name}`,
+                      image: img
+                  });
+              });
+          }
+      });
+  });
+
+  if (photoEvidence.length > 0) {
+      doc.addPage();
+      addHeader(doc);
+      doc.setFontSize(14);
+      doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
+      doc.text("ANEXO 3: EVIDENCIA FOTOGRÁFICA", 10, 35);
+
+      let yPos = 45;
+      const pageWidth = doc.internal.pageSize.width;
+      const margin = 10;
+      const maxImgHeight = 110; // Max height for 2 photos per page approx
+      
+      photoEvidence.forEach((item, index) => {
+          // Check if we need a new page (every 2 photos, or if space runs out)
+          if (yPos + maxImgHeight > doc.internal.pageSize.height - 20) {
+              addFooter(doc);
+              doc.addPage();
+              addHeader(doc);
+              doc.setFontSize(14);
+              doc.setTextColor(COMPANY_COLOR[0], COMPANY_COLOR[1], COMPANY_COLOR[2]);
+              doc.text("ANEXO 3: EVIDENCIA FOTOGRÁFICA (Cont.)", 10, 35);
+              yPos = 45;
+          }
+
+          doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, 'bold');
+          doc.text(`${item.sector}: ${item.title}`, margin, yPos);
+          yPos += 5;
+
+          try {
+              const imgProps = doc.getImageProperties(item.image);
+              const availableWidth = pageWidth - (margin * 2);
+              const ratio = Math.min(availableWidth / imgProps.width, maxImgHeight / imgProps.height);
+              const w = imgProps.width * ratio;
+              const h = imgProps.height * ratio;
+              
+              // Center image horizontally
+              const xPos = margin + (availableWidth - w) / 2;
+              
+              doc.addImage(item.image, "PNG", xPos, yPos, w, h);
+              yPos += h + 15; // Space for next photo
+          } catch (e) {
+              doc.setTextColor(200, 0, 0);
+              doc.text("[Error al procesar imagen]", margin, yPos);
+              yPos += 20;
+          }
+      });
+      
+      addFooter(doc);
+  }
+
   // --- ANEXO 2: INSTRUMENTOS (Certificados) ---
   // If we had images for certificates, we would loop them here.
   // For now, placeholder or check if any have attached images.
