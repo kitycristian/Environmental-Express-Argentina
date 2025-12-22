@@ -86,8 +86,6 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
        // Navigate points horizontally
        const pointIndex = parseInt(field.split('-')[1]);
        const nextInput = document.getElementById(`input-${rowIndex}-point-${pointIndex + 1}`);
-       // If next point doesn't exist but we are within 15 limit, maybe focus "add point"? 
-       // For now, standard navigation
        if (nextInput) nextInput.focus();
     } else if (e.key === 'ArrowLeft' && field.startsWith('point-')) {
        const pointIndex = parseInt(field.split('-')[1]);
@@ -106,7 +104,9 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
            
            if (field === 'width') nextInputId = `input-${rowIndex}-length`;
            else if (field === 'length') nextInputId = `input-${rowIndex}-height`;
-           else if (field === 'height') nextInputId = `input-${rowIndex}-point-0`;
+           else if (field === 'height') nextInputId = `input-${rowIndex}-lightingType`;
+           else if (field === 'lightingType') nextInputId = `input-${rowIndex}-lightsOffCount`;
+           else if (field === 'lightsOffCount') nextInputId = `input-${rowIndex}-point-0`;
            else if (field.startsWith('point-')) {
                const pointIndex = parseInt(field.split('-')[1]);
                // If next point is within visible limit
@@ -118,9 +118,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                }
            }
            else if (field === 'limit') {
-               // From limit -> Maybe next row Name? Or stay.
-               // User said "celda de al lado siguiente". After limit there is nothing sideways.
-               // Let's go to next row name for continuous entry.
+               // From limit -> next row Name
                nextInputId = `input-${rowIndex + 1}-name`;
            }
            
@@ -215,7 +213,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
     }
   };
 
-  const totalTableWidth = 40 + 50 + 250 + 180 + 180 + (visiblePoints * 40) + 400 + 50; // Added 40px for checkbox col
+  const totalTableWidth = 40 + 50 + 250 + 180 + 180 + 160 + (visiblePoints * 40) + 400 + 50; // Added 160px for Details group
 
   return (
     <div className="space-y-4">
@@ -327,6 +325,15 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                       <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 border-r border-orange-100 leading-3">INDICE<br/>K</div>
                       <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 border-r border-orange-100 leading-3">PTOS<br/>MIN</div>
                       <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 leading-3">PTOS<br/>ACT</div>
+                  </div>
+              </TableHead>
+
+              {/* Detalles (Tipo / Off) - 2 cols of 80px = 160px */}
+              <TableHead className="p-0 border-r text-center bg-purple-50/50 w-[160px]">
+                  <div className="border-b py-2 text-xs font-bold text-purple-800 uppercase tracking-wider bg-purple-100/50">Detalles</div>
+                  <div className="flex h-10 w-full">
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-purple-700 border-r border-purple-100 leading-3">TIPO<br/>ILUM</div>
+                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-purple-700 leading-3">LUCES<br/>OFF</div>
                   </div>
               </TableHead>
 
@@ -473,6 +480,41 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                         </div>
                         <div className="flex-1 flex items-center justify-center text-xs font-bold text-orange-700">
                             {points.length}
+                        </div>
+                     </div>
+                  </TableCell>
+
+                  {/* Detalles - 2 cols */}
+                  <TableCell className="p-0 border-r align-top w-[160px]">
+                     <div className="flex h-full w-full">
+                        <div className="border-r h-full flex-1 relative">
+                            <select 
+                                className="w-full h-full bg-transparent text-xs text-center appearance-none cursor-pointer focus:bg-white focus:ring-1 focus:ring-inset focus:ring-purple-500 outline-none p-0 border-none"
+                                value={measurement.config?.lightingType || 'artificial'}
+                                onChange={(e) => updateConfig('lightingType', e.target.value)}
+                                id={`input-${rowIndex}-lightingType`}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault(); 
+                                        document.getElementById(`input-${rowIndex}-lightsOffCount`)?.focus();
+                                    }
+                                }}
+                            >
+                                <option value="artificial">Artif.</option>
+                                <option value="natural">Natural</option>
+                                <option value="mixed">Mixta</option>
+                            </select>
+                        </div>
+                        <div className="h-full flex-1">
+                            <DebouncedInput
+                                id={`input-${rowIndex}-lightsOffCount`}
+                                type="number"
+                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-purple-500"
+                                value={measurement.config?.lightsOffCount || ''}
+                                placeholder="-"
+                                onDebouncedChange={(v) => updateConfig('lightsOffCount', parseFloat(v as string))}
+                                onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'lightsOffCount')}
+                            />
                         </div>
                      </div>
                   </TableCell>

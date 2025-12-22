@@ -128,6 +128,7 @@ export interface Measurement {
     lightSource?: string; // LED, Fluorescente, etc.
     artifactType?: string; // Descarga, LED, Incandescente, etc.
     luxOff?: number; // Valor de medición con luces apagadas (OFF)
+    lightsOffCount?: number; // Cantidad de luces OFF
   };
 
   // Detailed Metadata (New Request)
