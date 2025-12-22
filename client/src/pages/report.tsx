@@ -1,8 +1,8 @@
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil, FileText } from "lucide-react";
+import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil, FileText, ImageIcon, Check, Trash2, Plus } from "lucide-react";
 import { Link } from "wouter";
-import { MEASUREMENT_LABELS, Measurement, MeasurementType } from "@/lib/types";
+import { MEASUREMENT_LABELS, Measurement, MeasurementType, Instrument } from "@/lib/types";
 import logoUrl from "@assets/image_1765761040646.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -12,18 +12,55 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Report() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
   const sectors = useStore((state) => state.sectors);
+  const availableInstruments = useStore((state) => state.availableInstruments);
   const { toast } = useToast();
   
   // State for filtering
   const [selectedType, setSelectedType] = useState<MeasurementType | 'all'>('all');
+  const [isInstrumentDialogOpen, setIsInstrumentDialogOpen] = useState(false);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleSketchUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      updateEstablishment({ sketchImage: reader.result as string });
+      toast({ title: "Croquis cargado correctamente" });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (file: File, type: 'measurementProof' | 'calibrationCertificate' | 'other', measurementId?: string) => {
+      // Logic for measurement images would go here, but for now we are dealing with global annexes mostly
+      toast({ title: "Función de imágenes detalladas próximamente" });
+  };
+
+  const addInstrumentToReport = (instrument: Instrument) => {
+      const currentInstruments = establishment.instruments || [];
+      if (!currentInstruments.some(i => i.id === instrument.id)) {
+          updateEstablishment({
+              instruments: [...currentInstruments, instrument]
+          });
+          toast({ title: "Instrumento agregado al anexo" });
+      }
+      setIsInstrumentDialogOpen(false);
+  };
+
+  const removeInstrumentFromReport = (instrumentId: string) => {
+      const currentInstruments = establishment.instruments || [];
+      updateEstablishment({
+          instruments: currentInstruments.filter(i => i.id !== instrumentId)
+      });
   };
 
   const generateAIContent = () => {
@@ -1550,31 +1587,97 @@ export default function Report() {
             <h2 className="text-xl font-bold text-primary mb-6 uppercase tracking-wide border-b-2 border-primary pb-2">
                 Anexo 1: Croquis del Establecimiento
             </h2>
-            {establishment.sketchImage ? (
-                <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-gray-50/30 min-h-[400px]">
-                    <img src={establishment.sketchImage} alt="Croquis del Establecimiento" className="max-w-full max-h-[800px] object-contain" />
-                </div>
-            ) : (
-                <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
-                    No se ha adjuntado un croquis general del establecimiento.
-                </div>
-            )}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center min-h-[300px] flex flex-col items-center justify-center bg-gray-50 relative group">
+               {establishment.sketchImage ? (
+                   <div className="relative w-full h-full flex items-center justify-center">
+                       <img src={establishment.sketchImage} alt="Croquis del Establecimiento" className="max-h-[600px] max-w-full object-contain" />
+                       <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity no-print">
+                           <Button variant="secondary" size="sm" onClick={() => updateEstablishment({ sketchImage: undefined })}>
+                               <Trash2 className="h-4 w-4" />
+                           </Button>
+                       </div>
+                   </div>
+               ) : (
+                   <div className="flex flex-col items-center gap-4 no-print">
+                       <p className="text-muted-foreground">No se ha adjuntado un croquis general del establecimiento.</p>
+                       <div className="relative">
+                            <Button variant="outline" className="gap-2">
+                                <ImageIcon className="h-4 w-4" /> Subir Croquis
+                            </Button>
+                            <Input 
+                                type="file" 
+                                accept="image/*" 
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                onChange={(e) => e.target.files?.[0] && handleSketchUpload(e.target.files[0])}
+                            />
+                       </div>
+                   </div>
+               )}
+               {/* Print placeholder if empty */}
+               {!establishment.sketchImage && (
+                   <div className="hidden print:block text-gray-400 italic">
+                       [Espacio reservado para el Croquis del Establecimiento]
+                   </div>
+               )}
+           </div>
         </div>
 
         {/* Anexo 2: Instrumentos */}
         <div className="break-before-page mt-8">
-            <h2 className="text-xl font-bold text-primary mb-6 uppercase tracking-wide border-b-2 border-primary pb-2">
-                Anexo 2: Instrumental Utilizado y Certificados
-            </h2>
+            <div className="flex items-center justify-between mb-6 border-b-2 border-primary pb-2">
+                 <h2 className="text-xl font-bold text-primary uppercase tracking-wide">
+                     Anexo 2: Instrumental Utilizado y Certificados
+                 </h2>
+                 <Dialog open={isInstrumentDialogOpen} onOpenChange={setIsInstrumentDialogOpen}>
+                     <DialogTrigger asChild>
+                         <Button variant="outline" size="sm" className="gap-2 no-print">
+                             <Plus className="h-4 w-4" /> Agregar Instrumento
+                         </Button>
+                     </DialogTrigger>
+                     <DialogContent>
+                         <DialogHeader>
+                             <DialogTitle>Seleccionar Instrumento</DialogTitle>
+                         </DialogHeader>
+                         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                             {availableInstruments.map(inst => (
+                                 <div key={inst.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                                     <div>
+                                         <div className="font-bold">{inst.brand} {inst.model}</div>
+                                         <div className="text-xs text-muted-foreground">Serie: {inst.serialNumber} | Calibración: {inst.calibrationCertificate || 'S/N'}</div>
+                                     </div>
+                                     <Button size="sm" onClick={() => addInstrumentToReport(inst)}>
+                                         Seleccionar
+                                     </Button>
+                                 </div>
+                             ))}
+                             {availableInstruments.length === 0 && (
+                                 <p className="text-center text-muted-foreground py-4">No hay instrumentos registrados en la base de datos.</p>
+                             )}
+                             <Link href="/instruments" className="w-full">
+                                 <Button variant="secondary" className="w-full">Gestionar Instrumentos</Button>
+                             </Link>
+                         </div>
+                     </DialogContent>
+                 </Dialog>
+            </div>
             
-            {!establishment.instruments || establishment.instruments.length === 0 ? (
-                <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
-                    No hay instrumentos registrados.
+            {(!establishment.instruments || establishment.instruments.length === 0) ? (
+                <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg bg-gray-50">
+                    No hay instrumentos registrados en este reporte.
                 </div>
             ) : (
-                <div className="space-y-12">
+                <div className="space-y-8">
                     {establishment.instruments.map((inst, index) => (
-                        <div key={inst.id} className="break-inside-avoid">
+                        <div key={inst.id} className="break-inside-avoid border rounded-lg p-6 bg-white shadow-sm relative group">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="absolute top-2 right-2 no-print text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => removeInstrumentFromReport(inst.id)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+
                             <h3 className="text-lg font-bold text-gray-800 mb-4 bg-gray-100 p-2 border-l-4 border-primary">
                                 {index + 1}. {inst.brand} {inst.model} (S/N: {inst.serialNumber})
                             </h3>
@@ -1586,27 +1689,35 @@ export default function Report() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
-                                {inst.attachedDocuments?.calibrationCertificateImage && (
-                                    <div className="flex flex-col gap-2">
-                                        <span className="font-bold text-xs uppercase text-gray-500 border-b pb-1">Certificado de Calibración</span>
+                                {/* Calibration Certificate Placeholder/Image */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="font-bold text-xs uppercase text-gray-500 border-b pb-1">Certificado de Calibración</span>
+                                    {inst.attachedDocuments?.calibrationCertificateImage ? (
                                         <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-sm">
-                                            <img src={inst.attachedDocuments.calibrationCertificateImage} alt="Certificado Calibración" className="w-full h-auto object-contain max-h-[500px]" />
+                                            <img src={inst.attachedDocuments.calibrationCertificateImage} alt="Certificado Calibración" className="w-full h-auto object-contain max-h-[300px]" />
                                         </div>
-                                    </div>
-                                )}
-                                {inst.attachedDocuments?.traceablePatternImage && (
-                                    <div className="flex flex-col gap-2">
-                                        <span className="font-bold text-xs uppercase text-gray-500 border-b pb-1">Patrón Trazable</span>
+                                    ) : (
+                                        <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center text-center h-[200px] bg-gray-50/50">
+                                            <FileText className="h-8 w-8 text-gray-300 mb-2" />
+                                            <span className="text-xs text-gray-400 italic">Certificado digital no disponible</span>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Traceable Pattern Placeholder/Image */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="font-bold text-xs uppercase text-gray-500 border-b pb-1">Patrón Trazable</span>
+                                    {inst.attachedDocuments?.traceablePatternImage ? (
                                         <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-sm">
-                                            <img src={inst.attachedDocuments.traceablePatternImage} alt="Patrón Trazable" className="w-full h-auto object-contain max-h-[500px]" />
+                                            <img src={inst.attachedDocuments.traceablePatternImage} alt="Patrón Trazable" className="w-full h-auto object-contain max-h-[300px]" />
                                         </div>
-                                    </div>
-                                )}
-                                {!inst.attachedDocuments?.calibrationCertificateImage && !inst.attachedDocuments?.traceablePatternImage && (
-                                    <div className="col-span-2 text-center py-8 text-gray-400 italic text-xs">
-                                        No hay imágenes de documentación adjuntas para este instrumento.
-                                    </div>
-                                )}
+                                    ) : (
+                                        <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center text-center h-[200px] bg-gray-50/50">
+                                            <Sparkles className="h-8 w-8 text-gray-300 mb-2" />
+                                            <span className="text-xs text-gray-400 italic">Patrón trazable no disponible</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
