@@ -21,6 +21,7 @@ export default function Report() {
   const updateEstablishment = useStore((state) => state.updateEstablishment);
   const sectors = useStore((state) => state.sectors);
   const availableInstruments = useStore((state) => state.availableInstruments);
+  const updateMeasurement = useStore((state) => state.updateMeasurement);
   const { toast } = useToast();
   
   // State for filtering
@@ -38,6 +39,47 @@ export default function Report() {
       toast({ title: "Croquis cargado correctamente" });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleMeasurementImageUpload = (sectorId: string, measurementId: string, file: File) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+          const imageBase64 = reader.result as string;
+          
+          // Find the measurement to update
+          const sector = sectors.find(s => s.id === sectorId);
+          const measurement = sector?.measurements.find(m => m.id === measurementId);
+          
+          if (measurement) {
+              const currentOtherImages = measurement.attachedDocuments?.otherImages || [];
+              const updatedDocuments = {
+                  ...measurement.attachedDocuments,
+                  otherImages: [...currentOtherImages, imageBase64]
+              };
+              
+              updateMeasurement(sectorId, measurementId, { attachedDocuments: updatedDocuments });
+              toast({ title: "Imagen agregada a la medición" });
+          }
+      };
+      reader.readAsDataURL(file);
+  };
+
+  const handleMeasurementImageDelete = (sectorId: string, measurementId: string, type: 'measurementProofImage' | 'otherImages', index?: number) => {
+        const sector = sectors.find(s => s.id === sectorId);
+        const measurement = sector?.measurements.find(m => m.id === measurementId);
+        
+        if (measurement && measurement.attachedDocuments) {
+            let updatedDocuments = { ...measurement.attachedDocuments };
+            
+            if (type === 'measurementProofImage') {
+                updatedDocuments.measurementProofImage = undefined;
+            } else if (type === 'otherImages' && typeof index === 'number') {
+                updatedDocuments.otherImages = updatedDocuments.otherImages?.filter((_, i) => i !== index);
+            }
+            
+            updateMeasurement(sectorId, measurementId, { attachedDocuments: updatedDocuments });
+            toast({ title: "Imagen eliminada" });
+        }
   };
 
   const handleImageUpload = (file: File, type: 'measurementProof' | 'calibrationCertificate' | 'other', measurementId?: string) => {
@@ -1799,22 +1841,33 @@ export default function Report() {
                 </div>
             ) : (
                  <div className="space-y-8">
-                    {sectors.map(sector => {
-                        const measurementsWithImages = sector.measurements.filter(m => 
-                            m.attachedDocuments?.measurementProofImage || 
-                            (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0)
-                        );
+                        const measurementsWithImages = sector.measurements; // Show all measurements to allow adding images
                         
                         if (measurementsWithImages.length === 0) return null;
 
+                        // Only render if it has images OR we are in edit mode (not printing)
+                        // Actually, for report view, we probably want to see only those with images when printing,
+                        // but see all when editing to add images.
+                        // However, to keep it simple and consistent:
+                        // We will show all measurements sections here, but those without images will only show the upload button (hidden in print)
+
+                        const hasAnyImage = measurementsWithImages.some(m => m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0));
+
                         return (
-                            <div key={sector.id} className="break-inside-avoid">
+                            <div key={sector.id} className={`break-inside-avoid ${!hasAnyImage ? 'no-print' : ''}`}>
                                 <h4 className="font-bold text-md text-gray-700 mb-2 bg-gray-50 p-2 border-b">
                                     Sector: {sector.name}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {measurementsWithImages.map(m => (
-                                        <div key={m.id} className="border rounded-lg p-4 bg-white shadow-sm break-inside-avoid">
+                                    {measurementsWithImages.map(m => {
+                                         const hasImages = m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0);
+                                         
+                                         // If no images and printing, skip this card
+                                         // But we can't easily conditionally render based on print media query in JS logic here
+                                         // We use CSS classes.
+                                         
+                                         return (
+                                        <div key={m.id} className={`border rounded-lg p-4 bg-white shadow-sm break-inside-avoid relative group ${!hasImages ? 'no-print border-dashed' : ''}`}>
                                             <div className="mb-2 pb-2 border-b">
                                                 <span className="font-bold text-sm text-primary uppercase block">
                                                     {MEASUREMENT_LABELS[m.type]}
@@ -1827,37 +1880,83 @@ export default function Report() {
                                             
                                             <div className="space-y-4">
                                                 {m.attachedDocuments?.measurementProofImage && (
-                                                    <div className="flex flex-col gap-2">
+                                                    <div className="flex flex-col gap-2 relative group-image">
                                                         <span className="text-xs font-semibold bg-green-50 text-green-700 px-2 py-1 rounded w-fit">
                                                             Prueba de Medición
                                                         </span>
-                                                        <div className="rounded border bg-gray-50 overflow-hidden">
+                                                        <div className="rounded border bg-gray-50 overflow-hidden relative">
                                                             <img 
                                                                 src={m.attachedDocuments.measurementProofImage} 
                                                                 alt={`Prueba ${sector.name} - ${MEASUREMENT_LABELS[m.type]}`}
                                                                 className="w-full h-auto object-contain max-h-[300px]"
                                                             />
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                                                onClick={() => {
+                                                                    handleMeasurementImageDelete(sector.id, m.id, 'measurementProofImage');
+                                                                }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 )}
 
                                                 {m.attachedDocuments?.otherImages?.map((img, idx) => (
-                                                    <div key={idx} className="flex flex-col gap-2">
+                                                    <div key={idx} className="flex flex-col gap-2 relative group-image">
                                                         <span className="text-xs font-semibold bg-gray-100 text-gray-700 px-2 py-1 rounded w-fit">
                                                             Imagen Adicional {idx + 1}
                                                         </span>
-                                                        <div className="rounded border bg-gray-50 overflow-hidden">
+                                                        <div className="rounded border bg-gray-50 overflow-hidden relative">
                                                             <img 
                                                                 src={img} 
                                                                 alt={`Extra ${idx}`}
                                                                 className="w-full h-auto object-contain max-h-[300px]"
                                                             />
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                                                onClick={() => {
+                                                                    handleMeasurementImageDelete(sector.id, m.id, 'otherImages', idx);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 ))}
+                                                
+                                                {/* Fallback text if no images */}
+                                                {!hasImages && (
+                                                    <div className="text-center text-xs text-muted-foreground italic py-4">
+                                                        Sin imágenes adjuntas
+                                                    </div>
+                                                )}
+
+                                                {/* Upload button for each measurement */}
+                                                <div className="no-print mt-4 pt-4 border-t border-dashed">
+                                                     <div className="relative w-full">
+                                                        <Button variant="outline" size="sm" className="w-full gap-2">
+                                                            <ImageIcon className="h-4 w-4" /> Agregar Foto a Medición
+                                                        </Button>
+                                                        <Input 
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                                            onChange={(e) => {
+                                                                if (e.target.files?.[0]) {
+                                                                    handleMeasurementImageUpload(sector.id, m.id, e.target.files[0]);
+                                                                }
+                                                            }}
+                                                        />
+                                                     </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
                             </div>
                         );
@@ -1865,8 +1964,55 @@ export default function Report() {
                     
                     {/* Fallback if no specific images found anywhere */}
                     {!sectors.some(s => s.measurements.some(m => m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0))) && (
-                        <div className="p-12 text-center text-gray-400 italic border-2 border-dashed rounded-lg">
-                            No se han adjuntado imágenes específicas a las mediciones.
+                        <div className="space-y-8">
+                            <div className="p-4 text-center text-gray-400 italic border-2 border-dashed rounded-lg bg-gray-50 mb-6">
+                                No se han adjuntado imágenes específicas a las mediciones.
+                            </div>
+                            
+                            {/* Show all measurements anyway to allow upload */}
+                            {sectors.map(sector => (
+                                sector.measurements.length > 0 && (
+                                    <div key={sector.id} className="break-inside-avoid no-print">
+                                        <h4 className="font-bold text-md text-gray-700 mb-2 bg-gray-50 p-2 border-b">
+                                            Sector: {sector.name}
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {sector.measurements.map(m => (
+                                                <div key={m.id} className="border rounded-lg p-4 bg-white shadow-sm break-inside-avoid relative group border-dashed">
+                                                    <div className="mb-2 pb-2 border-b">
+                                                        <span className="font-bold text-sm text-primary uppercase block">
+                                                            {MEASUREMENT_LABELS[m.type]}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {m.details?.measurementDate ? format(new Date(m.details.measurementDate), "d/MM/yyyy") : ''} 
+                                                            {m.details?.startTime ? ` - ${m.details.startTime}` : ''}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {/* Upload button for each measurement */}
+                                                    <div className="no-print mt-2 pt-2">
+                                                            <div className="relative w-full">
+                                                            <Button variant="outline" size="sm" className="w-full gap-2">
+                                                                <ImageIcon className="h-4 w-4" /> Agregar Foto a Medición
+                                                            </Button>
+                                                            <Input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                onChange={(e) => {
+                                                                    if (e.target.files?.[0]) {
+                                                                        handleMeasurementImageUpload(sector.id, m.id, e.target.files[0]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                            </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )
+                            ))}
                         </div>
                     )}
                  </div>
