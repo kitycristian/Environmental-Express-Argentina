@@ -1,0 +1,53 @@
+"El informe sigue saliendo mal porque estás exportando la interfaz de usuario (UI) en lugar de un documento técnico. DETÉN el uso de window.print() o capturas del DOM actual. Necesito que implementes un Motor de Documentos independiente siguiendo estas reglas estrictas:
+
+1. Plantilla de Informe Independiente (Clean Layout):
+
+Crea una función de exportación que tome los datos de la inspección (cliente, mediciones, instrumentos) y los inserte en una plantilla HTML exclusiva para PDF, totalmente distinta a la interfaz del 'Tablero de Inspección'.
+
+
+
+
+
+Fondo Blanco Puro: Elimina cualquier color de fondo gris o sombras de tarjetas (cards).
+
+
+
+Tablas Profesionales: Las tablas deben tener bordes negros finos (0.5pt) y encabezados en blanco y negro para ser aptas para impresión, similares a las de un protocolo oficial de la SRT.
+
+
+
+2. Formateo de Contenido (Basado en PDF ALPLA/EEA):
+
+
+Salto de página (Page Breaks): Asegura que cada sección (Iluminación, Ruido, Croquis) comience en una hoja nueva.
+
+
+
+
+
+Encabezado Técnico: En cada página debe aparecer el logo de EEA arriba a la izquierda y, a la derecha, una tabla pequeña con: Razón Social, CUIT, Fecha y Número de Informe.
+
+
+
+
+Pie de Página: Centrado, con 'Página X de Y' y la leyenda: 'Documento técnico generado según protocolos vigentes de la SRT'.
+
+
+
+3. Lógica de Conclusiones Automáticas:
+
+No imprimas el texto de la interfaz. Genera un bloque de texto limpio que diga: 'En el sector [Nombre], los valores de [Agente] se encuentran [DENTRO/FUERA] de los parámetros legales' basándose en la comparación del Valor Medido vs Valor Legal.
+
+
+4. Manejo de Anexos:
+
+
+Croquis: Debe ocupar el ancho total de la página, sin el botón 'Subir Croquis' visible.
+
+
+Certificados: Los certificados de instrumentos deben ir en su propia página al final, con la imagen del certificado en un tamaño legible (Media página cada uno).
+
+
+5. Instrucción Técnica:
+
+Utiliza una librería como jsPDF con autoTable o react-pdf (si usas React) para definir el documento por código, NO permitas que el CSS de la página web afecte al PDF."

@@ -17,21 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { generateDocxReport } from "@/lib/docx-generator";
+import { generatePDFReport } from "@/lib/pdf-generator";
 
 export default function Report() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
 
   const sectors = useStore((state) => state.sectors);
-  // ... rest of component
-
-  // Add function
-  const handleDocxExport = () => {
-      toast({ title: "Generando documento DOCX..." });
-      generateDocxReport(establishment, sectors);
-  };
-
-  // ... inside return (add button)
   const availableInstruments = useStore((state) => state.availableInstruments);
   const updateMeasurement = useStore((state) => state.updateMeasurement);
   const { toast } = useToast();
@@ -40,8 +32,15 @@ export default function Report() {
   const [selectedType, setSelectedType] = useState<MeasurementType | 'all'>('all');
   const [isInstrumentDialogOpen, setIsInstrumentDialogOpen] = useState(false);
 
+  // Add function
+  const handleDocxExport = () => {
+      toast({ title: "Generando documento DOCX..." });
+      generateDocxReport(establishment, sectors);
+  };
+
   const handlePrint = () => {
-    window.print();
+    toast({ title: "Generando PDF...", description: "Espere un momento mientras se procesa el documento." });
+    generatePDFReport(establishment, sectors);
   };
 
   // Add print styles dynamically
