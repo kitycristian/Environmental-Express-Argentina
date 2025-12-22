@@ -1,0 +1,38 @@
+"El sistema de exportación actual es inaceptable: las tablas se rompen y las imágenes fallan al procesarse. Necesito una reconstrucción total del módulo de generación de informes siguiendo estas reglas de diseño técnico y editorial:
+
+1. Solución Definitiva a Imágenes (Anexo de Evidencia):
+
+Persistencia Real: No uses rutas temporales del navegador. Asegura que las imágenes (Croquis y Fotos) se conviertan a Base64 o se almacenen en una ruta estática persistente antes de la generación del PDF.
+
+
+Depuración de Errores: Elimina el mensaje '[Error al procesar imagen]'. Si una imagen no carga, el sistema debe alertar antes de generar el PDF, no después.
+
+Layout de Fotos: Las fotos deben aparecer con bordes definidos, centradas y con un epígrafe indicando el sector al que pertenecen.
+
+2. Rediseño Editorial de Tablas (Protocolos):
+
+Adiós al Caos: Las tablas de protocolos (Iluminación, Carga Térmica) deben tener un ancho fijo del 100% de la página, con columnas alineadas y fuentes de tamaño uniforme (10pt).
+
+Limpieza Visual: Fondo blanco puro. Elimina sombras y colores de la interfaz web. Usa solo un gris muy tenue para distinguir la fila de encabezados.
+
+
+Lógica de Estado: La columna 'Estado' (CUMPLE / NO CUMPLE) debe estar claramente separada y formateada para que sea lo primero que vea el auditor.
+
+
+3. Estructura de Documento Técnico (Layout ALPLA/EEA):
+
+
+Encabezado Institucional: En cada página, el logo de EEA debe estar en alta resolución con el nombre de la empresa.
+
+Separación de Agentes: Cada protocolo (Iluminación, Ruido, Carga Térmica) DEBE comenzar en una página nueva. No permitas que se corten a la mitad de una hoja.
+
+
+Pie de Página Profesional: Mantén la leyenda legal  y la numeración 'Página X de Y' de forma consistente en todo el documento.
+
+
+4. Conclusiones y Recomendaciones:
+
+
+Formato de Texto: Usa listas con viñetas claras para las recomendaciones por sector. El texto debe estar justificado y con interlineado de 1.15 para facilitar la lectura.
+
+Instrucción Técnica: No utilices window.print(). Implementa una librería de generación de documentos (como jsPDF con autoTable) que construya el PDF celda por celda basándose en los datos del JSON de la inspección, ignorando completamente el CSS de la interfaz de usuario."
