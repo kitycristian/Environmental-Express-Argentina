@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function Report() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
+
   const sectors = useStore((state) => state.sectors);
   const availableInstruments = useStore((state) => state.availableInstruments);
   const updateMeasurement = useStore((state) => state.updateMeasurement);
@@ -31,6 +32,84 @@ export default function Report() {
   const handlePrint = () => {
     window.print();
   };
+
+  // Add print styles dynamically
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        @page {
+          margin: 10mm;
+          size: A4 portrait;
+        }
+        
+        body {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          background-color: white !important;
+        }
+
+        /* Hide UI elements */
+        .no-print, button, nav, header, footer:not(.report-footer), .fixed, .toast-viewport {
+          display: none !important;
+        }
+
+        /* Report Footer should show */
+        .report-footer {
+            display: block !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            padding: 10px 30px;
+            z-index: 9999;
+        }
+
+        /* Force table widths and fonts */
+        table {
+          width: 100% !important;
+          font-size: 9px !important;
+          border-collapse: collapse !important;
+        }
+        
+        th, td {
+          padding: 2px 4px !important;
+          border: 1px solid black !important;
+        }
+
+        /* Adjust main container */
+        .container, .max-w-4xl {
+          max-width: none !important;
+          width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+
+        /* Page breaks */
+        .break-before-page {
+          break-before: page;
+          page-break-before: always;
+        }
+        
+        .break-inside-avoid {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        
+        /* Headers styling adjustment for print */
+        h2, h3, h4 {
+            color: black !important; /* Force black headers for formal look if needed, or keep colors */
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const handleSketchUpload = (file: File) => {
     const reader = new FileReader();
