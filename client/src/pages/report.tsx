@@ -1841,15 +1841,10 @@ export default function Report() {
                 </div>
             ) : (
                  <div className="space-y-8">
-                        const measurementsWithImages = sector.measurements; // Show all measurements to allow adding images
+                    {sectors.map(sector => {
+                        const measurementsWithImages = sector.measurements; 
                         
                         if (measurementsWithImages.length === 0) return null;
-
-                        // Only render if it has images OR we are in edit mode (not printing)
-                        // Actually, for report view, we probably want to see only those with images when printing,
-                        // but see all when editing to add images.
-                        // However, to keep it simple and consistent:
-                        // We will show all measurements sections here, but those without images will only show the upload button (hidden in print)
 
                         const hasAnyImage = measurementsWithImages.some(m => m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0));
 
@@ -1861,10 +1856,6 @@ export default function Report() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {measurementsWithImages.map(m => {
                                          const hasImages = m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0);
-                                         
-                                         // If no images and printing, skip this card
-                                         // But we can't easily conditionally render based on print media query in JS logic here
-                                         // We use CSS classes.
                                          
                                          return (
                                         <div key={m.id} className={`border rounded-lg p-4 bg-white shadow-sm break-inside-avoid relative group ${!hasImages ? 'no-print border-dashed' : ''}`}>
@@ -1929,14 +1920,12 @@ export default function Report() {
                                                     </div>
                                                 ))}
                                                 
-                                                {/* Fallback text if no images */}
                                                 {!hasImages && (
                                                     <div className="text-center text-xs text-muted-foreground italic py-4">
                                                         Sin imágenes adjuntas
                                                     </div>
                                                 )}
 
-                                                {/* Upload button for each measurement */}
                                                 <div className="no-print mt-4 pt-4 border-t border-dashed">
                                                      <div className="relative w-full">
                                                         <Button variant="outline" size="sm" className="w-full gap-2">
@@ -1961,60 +1950,6 @@ export default function Report() {
                             </div>
                         );
                     })}
-                    
-                    {/* Fallback if no specific images found anywhere */}
-                    {!sectors.some(s => s.measurements.some(m => m.attachedDocuments?.measurementProofImage || (m.attachedDocuments?.otherImages && m.attachedDocuments.otherImages.length > 0))) && (
-                        <div className="space-y-8">
-                            <div className="p-4 text-center text-gray-400 italic border-2 border-dashed rounded-lg bg-gray-50 mb-6">
-                                No se han adjuntado imágenes específicas a las mediciones.
-                            </div>
-                            
-                            {/* Show all measurements anyway to allow upload */}
-                            {sectors.map(sector => (
-                                sector.measurements.length > 0 && (
-                                    <div key={sector.id} className="break-inside-avoid no-print">
-                                        <h4 className="font-bold text-md text-gray-700 mb-2 bg-gray-50 p-2 border-b">
-                                            Sector: {sector.name}
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {sector.measurements.map(m => (
-                                                <div key={m.id} className="border rounded-lg p-4 bg-white shadow-sm break-inside-avoid relative group border-dashed">
-                                                    <div className="mb-2 pb-2 border-b">
-                                                        <span className="font-bold text-sm text-primary uppercase block">
-                                                            {MEASUREMENT_LABELS[m.type]}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {m.details?.measurementDate ? format(new Date(m.details.measurementDate), "d/MM/yyyy") : ''} 
-                                                            {m.details?.startTime ? ` - ${m.details.startTime}` : ''}
-                                                        </span>
-                                                    </div>
-                                                    
-                                                    {/* Upload button for each measurement */}
-                                                    <div className="no-print mt-2 pt-2">
-                                                            <div className="relative w-full">
-                                                            <Button variant="outline" size="sm" className="w-full gap-2">
-                                                                <ImageIcon className="h-4 w-4" /> Agregar Foto a Medición
-                                                            </Button>
-                                                            <Input 
-                                                                type="file" 
-                                                                accept="image/*" 
-                                                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                                                onChange={(e) => {
-                                                                    if (e.target.files?.[0]) {
-                                                                        handleMeasurementImageUpload(sector.id, m.id, e.target.files[0]);
-                                                                    }
-                                                                }}
-                                                            />
-                                                            </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )
-                            ))}
-                        </div>
-                    )}
                  </div>
             )}
         </div>
