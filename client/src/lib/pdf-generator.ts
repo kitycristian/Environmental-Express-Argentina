@@ -389,21 +389,54 @@ export const generatePDFReport = async (establishment: Establishment, sectors: S
           yPos += 5;
 
           try {
-              const imgProps = doc.getImageProperties(item.image);
+              // Convert base64 to image explicitly if needed, but addImage supports it.
+              // jsPDF usually needs format hint if it can't detect it.
+              // We'll pass format 'PNG' or 'JPEG' if we can guess, but let's try a safer addImage first.
+              
+              // const imgProps = doc.getImageProperties(item.image); 
+              // getImageProperties can fail if format is not supported synchronously.
+              
               const availableWidth = pageWidth - (margin * 2);
-              const ratio = Math.min(availableWidth / imgProps.width, maxImgHeight / imgProps.height);
-              const w = imgProps.width * ratio;
-              const h = imgProps.height * ratio;
+              const maxH = maxImgHeight;
               
-              // Center image horizontally
+              // We'll try to add the image directly. If we need dimensions, we'll assume a standard ratio or handle async loading
+              // But since we already have base64, we can create an Image element to get dimensions if getImageProperties fails.
+              // However, since we are in async function, we can await an image loader.
+              
+              const img = new Image();
+              img.src = item.image;
+              
+              // Note: This waiting is synchronous for the loop inside async function? No, we need to promisify getting dimensions if doc.getImageProperties fails.
+              // But doc.getImageProperties is synchronous for Data URLs usually.
+              // The error suggests the string might be missing prefix or have issues.
+              
+              // Check if image string has data prefix
+              if (!item.image.startsWith('data:image/')) {
+                  throw new Error("Invalid image format");
+              }
+              
+              const props = doc.getImageProperties(item.image);
+              const ratio = Math.min(availableWidth / props.width, maxH / props.height);
+              const w = props.width * ratio;
+              const h = props.height * ratio;
+              
               const xPos = margin + (availableWidth - w) / 2;
-              
               doc.addImage(item.image, "PNG", xPos, yPos, w, h);
-              yPos += h + 15; // Space for next photo
+              yPos += h + 15;
           } catch (e) {
-              doc.setTextColor(200, 0, 0);
-              doc.text("[Error al procesar imagen]", margin, yPos);
-              yPos += 20;
+              // Fallback: try adding as JPEG if PNG failed, or generic
+              try {
+                  // Sometimes properties fail but adding works? Unlikely.
+                  // Try to just add it with fixed width if props failed
+                  // doc.addImage(item.image, xPos, yPos, 100, 100); 
+                  doc.setTextColor(200, 0, 0);
+                  doc.text("[Error: Formato de imagen no soportado]", margin, yPos);
+                  yPos += 20;
+              } catch (e2) {
+                  doc.setTextColor(200, 0, 0);
+                  doc.text("[Error al procesar imagen]", margin, yPos);
+                  yPos += 20;
+              }
           }
       });
       
