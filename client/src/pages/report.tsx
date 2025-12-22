@@ -16,11 +16,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { generateDocxReport } from "@/lib/docx-generator";
+
 export default function Report() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
 
   const sectors = useStore((state) => state.sectors);
+  // ... rest of component
+
+  // Add function
+  const handleDocxExport = () => {
+      toast({ title: "Generando documento DOCX..." });
+      generateDocxReport(establishment, sectors);
+  };
+
+  // ... inside return (add button)
   const availableInstruments = useStore((state) => state.availableInstruments);
   const updateMeasurement = useStore((state) => state.updateMeasurement);
   const { toast } = useToast();
@@ -1550,8 +1561,17 @@ export default function Report() {
           }}>
             <FileJson className="mr-2 h-4 w-4" /> Exportar JSON
           </Button>
-          <Button onClick={handlePrint} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          <Button 
+             variant="outline" 
+             onClick={handleDocxExport} 
+             className="gap-2 border-blue-800 text-blue-800 hover:bg-blue-50 no-print"
+          >
+             <FileText className="h-4 w-4" />
+             Exportar DOCX
+          </Button>
+          <Button onClick={handlePrint} className="bg-primary text-primary-foreground hover:bg-primary/90 no-print">
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir / PDF
           </Button>
         </div>
       </div>
@@ -2033,7 +2053,7 @@ export default function Report() {
             )}
         </div>
 
-        <footer className="mt-16 pt-6 border-t border-gray-200 flex flex-col items-center text-xs text-gray-400 print:fixed print:bottom-0 print:left-0 print:w-full print:bg-white print:px-8 print:pb-4">
+        <footer className="report-footer mt-16 pt-6 border-t border-gray-200 flex flex-col items-center text-xs text-gray-400">
           <div className="flex justify-between w-full mb-8">
              <div className="text-left">
                <span>Generado el {new Date().toLocaleDateString()}</span>

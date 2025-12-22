@@ -1,0 +1,52 @@
+"El sistema de exportación actual está imprimiendo la interfaz de la herramienta y no un documento técnico. Necesito que reconstruyas el módulo de exportación (PDF y DOCS) para que genere un Informe Técnico de Agentes de Riesgo limpio y profesional, siguiendo estrictamente estas directivas:
+
+1. Separación de Capas (Layout de Informe):
+
+
+Cero elementos de interfaz: El documento final NO debe mostrar botones ('Guardar', 'Subir Croquis'), barras de navegación o campos de entrada de texto.
+
+
+
+Formato de Hoja: Configura el diseño en formato A4 vertical con márgenes técnicos (2.5 cm).
+
+
+Encabezado y Pie de Página en cada hoja: * Encabezado: Logo de EEA , título del informe y datos del establecimiento (Razón Social, CUIT, Dirección).
+
+
+
+
+Pie de Página: Número de página ('Página X de Y'), fecha de generación y la leyenda legal obligatoria de la SRT.
+
+
+
+
+2. Estructura de Contenido (Basada en Protocolos SRT):
+
+
+Página 1 (Portada): Título grande 'INFORME TÉCNICO', datos del cliente, fecha de medición y listado de instrumental utilizado con sus números de serie.
+
+
+
+
+Página 2 en adelante (Protocolos): Tablas de mediciones limpias (ej. Tabla de Valores de Iluminación) con columnas para Sector, Punto, Valor Medido y Valor Legal.
+
+
+Página de Conclusiones: Un resumen legible de los sectores que cumplen y los que no cumplen, junto con las recomendaciones de adecuación.
+
+
+
+
+
+Anexos: El croquis debe aparecer en una página completa sin bordes de botones , seguido por la evidencia fotográfica organizada (máximo 2 o 4 fotos por página con su respectivo epígrafe).
+
+
+
+3. Tecnología de Generación:
+
+Para PDF: Utiliza una plantilla HTML/CSS específica para impresión (usando @media print o librerías como html2pdf o react-pdf) que oculte automáticamente los elementos de la web.
+
+Para DOCS: Permite la descarga en formato .docx manteniendo las tablas editables y el logo en alta resolución.
+
+4. Estética Corporativa:
+
+Usa el esquema de colores institucional (Azul y Verde) únicamente para los encabezados de tablas y títulos. El cuerpo del texto debe ser negro sobre fondo blanco para impresión."
