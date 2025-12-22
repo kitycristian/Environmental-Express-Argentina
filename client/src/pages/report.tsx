@@ -294,34 +294,33 @@ export default function Report() {
        </div>
 
        {/* Memoria de Calculos Table */}
-       <div className="mt-8 break-inside-avoid">
+       <div className="mt-8 break-inside-avoid w-full">
            <h3 className="font-bold text-sm uppercase mb-2 bg-gray-200 p-1 pl-2 border-l-4 border-black">Memoria de Calculos</h3>
-           <div className="overflow-x-auto">
-               <table className="w-full text-[9px] border-collapse border border-black table-fixed min-w-[1000px]">
+           <div className="w-full">
+               <table className="w-full text-[9px] border-collapse border border-black table-fixed">
                   <thead>
                     <tr className="bg-white text-center font-bold text-[8px] h-8">
-                       <th className="border border-black p-1 w-8" rowSpan={2}>Sector</th>
-                       <th className="border border-black p-1" rowSpan={2}>Subsector</th>
-                       <th className="border border-black p-1 w-20" colSpan={3}>Dimensiones</th>
-                       <th className="border border-black p-1 w-8" rowSpan={2}>Calc.</th>
-                       <th className="border border-black p-1 w-8" rowSpan={2}>Red.</th>
-                       <th className="border border-black p-1 w-8" rowSpan={2}>Factor</th>
-                       <th className="border border-black p-1 w-8" rowSpan={2}>(X+2)</th>
-                       <th className="border border-black p-1 w-8" rowSpan={2}>Ptos</th>
+                       <th className="border border-black p-1 w-[3%]" rowSpan={2}>#</th>
+                       <th className="border border-black p-1 w-[12%]" rowSpan={2}>Sector</th>
+                       <th className="border border-black p-1 w-[12%]" colSpan={3}>Dimensiones</th>
+                       <th className="border border-black p-1 w-[8%]" colSpan={2}>Índices</th>
+                       <th className="border border-black p-1 w-[3%]" rowSpan={2}>Ptos</th>
                        <th className="border border-black p-1" colSpan={9}>Iluminancia por Punto Monitoreado (LUX)</th>
-                       <th className="border border-black p-1 w-10" rowSpan={2}>Valor Max. (Lux)</th>
-                       <th className="border border-black p-1 w-10" rowSpan={2}>Valor Min. (Lux)</th>
-                       <th className="border border-black p-1 w-14" rowSpan={2}>E minima ≥ (Emedia)/2</th>
-                       <th className="border border-black p-1 w-10 bg-blue-100" rowSpan={2}>E. media (Lux)</th>
-                       <th className="border border-black p-1 w-10" rowSpan={2}>Limite Legal (Lux)</th>
-                       <th className="border border-black p-1 w-12" rowSpan={2}>Cumple E min</th>
-                       <th className="border border-black p-1 w-12" rowSpan={2}>Cumple Limite</th>
+                       <th className="border border-black p-1 w-[4%]" rowSpan={2}>Max</th>
+                       <th className="border border-black p-1 w-[4%]" rowSpan={2}>Min</th>
+                       <th className="border border-black p-1 w-[8%]" rowSpan={2}>Uniformidad</th>
+                       <th className="border border-black p-1 w-[4%] bg-blue-100" rowSpan={2}>Med</th>
+                       <th className="border border-black p-1 w-[4%]" rowSpan={2}>Lim</th>
+                       <th className="border border-black p-1 w-[3%]" rowSpan={2}>Uni</th>
+                       <th className="border border-black p-1 w-[3%]" rowSpan={2}>Lim</th>
                     </tr>
                     <tr className="bg-white text-center font-bold text-[8px] h-6">
-                       <th className="border border-black p-0.5">Ancho</th>
-                       <th className="border border-black p-0.5">Largo</th>
-                       <th className="border border-black p-0.5">Alto</th>
-                       {[1,2,3,4,5,6,7,8,9].map(i => <th key={i} className="border border-black p-0.5 w-8">{i}</th>)}
+                       <th className="border border-black p-0.5">An</th>
+                       <th className="border border-black p-0.5">Lg</th>
+                       <th className="border border-black p-0.5">Al</th>
+                       <th className="border border-black p-0.5">K</th>
+                       <th className="border border-black p-0.5">Min</th>
+                       {[1,2,3,4,5,6,7,8,9].map(i => <th key={i} className="border border-black p-0.5 w-[3%]">{i}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -337,16 +336,24 @@ export default function Report() {
                          // Determine number of rows needed for points (9 cols)
                          const pointRows = Math.ceil(Math.max(values.length, 1) / 9);
                          
+                         // Calculate K Index for display
+                         const l = m.config?.length || 0;
+                         const w = m.config?.width || 0;
+                         const h = m.config?.height || 0;
+                         const hm = m.config?.workPlaneHeight || 0.85;
+                         const h_mount = hm ? (h - hm) : h;
+                         const kIndex = (l && w && h_mount > 0) ? ((l * w) / (h_mount * (l + w))).toFixed(2) : '-';
+
                          return (
-                            <tr key={m.id} className="text-center bg-white text-[9px] hover:bg-gray-50 border-b border-black">
+                            <tr key={m.id} className="text-center bg-white text-[9px] border-b border-black break-inside-avoid">
                                 <td className="border border-black p-1">{index + 1}</td>
-                                <td className="border border-black p-1 text-left px-2 break-words" title={m.name || m.sectorName}>{m.name || m.sectorName}</td>
+                                <td className="border border-black p-1 text-left px-1 break-words leading-tight" title={m.name || m.sectorName}>
+                                    {m.name || m.sectorName}
+                                </td>
                                 <td className="border border-black p-1">{m.config?.width || '-'}</td>
                                 <td className="border border-black p-1">{m.config?.length || '-'}</td>
                                 <td className="border border-black p-1">{m.config?.height || '-'}</td>
-                                <td className="border border-black p-1">-</td>
-                                <td className="border border-black p-1">-</td>
-                                <td className="border border-black p-1">-</td>
+                                <td className="border border-black p-1">{kIndex}</td>
                                 <td className="border border-black p-1">-</td>
                                 <td className="border border-black p-1">{values.length}</td>
                                 
@@ -358,7 +365,7 @@ export default function Report() {
                                                 const valIndex = rowIdx * 9 + colIdx;
                                                 const val = values[valIndex];
                                                 return (
-                                                    <div key={rowIdx} className={`h-4 flex items-center justify-center border-b border-gray-100 last:border-0 ${valIndex >= values.length ? 'invisible' : ''}`}>
+                                                    <div key={rowIdx} className={`h-4 flex items-center justify-center border-b border-gray-100 last:border-0 text-[8px] ${valIndex >= values.length ? 'invisible' : ''}`}>
                                                         {val !== undefined ? val : ''}
                                                     </div>
                                                 );
@@ -369,15 +376,15 @@ export default function Report() {
 
                                 <td className="border border-black p-1">{eMax}</td>
                                 <td className="border border-black p-1">{eMin}</td>
-                                <td className="border border-black p-1 whitespace-nowrap">
-                                    {eMin} {compliesUniformity ? '>' : '<'} {Math.round(halfAvg)}
+                                <td className="border border-black p-1 whitespace-nowrap text-[8px]">
+                                    {eMin} {compliesUniformity ? '≥' : '<'} {Math.round(halfAvg)}
                                 </td>
                                 <td className="border border-black p-1 bg-blue-50 font-bold">{eAvg}</td>
                                 <td className="border border-black p-1">{m.config?.limit || '-'}</td>
-                                <td className={`border border-black p-1 font-bold ${compliesUniformity ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                                <td className={`border border-black p-1 font-bold ${compliesUniformity ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                     {compliesUniformity ? 'SI' : 'NO'}
                                 </td>
-                                <td className={`border border-black p-1 font-bold ${compliesLimit ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                                <td className={`border border-black p-1 font-bold ${compliesLimit ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                     {compliesLimit ? 'SI' : 'NO'}
                                 </td>
                             </tr>
