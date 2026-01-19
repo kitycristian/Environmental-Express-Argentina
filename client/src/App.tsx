@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import SectorDetail from "@/pages/sector-detail"; // Keeping it for backward compat or if needed
 import MeasurementCampaign from "@/pages/measurement-campaign";
 import MeasurementEntry from "@/pages/measurement-entry";
+import LightingSheet from "@/pages/lighting-sheet";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
@@ -46,6 +47,11 @@ function Router() {
 
   if (location === "/login") {
     return <Login />;
+  }
+
+  // Fullscreen pages without Layout
+  if (location === "/lighting-sheet") {
+    return <ProtectedRoute component={LightingSheet} />;
   }
 
   return (
