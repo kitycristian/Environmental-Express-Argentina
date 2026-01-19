@@ -213,61 +213,61 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
     }
   };
 
-  const totalTableWidth = 40 + 50 + 250 + 180 + 180 + 160 + (visiblePoints * 40) + 400 + 50; // Added 160px for Details group
+  const totalTableWidth = 60 + 70 + 320 + 240 + 240 + 200 + (visiblePoints * 80) + 500 + 70;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center bg-white p-2 rounded-lg border shadow-sm">
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl border-2 shadow-md">
         <div className="flex items-center gap-4">
-            <h3 className="font-semibold text-lg px-2">Planilla de Campo - Iluminación</h3>
+            <h3 className="font-bold text-2xl px-3 text-primary">Planilla de Campo - Iluminación</h3>
             {selectedSectorIds.length > 0 && (
-                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4 duration-300">
-                    <div className="h-6 w-px bg-gray-200 mx-2" />
-                    <span className="text-xs font-medium text-muted-foreground">{selectedSectorIds.length} seleccionados</span>
+                <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <div className="h-8 w-px bg-gray-300 mx-2" />
+                    <span className="text-base font-medium text-muted-foreground">{selectedSectorIds.length} seleccionados</span>
                     <Button 
                         variant="destructive" 
-                        size="sm" 
-                        className="h-7 px-2 text-xs"
+                        size="lg" 
+                        className="h-12 px-4 text-base"
                         onClick={handleBulkDelete}
                     >
-                        <Trash2 className="h-3 w-3 mr-1" />
+                        <Trash2 className="h-5 w-5 mr-2" />
                         Borrar
                     </Button>
                     <Button 
                         variant="outline" 
-                        size="sm" 
-                        className="h-7 px-2 text-xs border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                        size="lg" 
+                        className="h-12 px-4 text-base border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
                         onClick={handleBulkAddPoint}
                     >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Punto
+                        <Plus className="h-5 w-5 mr-2" />
+                        Agregar Punto
                     </Button>
                 </div>
             )}
         </div>
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-gray-100 rounded-md p-1 mr-2">
+        <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 mr-2">
                 <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-6 w-6" 
+                    className="h-10 w-10 text-xl" 
                     onClick={() => setVisiblePoints(Math.max(9, visiblePoints - 3))}
                     disabled={visiblePoints <= 9}
                 >
-                    <span className="text-xs">-</span>
+                    <Minus className="h-5 w-5" />
                 </Button>
-                <span className="text-xs font-mono w-12 text-center">{visiblePoints} Ptos</span>
+                <span className="text-lg font-bold font-mono w-20 text-center">{visiblePoints} Ptos</span>
                 <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-6 w-6" 
+                    className="h-10 w-10 text-xl" 
                     onClick={() => setVisiblePoints(visiblePoints + 3)}
                 >
-                    <span className="text-xs">+</span>
+                    <Plus className="h-5 w-5" />
                 </Button>
             </div>
-            <Button onClick={handleAddRow} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={handleAddRow} size="lg" className="h-12 text-base px-6">
+                <Plus className="h-5 w-5 mr-2" />
                 Agregar Sector (Fila)
             </Button>
         </div>
@@ -290,79 +290,80 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
         >
             <Table className="border-collapse" style={{ minWidth: `${totalTableWidth}px` }}>
             <TableHeader className="bg-gray-50 border-b-2 border-gray-200">
-            <TableRow className="h-20"> 
+            <TableRow className="h-24"> 
               {/* Checkbox */}
-              <TableHead className="w-[40px] text-center border-r bg-gray-100 p-0">
+              <TableHead className="w-[60px] text-center border-r bg-gray-100 p-0">
                   <div className="flex items-center justify-center w-full h-full">
                       <Checkbox 
                         checked={selectedSectorIds.length === sectors.length && sectors.length > 0}
                         onCheckedChange={toggleSelectAll}
                         aria-label="Select all"
+                        className="h-6 w-6"
                       />
                   </div>
               </TableHead>
 
               {/* Index */}
-              <TableHead className="w-[50px] text-center font-bold border-r bg-gray-100 text-gray-700">#</TableHead>
+              <TableHead className="w-[70px] text-center font-bold text-lg border-r bg-gray-100 text-gray-700">#</TableHead>
               
               {/* Sector Name */}
-              <TableHead className="w-[250px] font-bold border-r bg-gray-50 text-gray-700 px-4 text-left">Sector / Subsector</TableHead>
+              <TableHead className="w-[320px] font-bold text-lg border-r bg-gray-50 text-gray-700 px-4 text-left">Sector / Subsector</TableHead>
               
-              {/* Dimensiones - 3 cols of 60px = 180px */}
-              <TableHead className="p-0 border-r text-center bg-blue-50/50 w-[180px]">
-                  <div className="border-b py-2 text-xs font-bold text-blue-800 uppercase tracking-wider bg-blue-100/50">Dimensiones</div>
-                  <div className="flex h-10 w-full">
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-blue-700 border-r border-blue-100">ANCHO</div>
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-blue-700 border-r border-blue-100">LARGO</div>
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-blue-700">ALTO</div>
+              {/* Dimensiones - 3 cols */}
+              <TableHead className="p-0 border-r text-center bg-blue-50/50 w-[240px]">
+                  <div className="border-b py-3 text-base font-bold text-blue-800 uppercase tracking-wider bg-blue-100/50">Dimensiones</div>
+                  <div className="flex h-12 w-full">
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-blue-700 border-r border-blue-100">ANCHO</div>
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-blue-700 border-r border-blue-100">LARGO</div>
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-blue-700">ALTO</div>
                   </div>
               </TableHead>
               
-              {/* Cálculos - 3 cols of 60px = 180px */}
-              <TableHead className="p-0 border-r text-center bg-orange-50/50 w-[180px]">
-                  <div className="border-b py-2 text-xs font-bold text-orange-800 uppercase tracking-wider bg-orange-100/50">Cálculos</div>
-                  <div className="flex h-10 w-full">
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 border-r border-orange-100 leading-3">INDICE<br/>K</div>
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 border-r border-orange-100 leading-3">PTOS<br/>MIN</div>
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-orange-700 leading-3">PTOS<br/>ACT</div>
+              {/* Cálculos - 3 cols */}
+              <TableHead className="p-0 border-r text-center bg-orange-50/50 w-[240px]">
+                  <div className="border-b py-3 text-base font-bold text-orange-800 uppercase tracking-wider bg-orange-100/50">Cálculos</div>
+                  <div className="flex h-12 w-full">
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-orange-700 border-r border-orange-100 leading-4">INDICE<br/>K</div>
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-orange-700 border-r border-orange-100 leading-4">PTOS<br/>MIN</div>
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-orange-700 leading-4">PTOS<br/>ACT</div>
                   </div>
               </TableHead>
 
-              {/* Detalles (Tipo / Off) - 2 cols of 80px = 160px */}
-              <TableHead className="p-0 border-r text-center bg-purple-50/50 w-[160px]">
-                  <div className="border-b py-2 text-xs font-bold text-purple-800 uppercase tracking-wider bg-purple-100/50">Detalles</div>
-                  <div className="flex h-10 w-full">
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-purple-700 border-r border-purple-100 leading-3">TIPO<br/>ILUM</div>
-                      <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-purple-700 leading-3">LUCES<br/>OFF</div>
+              {/* Detalles (Tipo / Off) - 2 cols */}
+              <TableHead className="p-0 border-r text-center bg-purple-50/50 w-[200px]">
+                  <div className="border-b py-3 text-base font-bold text-purple-800 uppercase tracking-wider bg-purple-100/50">Detalles</div>
+                  <div className="flex h-12 w-full">
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-purple-700 border-r border-purple-100 leading-4">TIPO<br/>ILUM</div>
+                      <div className="flex-1 flex items-center justify-center text-sm font-semibold text-purple-700 leading-4">LUCES<br/>OFF</div>
                   </div>
               </TableHead>
 
               {/* Puntos de Medición - Dynamic cols */}
-              <TableHead className="p-0 border-r text-center bg-yellow-50/50" style={{ width: `${visiblePoints * 40}px` }}>
-                  <div className="border-b py-2 text-xs font-bold text-yellow-800 uppercase tracking-wider bg-yellow-100/50">Iluminancia por Punto (LUX)</div>
-                  <div className="flex h-10 w-full">
+              <TableHead className="p-0 border-r text-center bg-yellow-50/50" style={{ width: `${visiblePoints * 80}px` }}>
+                  <div className="border-b py-3 text-base font-bold text-yellow-800 uppercase tracking-wider bg-yellow-100/50">Iluminancia por Punto (LUX)</div>
+                  <div className="flex h-12 w-full">
                       {Array.from({ length: visiblePoints }).map((_, i) => (
-                          <div key={i} className="flex-1 border-r border-yellow-100 last:border-r-0 flex items-center justify-center text-[10px] text-yellow-700 font-mono font-bold">
+                          <div key={i} className="flex-1 border-r border-yellow-100 last:border-r-0 flex items-center justify-center text-base text-yellow-700 font-mono font-bold">
                               {i + 1}
                           </div>
                       ))}
                   </div>
               </TableHead>
 
-              {/* Resultados - 5 cols of 80px = 400px */}
-              <TableHead className="p-0 text-center bg-green-50/50 w-[400px]">
-                  <div className="border-b py-2 text-xs font-bold text-green-800 uppercase tracking-wider bg-green-100/50">Resultados</div>
-                  <div className="flex h-10 w-full">
-                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3 px-1">E min<br/>≥ Em/2</div>
-                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">E<br/>MEDIA</div>
-                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">LIMITE<br/>LEGAL</div>
-                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">CUMPLE<br/>UNIF.</div>
-                       <div className="flex-1 flex items-center justify-center text-[10px] font-semibold text-green-700 leading-3">CUMPLE<br/>LIMITE</div>
+              {/* Resultados - 5 cols */}
+              <TableHead className="p-0 text-center bg-green-50/50 w-[500px]">
+                  <div className="border-b py-3 text-base font-bold text-green-800 uppercase tracking-wider bg-green-100/50">Resultados</div>
+                  <div className="flex h-12 w-full">
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-sm font-semibold text-green-700 leading-4 px-1">E min<br/>≥ Em/2</div>
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-sm font-semibold text-green-700 leading-4">E<br/>MEDIA</div>
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-sm font-semibold text-green-700 leading-4">LIMITE<br/>LEGAL</div>
+                       <div className="flex-1 border-r border-green-100 flex items-center justify-center text-sm font-semibold text-green-700 leading-4">CUMPLE<br/>UNIF.</div>
+                       <div className="flex-1 flex items-center justify-center text-sm font-semibold text-green-700 leading-4">CUMPLE<br/>LIMITE</div>
                   </div>
               </TableHead>
               
               {/* Actions */}
-              <TableHead className="w-[50px] text-center font-bold border-r bg-gray-50 text-gray-700"></TableHead>
+              <TableHead className="w-[70px] text-center font-bold border-r bg-gray-50 text-gray-700"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -399,30 +400,31 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
               return (
                 <TableRow key={sector.id} className={cn(
-                    "hover:bg-blue-50/30 transition-colors border-b border-gray-100",
+                    "hover:bg-blue-50/30 transition-colors border-b-2 border-gray-200 h-16",
                     selectedSectorIds.includes(sector.id) && "bg-blue-50/40"
                 )}>
                   {/* Checkbox */}
-                  <TableCell className="text-center border-r bg-gray-50/50 p-0 w-[40px]">
+                  <TableCell className="text-center border-r bg-gray-50/50 p-0 w-[60px]">
                       <div className="flex items-center justify-center w-full h-full">
                           <Checkbox 
                             checked={selectedSectorIds.includes(sector.id)}
                             onCheckedChange={() => toggleSelectSector(sector.id)}
                             aria-label={`Select sector ${sector.name}`}
+                            className="h-6 w-6"
                           />
                       </div>
                   </TableCell>
 
                   {/* Index */}
-                  <TableCell className="text-center font-bold text-xs border-r bg-gray-50/50 text-gray-500 w-[50px]">
+                  <TableCell className="text-center font-bold text-xl border-r bg-gray-50/50 text-gray-600 w-[70px]">
                     {rowIndex + 1}
                   </TableCell>
                   
                   {/* Sector Name */}
-                  <TableCell className="border-r p-1 align-top w-[250px]">
+                  <TableCell className="border-r p-2 align-middle w-[320px]">
                      <DebouncedInput
                         id={`input-${rowIndex}-name`}
-                        className="h-10 min-h-[40px] text-sm font-medium border-transparent hover:border-input focus:border-primary px-3 bg-transparent w-full" 
+                        className="h-14 text-lg font-semibold border-2 border-transparent hover:border-input focus:border-primary px-4 bg-transparent w-full rounded-lg" 
                         value={sector.name}
                         placeholder="Nombre del sector..."
                         onDebouncedChange={(val) => updateSector(sector.id, { name: val as string })}
@@ -431,35 +433,35 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                   </TableCell>
 
                   {/* Dimensions - 3 cols */}
-                  <TableCell className="p-0 border-r align-top w-[180px]">
-                     <div className="flex h-full w-full">
-                        <div className="border-r h-full flex-1">
+                  <TableCell className="p-0 border-r align-middle w-[240px]">
+                     <div className="flex h-16 w-full">
+                        <div className="border-r h-full flex-1 flex items-center justify-center">
                             <DebouncedInput
                                 id={`input-${rowIndex}-width`}
                                 type="number"
-                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
+                                className="h-12 w-full text-center text-lg font-mono border-2 border-transparent hover:border-input bg-transparent focus:bg-white focus:border-blue-500 rounded-lg mx-1"
                                 value={width || ''}
                                 placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('width', parseFloat(v as string))}
                                 onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'width')}
                             />
                         </div>
-                        <div className="border-r h-full flex-1">
+                        <div className="border-r h-full flex-1 flex items-center justify-center">
                             <DebouncedInput
                                 id={`input-${rowIndex}-length`}
                                 type="number"
-                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
+                                className="h-12 w-full text-center text-lg font-mono border-2 border-transparent hover:border-input bg-transparent focus:bg-white focus:border-blue-500 rounded-lg mx-1"
                                 value={length || ''}
                                 placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('length', parseFloat(v as string))}
                                 onKeyDown={(e) => handleKeyDown(e, rowIndex, 0, 'length')}
                             />
                         </div>
-                        <div className="h-full flex-1">
+                        <div className="h-full flex-1 flex items-center justify-center">
                             <DebouncedInput
                                 id={`input-${rowIndex}-height`}
                                 type="number"
-                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-blue-500"
+                                className="h-12 w-full text-center text-lg font-mono border-2 border-transparent hover:border-input bg-transparent focus:bg-white focus:border-blue-500 rounded-lg mx-1"
                                 value={height || ''}
                                 placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('height', parseFloat(v as string))}
@@ -470,26 +472,26 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                   </TableCell>
 
                   {/* Calculations - 3 cols */}
-                  <TableCell className="p-0 border-r align-top bg-orange-50/5 w-[180px]">
-                     <div className="flex h-full w-full">
-                        <div className="border-r flex-1 flex items-center justify-center text-xs font-mono text-muted-foreground bg-gray-50/50">
+                  <TableCell className="p-0 border-r align-middle bg-orange-50/10 w-[240px]">
+                     <div className="flex h-16 w-full">
+                        <div className="border-r flex-1 flex items-center justify-center text-lg font-mono text-gray-600 bg-gray-50/50">
                             {roomIndex}
                         </div>
-                        <div className="border-r flex-1 flex items-center justify-center text-xs font-mono text-muted-foreground bg-gray-50/50">
+                        <div className="border-r flex-1 flex items-center justify-center text-lg font-mono text-gray-600 bg-gray-50/50">
                             {minPoints}
                         </div>
-                        <div className="flex-1 flex items-center justify-center text-xs font-bold text-orange-700">
+                        <div className="flex-1 flex items-center justify-center text-xl font-bold text-orange-600">
                             {points.length}
                         </div>
                      </div>
                   </TableCell>
 
                   {/* Detalles - 2 cols */}
-                  <TableCell className="p-0 border-r align-top w-[160px]">
-                     <div className="flex h-full w-full">
-                        <div className="border-r h-full flex-1 relative">
+                  <TableCell className="p-0 border-r align-middle w-[200px]">
+                     <div className="flex h-16 w-full">
+                        <div className="border-r h-full flex-1 flex items-center justify-center relative">
                             <select 
-                                className="w-full h-full bg-transparent text-xs text-center appearance-none cursor-pointer focus:bg-white focus:ring-1 focus:ring-inset focus:ring-purple-500 outline-none p-0 border-none"
+                                className="w-full h-12 bg-white text-base text-center appearance-none cursor-pointer focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none border-2 border-transparent hover:border-input rounded-lg mx-1"
                                 value={measurement.config?.lightingType || 'artificial'}
                                 onChange={(e) => updateConfig('lightingType', e.target.value)}
                                 id={`input-${rowIndex}-lightingType`}
@@ -505,11 +507,11 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                                 <option value="mixed">Mixta</option>
                             </select>
                         </div>
-                        <div className="h-full flex-1">
+                        <div className="h-full flex-1 flex items-center justify-center">
                             <DebouncedInput
                                 id={`input-${rowIndex}-lightsOffCount`}
                                 type="number"
-                                className="h-full w-full text-center text-xs border-transparent hover:border-input p-0 bg-transparent focus:bg-white focus:ring-1 focus:ring-inset focus:ring-purple-500"
+                                className="h-12 w-full text-center text-lg font-mono border-2 border-transparent hover:border-input bg-transparent focus:bg-white focus:border-purple-500 rounded-lg mx-1"
                                 value={measurement.config?.lightsOffCount || ''}
                                 placeholder="-"
                                 onDebouncedChange={(v) => updateConfig('lightsOffCount', parseFloat(v as string))}
@@ -519,41 +521,38 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                      </div>
                   </TableCell>
 
-                  {/* Points Grid - Dynamic cols */}
-                  <TableCell className="p-0 border-r align-top bg-yellow-50/5" style={{ width: `${visiblePoints * 40}px` }}>
-                      <div className="flex h-full w-full">
+                  {/* Points Grid - Dynamic cols - LARGE */}
+                  <TableCell className="p-0 border-r align-middle bg-yellow-50/10" style={{ width: `${visiblePoints * 80}px` }}>
+                      <div className="flex h-16 w-full">
                           {Array.from({ length: visiblePoints }).map((_, colIndex) => {
                               const point = points[colIndex];
                               
-                              const isEditable = point !== undefined; // If point exists, it's editable
-                              const isNext = colIndex === points.length; // Next available slot to add
+                              const isEditable = point !== undefined;
+                              const isNext = colIndex === points.length;
                               
                               return (
-                                  <div key={colIndex} className="flex-1 h-full border-r border-gray-100 last:border-r-0 flex items-center justify-center p-0">
+                                  <div key={colIndex} className="flex-1 h-full border-r border-gray-200 last:border-r-0 flex items-center justify-center p-1">
                                       {isEditable ? (
                                           <DebouncedInput 
                                               id={`input-${rowIndex}-point-${colIndex}`}
                                               type="number"
-                                              className="h-full w-full text-center text-xs font-mono p-0 border-transparent hover:border-blue-300 focus:border-blue-500 focus:bg-white bg-transparent rounded-none transition-colors"
+                                              className="h-12 w-full text-center text-xl font-mono font-bold border-2 border-transparent hover:border-yellow-400 focus:border-yellow-500 focus:bg-yellow-50 bg-transparent rounded-lg transition-colors"
                                               value={point.values.lux || ''}
                                               onDebouncedChange={(val) => updatePoint(sector.id, measurement.id, point.id, { values: { ...point.values, lux: val } })}
                                               onKeyDown={(e) => {
                                                   handleKeyDown(e, rowIndex, colIndex, `point-${colIndex}`);
-                                                  if (e.key === 'Backspace' && (!point.values.lux || point.values.lux === '')) {
-                                                      // Optional: behavior on delete
-                                                  }
                                               }}
                                           />
                                       ) : isNext ? (
                                           <Input 
-                                              className="h-full w-full text-center text-xs p-0 border-none bg-transparent hover:bg-gray-100 cursor-pointer text-gray-300 hover:text-gray-500 transition-colors rounded-none"
+                                              className="h-12 w-full text-center text-xl font-bold border-2 border-dashed border-gray-300 bg-transparent hover:bg-gray-100 cursor-pointer text-gray-400 hover:text-gray-600 transition-colors rounded-lg"
                                               placeholder="+"
                                               onFocus={() => {
                                                   addPoint(sector.id, measurement.id, { values: { lux: '' } });
                                               }}
                                           />
                                       ) : (
-                                          <div className="w-full h-full bg-gray-50/30"></div>
+                                          <div className="w-full h-12 bg-gray-100/50 rounded-lg"></div>
                                       )}
                                   </div>
                               );
@@ -561,29 +560,29 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                       </div>
                   </TableCell>
 
-                  {/* Resultados - 5 cols */}
-                  <TableCell className="p-0 align-top bg-green-50/5 w-[400px]">
-                       <div className="flex h-full w-full">
+                  {/* Resultados - 5 cols - LARGE */}
+                  <TableCell className="p-0 align-middle bg-green-50/10 w-[500px]">
+                       <div className="flex h-16 w-full">
                            {/* E min >= Emed/2 */}
-                           <div className="flex-1 border-r flex items-center justify-center text-xs bg-white px-1">
+                           <div className="flex-1 border-r flex items-center justify-center bg-white px-2">
                                <div className="flex flex-col items-center w-full">
-                                   <span className="font-mono text-xs">{eMin}</span>
-                                   <div className="h-px w-full bg-gray-200 my-0.5"></div>
-                                   <span className="font-mono text-[10px] text-gray-400">{Math.round(eAvg/2)}</span>
+                                   <span className="font-mono text-lg font-bold">{eMin}</span>
+                                   <div className="h-px w-full bg-gray-300 my-1"></div>
+                                   <span className="font-mono text-sm text-gray-500">{Math.round(eAvg/2)}</span>
                                </div>
                            </div>
                            
                            {/* E Media */}
-                           <div className="flex-1 border-r flex items-center justify-center font-bold text-xs bg-white">
+                           <div className="flex-1 border-r flex items-center justify-center font-bold text-xl bg-white text-blue-600">
                                {eAvg}
                            </div>
 
                            {/* Limit */}
-                           <div className="flex-1 border-r p-0 bg-white">
+                           <div className="flex-1 border-r p-1 bg-white flex items-center justify-center">
                                <DebouncedInput
                                    id={`input-${rowIndex}-limit`}
                                    type="number"
-                                   className="h-full w-full text-center text-xs font-bold text-blue-700 border-transparent hover:border-input p-0 bg-transparent focus:bg-white"
+                                   className="h-12 w-full text-center text-lg font-bold text-blue-700 border-2 border-transparent hover:border-input bg-transparent focus:bg-blue-50 focus:border-blue-500 rounded-lg"
                                    value={limit || ''}
                                    placeholder="-"
                                    onDebouncedChange={(v) => updateConfig('limit', parseFloat(v as string))}
@@ -593,16 +592,16 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
 
                            {/* Compliance Uniformity */}
                            <div className={cn(
-                               "flex-1 border-r flex items-center justify-center font-bold text-xs",
-                               uniformityCheck ? "bg-green-100 text-green-700" : "bg-red-50 text-red-700"
+                               "flex-1 border-r flex items-center justify-center font-bold text-lg",
+                               uniformityCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                            )}>
                                {uniformityCheck ? "SI" : "NO"}
                            </div>
 
                            {/* Compliance Limit */}
                            <div className={cn(
-                               "flex-1 flex items-center justify-center font-bold text-xs",
-                               limitCheck ? "bg-green-100 text-green-700" : "bg-red-50 text-red-700"
+                               "flex-1 flex items-center justify-center font-bold text-lg",
+                               limitCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                            )}>
                                {limitCheck ? "SI" : "NO"}
                            </div>
@@ -610,11 +609,11 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                   </TableCell>
 
                   {/* Actions */}
-                  <TableCell className="text-center border-r bg-gray-50/30 p-0 align-middle">
+                  <TableCell className="text-center border-r bg-gray-50/30 p-0 align-middle w-[70px]">
                       <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          className="h-12 w-12 text-muted-foreground hover:text-destructive hover:bg-red-50"
                           onClick={() => {
                               if (confirm(`¿Está seguro de eliminar el sector "${sector.name}" de esta planilla?`)) {
                                   deleteMeasurement(sector.id, measurement.id);
@@ -622,7 +621,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
                           }}
                           title="Eliminar Sector"
                       >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-6 w-6" />
                       </Button>
                   </TableCell>
                 </TableRow>
@@ -631,7 +630,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
             
             {sectors.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground"> {/* Increased colSpan */}
+                    <TableCell colSpan={9} className="h-32 text-center text-xl text-muted-foreground">
                         No hay sectores. Haga click en "Agregar Sector" para comenzar.
                     </TableCell>
                 </TableRow>
@@ -642,7 +641,7 @@ export function LightingCampaignTable({ sectors, type }: LightingCampaignTablePr
       </div>
       
       {/* Help / Legend */}
-      <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded border">
+      <div className="text-base text-muted-foreground bg-gray-50 p-4 rounded-lg border-2">
           <p><strong>Referencia:</strong> Indice K = (L*A)/(h*(L+A)). Puntos Mínimos sugeridos según Resolución 84/12. Uniformidad = E_min ≥ (E_media / 2).</p>
       </div>
     </div>
