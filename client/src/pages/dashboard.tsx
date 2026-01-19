@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { MeasurementModal } from "@/components/measurement-modal";
+import { SketchEditor } from "@/components/sketch-editor";
 import { useClients, useCreateInspection } from "@/lib/hooks";
 
 export default function Dashboard() {
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [openClientSelect, setOpenClientSelect] = useState(false);
   const [activeMeasurementType, setActiveMeasurementType] = useState<MeasurementType | null>(null);
+  const [sketchEditorOpen, setSketchEditorOpen] = useState(false);
   const { toast } = useToast();
   const user = useAuth((state) => state.user);
 
@@ -237,9 +239,18 @@ export default function Dashboard() {
                                 onChange={(e) => e.target.files?.[0] && handleSketchUpload(e.target.files[0])}
                             />
                         </div>
-                        <Button variant="outline" size="sm" className="h-7 text-xs gap-2" onClick={() => toast({ title: "Función de dibujo próximamente", description: "El editor de croquis estará disponible en la próxima versión." })}>
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-2" onClick={() => setSketchEditorOpen(true)}>
                             <PenTool className="h-3 w-3" /> Dibujar
                         </Button>
+                        <SketchEditor
+                          open={sketchEditorOpen}
+                          onOpenChange={setSketchEditorOpen}
+                          onSave={(imageData) => {
+                            updateEstablishment({ sketchImage: imageData });
+                            toast({ title: "Croquis guardado correctamente" });
+                          }}
+                          initialImage={establishment.sketchImage}
+                        />
                     </div>
                 )}
             </div>
