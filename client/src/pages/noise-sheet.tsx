@@ -127,18 +127,25 @@ export default function NoiseSheet() {
             <DialogTitle>Importar Sectores del Cliente</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccione un cliente..." />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.filter(c => c.sectors && (c.sectors as string[]).length > 0).map(client => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name} ({(client.sectors as string[]).length} sectores)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {clients.filter(c => c.sectors && (c.sectors as string[]).length > 0).length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground border rounded-md bg-muted/50">
+                <p className="font-medium">No hay clientes con sectores definidos</p>
+                <p className="text-sm mt-1">Primero agregue sectores a un cliente desde la página de Clientes</p>
+              </div>
+            ) : (
+              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione un cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.filter(c => c.sectors && (c.sectors as string[]).length > 0).map(client => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name} ({(client.sectors as string[]).length} sectores)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {selectedClientId && (
               <div className="p-3 bg-muted rounded text-sm">
                 <p className="font-medium mb-2">Sectores a importar:</p>
