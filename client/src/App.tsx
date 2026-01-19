@@ -6,6 +6,7 @@ import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
 import SectorDetail from "@/pages/sector-detail"; // Keeping it for backward compat or if needed
 import MeasurementCampaign from "@/pages/measurement-campaign";
+import MeasurementEntry from "@/pages/measurement-entry";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
@@ -58,6 +59,7 @@ function Router() {
         <Route path="/budget-generator" component={() => <ProtectedRoute component={BudgetGenerator} adminOnly />} />
         <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} adminOnly />} />
         <Route path="/campaign/:type" component={() => <ProtectedRoute component={MeasurementCampaign} />} />
+        <Route path="/campaign/:type/entry" component={() => <ProtectedRoute component={MeasurementEntry} />} />
         <Route path="/sector/:id" component={() => <ProtectedRoute component={SectorDetail} />} />
         <Route path="/report" component={() => <ProtectedRoute component={Report} adminOnly />} />
         <Route component={NotFound} />

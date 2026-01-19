@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { MeasurementType, MEASUREMENT_LABELS, Measurement, Rubro } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search, Building2, ListPlus, Settings, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, MapPin, Search, Building2, ListPlus, Settings, Save, Play } from "lucide-react";
 import { MeasurementEditor, LightingGridEditor } from "@/components/measurement-editor";
 import { LightingCampaignTable } from "@/components/lighting-campaign-table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -19,6 +19,7 @@ import { useClients, useRubros, useCreateRubro, useUpdateRubro, useDeleteRubro }
 
 export default function MeasurementCampaign() {
   const [match, params] = useRoute("/campaign/:type");
+  const [, setLocation] = useLocation();
   const type = params?.type as MeasurementType;
   
   const sectors = useStore((state) => state.sectors);
@@ -147,11 +148,21 @@ export default function MeasurementCampaign() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          
+          {activeSectors.length > 0 && (
+            <Link href={`/campaign/${type}/entry`}>
+              <Button size="lg" className="h-12 bg-green-600 hover:bg-green-700 text-white gap-2 text-base px-6" data-testid="btn-start-measurements">
+                <Play className="h-5 w-5" />
+                Medir Sectores
+              </Button>
+            </Link>
+          )}
+          
           <Dialog open={isNewSectorOpen} onOpenChange={setIsNewSectorOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button variant="outline" size="lg" className="h-12">
                 <Plus className="mr-2 h-4 w-4" />
-                Agregar Sector
+                Agregar
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -177,17 +188,20 @@ export default function MeasurementCampaign() {
                       />
                     </div>
                     <div className="flex justify-end pt-4">
-                         <Button onClick={() => {
-                          useStore.getState().addSectorWithMeasurement({
-                            name: newSectorName,
-                            description: "",
-                            dimensions: "",
-                            activity: "",
-                            workersCount: 0
-                          }, type);
-                          setNewSectorName("");
-                          setIsNewSectorOpen(false);
-                        }}>Crear y Medir</Button>
+                         <Button 
+                          data-testid="btn-create-sector"
+                          onClick={() => {
+                            useStore.getState().addSectorWithMeasurement({
+                              name: newSectorName,
+                              description: "",
+                              dimensions: "",
+                              activity: "",
+                              workersCount: 0
+                            }, type);
+                            setNewSectorName("");
+                            setIsNewSectorOpen(false);
+                            setLocation(`/campaign/${type}/entry`);
+                          }}>Crear y Medir</Button>
                     </div>
                 </TabsContent>
                 

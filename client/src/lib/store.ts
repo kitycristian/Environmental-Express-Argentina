@@ -26,6 +26,7 @@ interface AppState {
   
   loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
   resetStore: () => void;
+  saveInspection: () => void;
 }
 
 const initialEstablishment: Establishment = {
@@ -202,6 +203,18 @@ export const useStore = create<AppState>()(
         })),
 
       resetStore: () => set({ establishment: initialEstablishment, sectors: [] }),
+      
+      saveInspection: () => {
+        const state = useStore.getState();
+        const inspectionData = {
+          establishment: state.establishment,
+          sectors: state.sectors,
+          savedAt: new Date().toISOString()
+        };
+        const savedInspections = JSON.parse(localStorage.getItem('syh-saved-inspections') || '[]');
+        savedInspections.push(inspectionData);
+        localStorage.setItem('syh-saved-inspections', JSON.stringify(savedInspections));
+      },
     }),
     {
       name: 'syh-relevamiento-working-state-v3',
