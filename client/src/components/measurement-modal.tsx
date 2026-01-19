@@ -197,20 +197,40 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
                             </Select>
 
                             {selectedRubro && (
-                                <div className="h-32 overflow-y-auto border rounded bg-gray-50 p-1">
-                                    {getRubroSectors(selectedRubro).map(sector => (
-                                        <div key={sector} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer" onClick={() => {
-                                            if (selectedRubroSectors.includes(sector)) {
-                                                setSelectedRubroSectors(selectedRubroSectors.filter(s => s !== sector));
-                                            } else {
-                                                setSelectedRubroSectors([...selectedRubroSectors, sector]);
-                                            }
-                                        }}>
-                                            <input type="checkbox" checked={selectedRubroSectors.includes(sector)} readOnly className="h-3 w-3 rounded border-gray-300" />
-                                            <span className="text-xs truncate">{sector}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                <>
+                                    <div className="flex gap-1">
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="flex-1 text-xs h-7"
+                                            onClick={() => setSelectedRubroSectors(getRubroSectors(selectedRubro))}
+                                        >
+                                            Seleccionar Todos
+                                        </Button>
+                                        <Button 
+                                            size="sm" 
+                                            variant="ghost" 
+                                            className="text-xs h-7"
+                                            onClick={() => setSelectedRubroSectors([])}
+                                        >
+                                            Ninguno
+                                        </Button>
+                                    </div>
+                                    <div className="h-32 overflow-y-auto border rounded bg-gray-50 p-1">
+                                        {getRubroSectors(selectedRubro).map(sector => (
+                                            <div key={sector} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer" onClick={() => {
+                                                if (selectedRubroSectors.includes(sector)) {
+                                                    setSelectedRubroSectors(selectedRubroSectors.filter(s => s !== sector));
+                                                } else {
+                                                    setSelectedRubroSectors([...selectedRubroSectors, sector]);
+                                                }
+                                            }}>
+                                                <input type="checkbox" checked={selectedRubroSectors.includes(sector)} readOnly className="h-3 w-3 rounded border-gray-300" />
+                                                <span className="text-xs truncate">{sector}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
                             )}
                             
                             <Button size="sm" className="w-full text-xs" onClick={handleBulkImport} disabled={selectedRubroSectors.length === 0}>
