@@ -612,12 +612,212 @@ function GenericMeasurementEditor({ measurement }: { measurement: Measurement })
   );
 }
 
+
+// Grounding Editor with Sub-types
+function GroundingMeasurementEditor({ measurement }: { measurement: Measurement }) {
+  const addPoint = useStore((state) => state.addPoint);
+  const updatePoint = useStore((state) => state.updatePoint);
+  const deletePoint = useStore((state) => state.deletePoint);
+  const updateMeasurement = useStore((state) => state.updateMeasurement);
+  const deleteMeasurement = useStore((state) => state.deleteMeasurement);
+  const { toast } = useToast();
+
+  const subtype = measurement.config?.groundingType || 'pat';
+
+  const GROUNDING_SUBTYPES = [
+    { value: 'pat', label: 'Medición de PAT y Continuidad de las Masas' },
+    { value: 'continuity', label: 'Ensayos de Continuidad y Dispositivo de Corte' },
+    { value: 'sockets', label: 'Continuidad en Tomacorrientes' },
+  ];
+
+  const FIELD_CONFIGS: Record<string, { key: string; label: string; type: string; options?: string[]; width?: string }[]> = {
+    pat: [
+        { key: 'grounding_number', label: 'N° Toma', type: 'text', width: '60px' },
+        { key: 'sector_name', label: 'Sector', type: 'text', width: '150px' },
+        { key: 'terrain_condition', label: 'Cond. Terreno', type: 'select', options: ['Lecho seco', 'Arcilloso', 'Pantanoso', 'Lluvias recientes', 'Arenoso seco', 'Arenoso húmedo', 'Otro'], width: '120px' },
+        { key: 'usage', label: 'Uso PAT', type: 'select', options: ['Seguridad Masas', 'Neutro Trafo', 'Electrónica', 'Informática', 'Iluminación', 'Pararrayos', 'Otros'], width: '140px' },
+        { key: 'scheme', label: 'Esquema', type: 'select', options: ['TT', 'TN-S', 'TN-C', 'TN-C-S', 'IT'], width: '80px' },
+        { key: 'resistance', label: 'Valor (Ω)', type: 'text', width: '80px' },
+        { key: 'complies_resistance', label: 'Cumple', type: 'select', options: ['SI', 'NO'], width: '70px' },
+        { key: 'continuity_masas', label: 'Cont. Masas', type: 'select', options: ['SI', 'NO'], width: '70px' },
+        { key: 'capacity_charge', label: 'Cap. Carga', type: 'select', options: ['SI', 'NO'], width: '70px' },
+        { key: 'protection_type', label: 'Tipo Prot.', type: 'select', options: ['DD', 'IA', 'Fusible'], width: '90px' },
+        { key: 'automatic_disconnection', label: 'Desc. Auto', type: 'select', options: ['SI', 'NO'], width: '70px' }
+    ],
+    continuity: [
+        { key: 'med_number', label: 'Med. N°', type: 'text', width: '60px' },
+        { key: 'board_description', label: 'Descripción Tablero', type: 'text', width: '200px' },
+        { key: 'disyuntor_number', label: 'Disyuntor N°', type: 'text', width: '100px' },
+        { key: 'rpat', label: 'RPAT [Ω]', type: 'text', width: '80px' },
+        { key: 'cut_current', label: 'I. Corte (mA)', type: 'text', width: '100px' },
+        { key: 'cc_current', label: 'I. CC (A)', type: 'text', width: '100px' },
+        { key: 'response_time', label: 'Tiempo (ms)', type: 'text', width: '100px' },
+        { key: 'observations', label: 'Observaciones', type: 'text', width: '200px' }
+    ],
+    sockets: [
+        { key: 'sector_name', label: 'Sector', type: 'text', width: '200px' },
+        { key: 'tested_count', label: 'Ensayados (Cant)', type: 'number', width: '100px' },
+        { key: 'with_continuity_count', label: 'Con Cont. (Cant)', type: 'number', width: '100px' },
+        { key: 'without_continuity_count', label: 'Sin Cont. (Cant)', type: 'number', width: '100px' },
+        { key: 'inverted_count', label: 'Invertidos (Cant)', type: 'number', width: '100px' },
+        { key: 'observations', label: 'Observaciones', type: 'text', width: '200px' }
+    ]
+  };
+
+  const currentFields = FIELD_CONFIGS[subtype] || FIELD_CONFIGS['pat'];
+
+  return (
+    <Card className="border shadow-sm">
+      <CardHeader className="py-3 px-4 bg-muted/20 border-b flex flex-row items-center justify-between">
+        <div className="flex items-center gap-4">
+           <CardTitle className="text-base font-semibold text-primary/80">
+             PUESTA A TIERRA
+           </CardTitle>
+           <Select 
+                value={subtype} 
+                onValueChange={(val: any) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, groundingType: val } })}
+           >
+                <SelectTrigger className="h-8 w-[280px] text-xs bg-white">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {GROUNDING_SUBTYPES.map(type => (
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                    ))}
+                </SelectContent>
+           </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select 
+            value={measurement.status} 
+            onValueChange={(val: any) => updateMeasurement(measurement.sectorId, measurement.id, { status: val })}
+          >
+            <SelectTrigger className={`h-8 w-[140px] ${measurement.status === 'compliant' ? 'text-green-600 border-green-200 bg-green-50' : measurement.status === 'non_compliant' ? 'text-red-600 border-red-200 bg-red-50' : ''}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pendiente</SelectItem>
+              <SelectItem value="compliant">Cumple Norma</SelectItem>
+              <SelectItem value="non_compliant">No Cumple</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            size="sm" 
+            className="h-8 gap-2 bg-primary/90 hover:bg-primary text-white"
+            onClick={() => {
+              toast({
+                title: "Medición guardada",
+                description: `Los datos de puesta a tierra han sido guardados.`,
+              });
+            }}
+          >
+            <Save className="h-4 w-4" />
+            Guardar
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              if(confirm('¿Eliminar esta medición?')) deleteMeasurement(measurement.sectorId, measurement.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                {currentFields.map(f => (
+                  <TableHead key={f.key} style={{ width: f.width }}>{f.label}</TableHead>
+                ))}
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {measurement.points.map((point) => (
+                <TableRow key={point.id}>
+                  {currentFields.map(f => (
+                    <TableCell key={f.key} className="p-2">
+                      {f.type === 'select' ? (
+                        <Select 
+                          value={String(point.values[f.key] || '')} 
+                          onValueChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, [f.key]: val } })}
+                        >
+                          <SelectTrigger className="h-8 w-full min-w-[80px] text-xs">
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {f.options?.map(opt => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <DebouncedInput 
+                          type={f.type === 'number' ? 'number' : 'text'} 
+                          className="h-8 w-full min-w-[60px] text-xs" 
+                          placeholder="-"
+                          value={point.values[f.key] || ''}
+                          onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, [f.key]: val as string } })}
+                        />
+                      )}
+                    </TableCell>
+                  ))}
+                  <TableCell>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-muted-foreground/50 hover:text-destructive"
+                      onClick={() => deletePoint(measurement.sectorId, measurement.id, point.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        <div className="p-4 bg-muted/10 border-t flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <Button variant="outline" size="sm" onClick={() => addPoint(measurement.sectorId, measurement.id)}>
+            <Plus className="mr-2 h-4 w-4" /> Agregar Fila
+          </Button>
+          
+          <div className="w-full md:w-1/2 space-y-4">
+             <div className="space-y-1">
+               <Label className="text-xs text-muted-foreground block">Observaciones Generales</Label>
+               <Textarea 
+                 className="h-16 text-sm resize-none" 
+                 placeholder="Comentarios generales sobre esta medición..."
+                 value={measurement.observations || ''}
+                 onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { observations: e.target.value })}
+               />
+             </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 import { MeasurementDetails } from "./measurement-details";
 
 export function MeasurementEditor({ measurement }: { measurement: Measurement }) {
-  const content = measurement.type === 'lighting' 
-    ? <LightingGridEditor measurement={measurement} />
-    : <GenericMeasurementEditor measurement={measurement} />;
+  let content;
+  
+  if (measurement.type === 'lighting') {
+      content = <LightingGridEditor measurement={measurement} />;
+  } else if (measurement.type === 'grounding') {
+      content = <GroundingMeasurementEditor measurement={measurement} />;
+  } else {
+      content = <GenericMeasurementEditor measurement={measurement} />;
+  }
 
   return (
     <div className="space-y-4">

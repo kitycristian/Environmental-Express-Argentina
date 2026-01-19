@@ -130,6 +130,9 @@ export interface Measurement {
     artifactType?: string; // Descarga, LED, Incandescente, etc.
     luxOff?: number; // Valor de medición con luces apagadas (OFF)
     lightsOffCount?: number; // Cantidad de luces OFF
+
+    // Grounding specific
+    groundingType?: 'pat' | 'continuity' | 'sockets';
   };
 
   // Detailed Metadata (New Request)
