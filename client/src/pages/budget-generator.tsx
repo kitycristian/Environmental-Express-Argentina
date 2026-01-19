@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useStore } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,7 @@ import autoTable from "jspdf-autotable";
 import logoUrl from "@assets/logo-eea.png";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "@/lib/types";
+import { useClients, useCreateClient } from "@/lib/hooks";
 
 interface BudgetItem {
   id: string;
@@ -53,8 +53,8 @@ const MEASUREMENT_TEMPLATES = [
 ];
 
 export default function BudgetGenerator() {
-  const clients = useStore((state) => state.clients);
-  const addClient = useStore((state) => state.addClient);
+  const { data: clients = [] } = useClients();
+  const createClient = useCreateClient();
   const { toast } = useToast();
 
   const [selectedClientId, setSelectedClientId] = useState<string>("");
@@ -145,9 +145,8 @@ export default function BudgetGenerator() {
       toast({ title: "Error", description: "El nombre es requerido", variant: "destructive" });
       return;
     }
-    addClient(newClient);
+    createClient.mutate(newClient);
     setIsClientModalOpen(false);
-    toast({ title: "Cliente creado", description: "El cliente se ha guardado correctamente." });
     setNewClient({
       name: "",
       razonSocial: "",

@@ -21,11 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useInspections, useDeleteInspection } from "@/lib/hooks";
 
 export default function HistoryPage() {
-  const history = useStore((state) => state.history);
-  const loadInspection = useStore((state) => state.loadInspection);
-  const deleteInspection = useStore((state) => state.deleteInspection);
+  const { data: history = [] } = useInspections();
+  const loadInspectionData = useStore((state) => state.loadInspectionData);
+  const deleteInspectionMutation = useDeleteInspection();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,21 +40,19 @@ export default function HistoryPage() {
   });
 
   const handleLoad = (id: string) => {
-    loadInspection(id);
-    toast({
-      title: "Inspección Cargada",
-      description: "Se han restaurado los datos de la inspección seleccionada.",
-    });
-    setLocation("/");
+    const inspection = history.find(i => i.id === id);
+    if (inspection) {
+      loadInspectionData(inspection.establishment, inspection.sectors);
+      toast({
+        title: "Inspección Cargada",
+        description: "Se han restaurado los datos de la inspección seleccionada.",
+      });
+      setLocation("/");
+    }
   };
 
   const handleDelete = (id: string) => {
-    deleteInspection(id);
-    toast({
-      title: "Inspección Eliminada",
-      description: "El registro ha sido eliminado del historial.",
-      variant: "destructive"
-    });
+    deleteInspectionMutation.mutate(id);
   };
 
   return (

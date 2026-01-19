@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useStore } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Edit, Save, Users, Settings, Wrench, Building2, UserPlus, Key, Shield } from "lucide-react";
 import { Instrument, Rubro } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { useRubros, useCreateRubro, useUpdateRubro, useDeleteRubro, useInstruments, useCreateInstrument, useUpdateInstrument, useDeleteInstrument } from "@/lib/hooks";
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -150,10 +150,10 @@ function UsersSettings() {
 }
 
 function RubrosSettings() {
-    const rubros = useStore((state) => state.rubros);
-    const addRubro = useStore((state) => state.addRubro);
-    const updateRubro = useStore((state) => state.updateRubro);
-    const deleteRubro = useStore((state) => state.deleteRubro);
+    const { data: rubros = [] } = useRubros();
+    const createRubro = useCreateRubro();
+    const updateRubroMutation = useUpdateRubro();
+    const deleteRubroMutation = useDeleteRubro();
     
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingRubro, setEditingRubro] = useState<Rubro | null>(null);
@@ -178,9 +178,9 @@ function RubrosSettings() {
         const sectorsList = newSectors.split('\n').map(s => s.trim()).filter(s => s.length > 0);
         
         if (editingRubro) {
-            updateRubro(editingRubro.id, { name: newName, sectors: sectorsList });
+            updateRubroMutation.mutate({ id: editingRubro.id, data: { name: newName, sectors: sectorsList } });
         } else {
-            addRubro({ name: newName, sectors: sectorsList });
+            createRubro.mutate({ name: newName, sectors: sectorsList });
         }
         setIsDialogOpen(false);
     };
@@ -209,7 +209,7 @@ function RubrosSettings() {
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(rubro)}>
                                         <Edit className="h-3 w-3" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => { if(confirm('¿Eliminar rubro?')) deleteRubro(rubro.id); }}>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => { if(confirm('¿Eliminar rubro?')) deleteRubroMutation.mutate(rubro.id); }}>
                                         <Trash2 className="h-3 w-3" />
                                     </Button>
                                 </div>
@@ -265,10 +265,10 @@ function RubrosSettings() {
 }
 
 function InstrumentsSettings() {
-    const instruments = useStore((state) => state.availableInstruments);
-    const addInstrument = useStore((state) => state.addInstrument);
-    const updateInstrument = useStore((state) => state.updateInstrument);
-    const deleteInstrument = useStore((state) => state.deleteInstrument);
+    const { data: instruments = [] } = useInstruments();
+    const createInstrument = useCreateInstrument();
+    const updateInstrumentMutation = useUpdateInstrument();
+    const deleteInstrumentMutation = useDeleteInstrument();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -286,9 +286,9 @@ function InstrumentsSettings() {
         };
 
         if (editingId) {
-            updateInstrument(editingId, data);
+            updateInstrumentMutation.mutate({ id: editingId, data });
         } else {
-            addInstrument({ ...data, id: crypto.randomUUID(), attachedDocuments: {} });
+            createInstrument.mutate({ ...data, attachedDocuments: {} });
         }
         setIsDialogOpen(false);
         setEditingId(null);
@@ -338,7 +338,7 @@ function InstrumentsSettings() {
                                     <Button variant="ghost" size="icon" onClick={() => handleEdit(inst)}>
                                         <Edit className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => { if(confirm('¿Eliminar instrumento?')) deleteInstrument(inst.id); }}>
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => { if(confirm('¿Eliminar instrumento?')) deleteInstrumentMutation.mutate(inst.id); }}>
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </TableCell>

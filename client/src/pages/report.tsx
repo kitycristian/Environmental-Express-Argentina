@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { useInstruments } from "@/lib/hooks";
 
 import { generateDocxReport } from "@/lib/docx-generator";
 import { generatePDFReport } from "@/lib/pdf-generator";
@@ -24,7 +25,7 @@ export default function Report() {
   const updateEstablishment = useStore((state) => state.updateEstablishment);
 
   const sectors = useStore((state) => state.sectors);
-  const availableInstruments = useStore((state) => state.availableInstruments);
+  const { data: availableInstruments = [] } = useInstruments();
   const updateMeasurement = useStore((state) => state.updateMeasurement);
   const { toast } = useToast();
   

@@ -12,15 +12,16 @@ import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone,
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useRubros, useInspections } from "@/lib/hooks";
 
 export default function ClientsPage() {
-  const clients = useStore((state) => state.clients);
-  const rubros = useStore((state) => state.rubros);
-  const addClient = useStore((state) => state.addClient);
-  const updateClient = useStore((state) => state.updateClient);
-  const deleteClient = useStore((state) => state.deleteClient);
-  const history = useStore((state) => state.history);
-  const loadInspection = useStore((state) => state.loadInspection);
+  const { data: clients = [] } = useClients();
+  const { data: rubros = [] } = useRubros();
+  const createClient = useCreateClient();
+  const updateClientMutation = useUpdateClient();
+  const deleteClientMutation = useDeleteClient();
+  const { data: history = [] } = useInspections();
+  const loadInspectionData = useStore((state) => state.loadInspectionData);
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");
@@ -59,11 +60,9 @@ export default function ClientsPage() {
     };
 
     if (editingClient) {
-      updateClient(editingClient.id, clientData);
-      toast({ title: "Cliente Actualizado", description: "Los datos han sido modificados correctamente." });
+      updateClientMutation.mutate({ id: editingClient.id, data: clientData });
     } else {
-      addClient(clientData);
-      toast({ title: "Cliente Creado", description: "Se ha añadido un nuevo cliente a la base de datos." });
+      createClient.mutate(clientData);
     }
     
     setIsDialogOpen(false);
@@ -85,8 +84,7 @@ export default function ClientsPage() {
 
   const handleDelete = (id: string) => {
     if(confirm('¿Está seguro de eliminar este cliente? Se perderán sus datos de contacto.')) {
-      deleteClient(id);
-      toast({ title: "Cliente Eliminado", variant: "destructive" });
+      deleteClientMutation.mutate(id);
     }
   };
 
@@ -97,12 +95,15 @@ export default function ClientsPage() {
 
   const handleLoadInspection = (id: string) => {
     if (confirm("¿Cargar esta inspección reemplazará los datos actuales del tablero. ¿Continuar?")) {
-      loadInspection(id);
-      setIsHistoryDialogOpen(false);
-      toast({
-        title: "Inspección Cargada",
-        description: "Los datos históricos han sido restaurados en el tablero.",
-      });
+      const inspection = history.find(h => h.id === id);
+      if (inspection) {
+        loadInspectionData(inspection.establishment, inspection.sectors);
+        setIsHistoryDialogOpen(false);
+        toast({
+          title: "Inspección Cargada",
+          description: "Los datos históricos han sido restaurados en el tablero.",
+        });
+      }
     }
   };
 

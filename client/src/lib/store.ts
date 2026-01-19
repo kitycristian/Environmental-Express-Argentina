@@ -1,15 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType, Inspection, Client, Instrument, Rubro } from './types';
+import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
   establishment: Establishment;
   sectors: Sector[];
-  history: Inspection[];
-  clients: Client[];
-  availableInstruments: Instrument[];
-  rubros: Rubro[];
   
   // Actions
   updateEstablishment: (data: Partial<Establishment>) => void;
@@ -26,28 +22,9 @@ interface AppState {
   updatePoint: (sectorId: string, measurementId: string, pointId: string, data: Partial<MeasurementPoint>) => void;
   deletePoint: (sectorId: string, measurementId: string, pointId: string) => void;
   
-  saveInspection: () => void;
-  loadInspection: (id: string) => void;
-  deleteInspection: (id: string) => void;
-  
   addSectorWithMeasurement: (sectorData: Omit<Sector, 'id' | 'measurements'>, type: MeasurementType) => void;
-
-  // Instruments Actions
-  addInstrument: (instrument: Instrument) => void;
-  updateInstrument: (id: string, data: Partial<Instrument>) => void;
-  deleteInstrument: (id: string) => void;
-
-  // CRM Actions
-  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
-  updateClient: (id: string, data: Partial<Client>) => void;
-  deleteClient: (id: string) => void;
-  loadClientToEstablishment: (clientId: string) => void;
-
-  // Rubro Actions
-  addRubro: (rubro: Omit<Rubro, 'id'>) => void;
-  updateRubro: (id: string, data: Partial<Rubro>) => void;
-  deleteRubro: (id: string) => void;
-
+  
+  loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
   resetStore: () => void;
 }
 
@@ -61,159 +38,11 @@ const initialEstablishment: Establishment = {
   responsible: '',
 };
 
-const SUPERMARKET_SECTORS = [
-    "Salón de Ventas",
-    "Salón de Ventas (Linea de Cajas)",
-    "Salon de Ventas (Atención al Cliente)",
-    "Deposito de Linea de Cajas",
-    "Sala de Cajero",
-    "Tesoreria",
-    "TOMRA",
-    "Recepción de Mercaderia",
-    "Panaderia",
-    "Deposito de Panaderia",
-    "Camara de Congelado de Panaderia",
-    "Camara de Enfriado de Panaderia",
-    "Laboratorio de Tortas",
-    "Laboratorio de Fiambres",
-    "Laboratorio de Rotiseria",
-    "Camara de Vegetales",
-    "Camara de Deli y Fiambres",
-    "Camara de Congelado de Carniceria",
-    "Camara de Congelado de Lacteos",
-    "Camara de Enfriado de Lacteos (WC)",
-    "Camara de Enfriado de Carnes",
-    "Sala de Tableros",
-    "Pasillo de Costos (Trastienda)",
-    "Pasillo de Circulacion (Oficinas)",
-    "Pasillo (acceso desde Costos)",
-    "Vestuario Hombre",
-    "Vestuario Mujer",
-    "Sala de Entrenamiento CBL",
-    "Oficina de Recursos Humanos",
-    "Oficina de Seguridad e Higiene",
-    "Sala de Reuniones",
-    "Oficina de Jefes/Recep./UPC",
-    "Sistemas",
-    "Mantenimiento",
-    "Puesto 1",
-    "Comedor",
-    "Gerencia",
-    "Deposito de Insumos",
-    "Laboratorio de Vegetales",
-    "Claims",
-    "Servicios Financieros",
-    "Laboratorio de Carnes",
-    "Laboratorio de Pollos",
-    "Camara de Pollos",
-    "Autoshop",
-    "Autocenter Taller",
-    "Sala de CCTV"
-  ];
-
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
       establishment: initialEstablishment,
       sectors: [],
-      history: [],
-      clients: [],
-      rubros: [
-        {
-          id: 'rubro-default-super',
-          name: 'Supermercados',
-          sectors: SUPERMARKET_SECTORS
-        }
-      ],
-      availableInstruments: [
-        {
-          id: 'inst-1',
-          type: 'thermal_load',
-          brand: 'TES',
-          model: '1639B',
-          serialNumber: '130308165',
-          calibrationCertificate: '22R4496',
-          calibrationDate: '',
-          attachedDocuments: {}
-        },
-        {
-          id: 'inst-2',
-          type: 'cold_stress',
-          brand: 'EXTECH',
-          model: 'SD700',
-          serialNumber: 'A.070301',
-          calibrationCertificate: '22R4500',
-          calibrationDate: '',
-          attachedDocuments: {}
-        },
-        {
-          id: 'inst-3',
-          type: 'cold_stress',
-          brand: 'TESTO',
-          model: '440',
-          serialNumber: '81216382',
-          calibrationCertificate: '22R4495',
-          calibrationDate: '',
-          attachedDocuments: {}
-        },
-        {
-          id: 'inst-4',
-          type: 'lighting',
-          brand: 'TRIGGER',
-          model: 'TG-531',
-          serialNumber: '200807261',
-          calibrationCertificate: '',
-          calibrationDate: '',
-          attachedDocuments: {}
-        },
-        {
-          id: 'inst-5',
-          type: 'generic',
-          brand: 'FLUKE',
-          model: '404D',
-          serialNumber: '27910311',
-          calibrationCertificate: '',
-          calibrationDate: '',
-          attachedDocuments: {}
-        },
-        {
-          id: 'inst-6',
-          type: 'noise',
-          brand: 'TES',
-          model: '1353 H',
-          serialNumber: '130105756',
-          calibrationCertificate: '22R4498',
-          calibrationDate: '',
-          attachedDocuments: {}
-        },
-        {
-          id: 'inst-7',
-          type: 'noise',
-          brand: 'TES',
-          model: '1355',
-          serialNumber: '130807935',
-          calibrationCertificate: '22R4497',
-          calibrationDate: '',
-          attachedDocuments: {}
-        }
-      ],
-
-      addInstrument: (instrument) =>
-        set((state) => ({
-          availableInstruments: [...state.availableInstruments, instrument]
-        })),
-
-      updateInstrument: (id, data) =>
-        set((state) => ({
-          availableInstruments: state.availableInstruments.map((i) =>
-            i.id === id ? { ...i, ...data } : i
-          )
-        })),
-
-      deleteInstrument: (id) =>
-        set((state) => ({
-          availableInstruments: state.availableInstruments.filter((i) => i.id !== id)
-        })),
 
       updateEstablishment: (data) => 
         set((state) => ({ establishment: { ...state.establishment, ...data } })),
@@ -344,34 +173,6 @@ export const useStore = create<AppState>()(
           })
         })),
 
-      saveInspection: () =>
-        set((state) => ({
-          history: [
-            {
-              id: uuidv4(),
-              savedAt: new Date().toISOString(),
-              establishment: JSON.parse(JSON.stringify(state.establishment)),
-              sectors: JSON.parse(JSON.stringify(state.sectors))
-            },
-            ...state.history
-          ]
-        })),
-
-      loadInspection: (id) =>
-        set((state) => {
-          const inspection = state.history.find((i) => i.id === id);
-          if (!inspection) return state;
-          return {
-            establishment: JSON.parse(JSON.stringify(inspection.establishment)),
-            sectors: JSON.parse(JSON.stringify(inspection.sectors))
-          };
-        }),
-
-      deleteInspection: (id) =>
-        set((state) => ({
-          history: state.history.filter((i) => i.id !== id)
-        })),
-
       addSectorWithMeasurement: (sectorData, type) => 
         set((state) => {
           const newSectorId = uuidv4();
@@ -394,64 +195,16 @@ export const useStore = create<AppState>()(
           };
         }),
 
-      addClient: (clientData) =>
-        set((state) => ({
-          clients: [
-            ...state.clients,
-            { ...clientData, id: uuidv4(), createdAt: new Date().toISOString() }
-          ]
-        })),
-
-      updateClient: (id, data) =>
-        set((state) => ({
-          clients: state.clients.map((c) => 
-            c.id === id ? { ...c, ...data } : c
-          )
-        })),
-
-      deleteClient: (id) =>
-        set((state) => ({
-          clients: state.clients.filter((c) => c.id !== id)
-        })),
-        
-      loadClientToEstablishment: (clientId) =>
-        set((state) => {
-          const client = state.clients.find(c => c.id === clientId);
-          if (!client) return state;
-          
-          return {
-            establishment: {
-              ...state.establishment,
-              name: client.name,
-              razonSocial: client.razonSocial,
-              cuit: client.cuit,
-              address: client.address,
-              city: client.city,
-              province: client.province,
-              postalCode: client.postalCode
-            }
-          };
-        }),
-
-      addRubro: (rubro) =>
-        set((state) => ({
-            rubros: [...state.rubros, { ...rubro, id: uuidv4() }]
-        })),
-
-      updateRubro: (id, data) =>
-        set((state) => ({
-            rubros: state.rubros.map(r => r.id === id ? { ...r, ...data } : r)
-        })),
-
-      deleteRubro: (id) =>
-        set((state) => ({
-            rubros: state.rubros.filter(r => r.id !== id)
+      loadInspectionData: (establishment, sectors) =>
+        set(() => ({
+          establishment: JSON.parse(JSON.stringify(establishment)),
+          sectors: JSON.parse(JSON.stringify(sectors))
         })),
 
       resetStore: () => set({ establishment: initialEstablishment, sectors: [] }),
     }),
     {
-      name: 'syh-relevamiento-storage-v2',
+      name: 'syh-relevamiento-working-state-v3',
       storage: createJSONStorage(() => localStorage),
     }
   )

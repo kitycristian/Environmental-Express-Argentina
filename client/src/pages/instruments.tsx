@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,23 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Plus, Image as ImageIcon, Settings2 } from "lucide-react";
 import { Instrument, MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
-import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/hooks/use-toast";
+import { useInstruments, useCreateInstrument, useUpdateInstrument, useDeleteInstrument } from "@/lib/hooks";
 
 export default function InstrumentsPage() {
-  const instruments = useStore((state) => state.availableInstruments);
-  const addInstrument = useStore((state) => state.addInstrument);
-  const updateInstrumentStore = useStore((state) => state.updateInstrument);
-  const deleteInstrumentStore = useStore((state) => state.deleteInstrument);
+  const { data: instruments = [] } = useInstruments();
+  const createInstrument = useCreateInstrument();
+  const updateInstrumentMutation = useUpdateInstrument();
+  const deleteInstrumentMutation = useDeleteInstrument();
   const { toast } = useToast();
 
   // Local state for the form
   const [editingId, setEditingId] = useState<string | null>(null);
   
   const handleAddInstrument = () => {
-    const newInstrument: Instrument = {
-      id: uuidv4(),
-      type: 'generic',
+    const newInstrument = {
+      type: 'generic' as const,
       brand: '',
       model: '',
       serialNumber: '',
@@ -32,21 +30,20 @@ export default function InstrumentsPage() {
       attachedDocuments: {}
     };
 
-    addInstrument(newInstrument);
-    setEditingId(newInstrument.id);
+    createInstrument.mutate(newInstrument, {
+      onSuccess: (data) => {
+        setEditingId(data.id);
+      }
+    });
   };
 
   const handleUpdateInstrument = (id: string, data: Partial<Instrument>) => {
-    updateInstrumentStore(id, data);
+    updateInstrumentMutation.mutate({ id, data });
   };
 
   const handleDeleteInstrument = (id: string) => {
-    deleteInstrumentStore(id);
     if (editingId === id) setEditingId(null);
-    toast({
-        title: "Instrumento Eliminado",
-        description: "El instrumento ha sido quitado de la lista global."
-    });
+    deleteInstrumentMutation.mutate(id);
   };
 
   const handleUpdateDocuments = (id: string, key: 'calibrationCertificateImage' | 'traceablePatternImage', value: string) => {

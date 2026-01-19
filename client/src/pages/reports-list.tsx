@@ -11,38 +11,41 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useInspections, useDeleteInspection } from "@/lib/hooks";
 
 export default function ReportsList() {
-  const history = useStore((state) => state.history);
-  const loadInspection = useStore((state) => state.loadInspection);
-  const deleteInspection = useStore((state) => state.deleteInspection);
+  const { data: history = [] } = useInspections();
+  const loadInspectionData = useStore((state) => state.loadInspectionData);
+  const deleteInspectionMutation = useDeleteInspection();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleLoad = (id: string) => {
     if (confirm("¿Cargar esta inspección reemplazará los datos actuales del tablero. ¿Continuar?")) {
-      loadInspection(id);
-      toast({
-        title: "Inspección Cargada",
-        description: "Los datos han sido restaurados en el tablero.",
-      });
-      setLocation("/");
+      const inspection = history.find(i => i.id === id);
+      if (inspection) {
+        loadInspectionData(inspection.establishment, inspection.sectors);
+        toast({
+          title: "Inspección Cargada",
+          description: "Los datos han sido restaurados en el tablero.",
+        });
+        setLocation("/");
+      }
     }
   };
   
   const handleView = (id: string) => {
-      loadInspection(id);
-      setLocation("/report");
+      const inspection = history.find(i => i.id === id);
+      if (inspection) {
+        loadInspectionData(inspection.establishment, inspection.sectors);
+        setLocation("/report");
+      }
   };
 
   const handleDelete = (id: string) => {
     if (confirm("¿Está seguro de eliminar este informe del historial?")) {
-      deleteInspection(id);
-      toast({
-        title: "Informe Eliminado",
-        description: "El registro ha sido eliminado correctamente.",
-      });
+      deleteInspectionMutation.mutate(id);
     }
   };
 

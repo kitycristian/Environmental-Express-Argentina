@@ -12,6 +12,7 @@ import { MeasurementEditor, LightingGridEditor } from "@/components/measurement-
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
+import { useRubros } from "@/lib/hooks";
 
 interface MeasurementModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ const LEGAL_FRAMEWORKS: Record<string, string> = {
 
 export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProps) {
   const sectors = useStore((state) => state.sectors);
-  const rubros = useStore((state) => state.rubros);
+  const { data: rubros = [] } = useRubros();
   const addSectorWithMeasurement = useStore((state) => state.addSectorWithMeasurement);
   const addMeasurement = useStore((state) => state.addMeasurement);
   const { toast } = useToast();

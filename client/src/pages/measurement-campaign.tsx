@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useClients, useRubros, useCreateRubro, useUpdateRubro, useDeleteRubro } from "@/lib/hooks";
 
 export default function MeasurementCampaign() {
   const [match, params] = useRoute("/campaign/:type");
@@ -22,15 +23,16 @@ export default function MeasurementCampaign() {
   
   const sectors = useStore((state) => state.sectors);
   const establishment = useStore((state) => state.establishment);
-  const clients = useStore((state) => state.clients);
-  const rubros = useStore((state) => state.rubros);
   const addSector = useStore((state) => state.addSector);
   const addMeasurement = useStore((state) => state.addMeasurement);
   const deleteMeasurement = useStore((state) => state.deleteMeasurement);
   const updateSector = useStore((state) => state.updateSector);
-  const addRubro = useStore((state) => state.addRubro);
-  const updateRubro = useStore((state) => state.updateRubro);
-  const deleteRubro = useStore((state) => state.deleteRubro);
+  
+  const { data: clients = [] } = useClients();
+  const { data: rubros = [] } = useRubros();
+  const createRubro = useCreateRubro();
+  const updateRubroMutation = useUpdateRubro();
+  const deleteRubroMutation = useDeleteRubro();
 
   const [isNewSectorOpen, setIsNewSectorOpen] = useState(false);
   const [newSectorName, setNewSectorName] = useState("");
@@ -98,12 +100,12 @@ export default function MeasurementCampaign() {
       const sectorsList = newRubroSectorsText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
       
       if (editingRubro) {
-          updateRubro(editingRubro.id, {
-              name: newRubroName,
-              sectors: sectorsList
+          updateRubroMutation.mutate({
+              id: editingRubro.id,
+              data: { name: newRubroName, sectors: sectorsList }
           });
       } else {
-          addRubro({
+          createRubro.mutate({
               name: newRubroName,
               sectors: sectorsList
           });

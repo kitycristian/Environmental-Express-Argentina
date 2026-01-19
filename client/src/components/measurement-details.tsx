@@ -9,6 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useInstruments } from "@/lib/hooks";
 
 interface MeasurementDetailsProps {
   measurement: Measurement;
@@ -17,7 +18,7 @@ interface MeasurementDetailsProps {
 
 export function MeasurementDetails({ measurement, sectorId }: MeasurementDetailsProps) {
   const updateMeasurement = useStore((state) => state.updateMeasurement);
-  const availableInstruments = useStore((state) => state.availableInstruments);
+  const { data: availableInstruments = [] } = useInstruments();
 
   const handleSelectInstrument = (instrumentId: string) => {
     const instrument = availableInstruments.find(i => i.id === instrumentId);

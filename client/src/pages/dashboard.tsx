@@ -13,14 +13,15 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { MeasurementModal } from "@/components/measurement-modal";
+import { useClients, useCreateInspection } from "@/lib/hooks";
 
 export default function Dashboard() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
   const sectors = useStore((state) => state.sectors);
-  const clients = useStore((state) => state.clients);
-  const loadClientToEstablishment = useStore((state) => state.loadClientToEstablishment);
-  const saveInspection = useStore((state) => state.saveInspection);
+  
+  const { data: clients = [] } = useClients();
+  const createInspection = useCreateInspection();
   
   const [, setLocation] = useLocation();
   const [openClientSelect, setOpenClientSelect] = useState(false);
@@ -37,11 +38,22 @@ export default function Dashboard() {
   };
 
   const handleSave = () => {
-      saveInspection();
-      toast({
-        title: "Inspección Guardada",
-        description: "Se ha guardado una copia en el historial local (Auto-guardado activo).",
+      createInspection.mutate({
+        establishment,
+        sectors
       });
+  };
+
+  const loadClientToEstablishment = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+    
+    updateEstablishment({
+      name: client.name,
+      razonSocial: client.razonSocial,
+      cuit: client.cuit,
+      address: client.address,
+    });
   };
 
   const handleSketchUpload = (file: File) => {
