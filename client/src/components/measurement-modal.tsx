@@ -124,190 +124,201 @@ export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="p-6 pb-2 border-b bg-muted/10">
-          <div className="flex items-center gap-2 mb-2">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+      <DialogContent className="w-[98vw] max-w-none h-[95vh] max-h-[95vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="p-4 md:p-6 border-b bg-primary/5">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl md:text-3xl font-bold flex items-center gap-3">
                {MEASUREMENT_LABELS[type]}
                {selectedSectorId && (
-                   <span className="text-muted-foreground font-normal text-base">
+                   <span className="text-primary font-semibold">
                       - {selectedSector?.name}
                    </span>
                )}
             </DialogTitle>
+            {selectedSectorId && (
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-lg font-bold ${
+                measurement?.status === 'compliant' ? 'bg-green-100 text-green-700' :
+                measurement?.status === 'non_compliant' ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-600'
+              }`}>
+                {complianceStatus.icon}
+                {complianceStatus.label}
+              </div>
+            )}
           </div>
-          <DialogDescription className="flex items-center gap-2 text-primary font-medium">
-             <FileText className="h-4 w-4" /> 
-             Marco Legal: {LEGAL_FRAMEWORKS[type] || "Normativa vigente"}
+          <DialogDescription className="flex items-center gap-2 text-primary font-medium text-base">
+             <FileText className="h-5 w-5" /> 
+             {LEGAL_FRAMEWORKS[type] || "Normativa vigente"}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-            {/* Sidebar: Sector Selection */}
-            <div className="w-full md:w-64 border-r bg-gray-50 p-4 flex flex-col gap-4">
-                <div className="space-y-2">
-                    <Label>Seleccionar Sector</Label>
-                    {!isAddingSector && !isBulkImportOpen ? (
-                        <div className="space-y-2">
-                            <Select value={selectedSectorId} onValueChange={setSelectedSectorId}>
-                                <SelectTrigger className="bg-white">
-                                    <SelectValue placeholder="Elegir sector..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sectors.map(sector => (
-                                        <SelectItem key={sector.id} value={sector.id}>{sector.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button 
-                                    variant="outline" 
-                                    className="w-full gap-1 text-primary border-primary/20 hover:bg-primary/5 text-xs px-2"
-                                    onClick={() => setIsAddingSector(true)}
-                                >
-                                    <Plus className="h-3 w-3" /> Nuevo
-                                </Button>
-                                <Button 
-                                    variant="outline" 
-                                    className="w-full gap-1 text-blue-700 border-blue-200 hover:bg-blue-50 text-xs px-2"
-                                    onClick={() => setIsBulkImportOpen(true)}
-                                >
-                                    <ListPlus className="h-3 w-3" /> Masivo
-                                </Button>
-                            </div>
+        <div className="flex-1 overflow-hidden flex flex-col">
+            {/* Top Bar: Sector Selection - LARGE for field use */}
+            <div className="border-b bg-gray-50 p-4">
+                {!isAddingSector && !isBulkImportOpen ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Label className="text-lg font-bold">Sector:</Label>
+                        <Select value={selectedSectorId} onValueChange={setSelectedSectorId}>
+                            <SelectTrigger className="h-14 text-lg bg-white min-w-[300px] font-semibold">
+                                <SelectValue placeholder="Elegir sector..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {sectors.map(sector => (
+                                    <SelectItem key={sector.id} value={sector.id} className="text-lg py-3">{sector.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button 
+                            variant="outline" 
+                            className="h-14 gap-2 text-primary border-primary/30 hover:bg-primary/5 text-base px-6"
+                            onClick={() => setIsAddingSector(true)}
+                        >
+                            <Plus className="h-5 w-5" /> Nuevo Sector
+                        </Button>
+                        <Button 
+                            variant="default" 
+                            className="h-14 gap-2 text-base px-6"
+                            onClick={() => setIsBulkImportOpen(true)}
+                        >
+                            <ListPlus className="h-5 w-5" /> Importar Masivo
+                        </Button>
+                    </div>
+                ) : isBulkImportOpen ? (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 max-w-2xl">
+                        <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-primary">Importar Sectores desde Rubro</span>
+                            <Button size="lg" variant="ghost" onClick={() => setIsBulkImportOpen(false)}>
+                                Cancelar
+                            </Button>
                         </div>
-                    ) : isBulkImportOpen ? (
-                        <div className="space-y-3 animate-in fade-in slide-in-from-left-2 border rounded-lg p-3 bg-white shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase text-muted-foreground">Importar desde Rubro</span>
-                                <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setIsBulkImportOpen(false)}>
-                                    <Plus className="h-3 w-3 rotate-45" />
-                                </Button>
-                            </div>
-                            
-                            <Select value={selectedRubro} onValueChange={setSelectedRubro}>
-                                <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue placeholder="Seleccionar Rubro" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {rubros.map(r => (
-                                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        
+                        <Select value={selectedRubro} onValueChange={setSelectedRubro}>
+                            <SelectTrigger className="h-14 text-lg">
+                                <SelectValue placeholder="Seleccionar Rubro" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {rubros.map(r => (
+                                    <SelectItem key={r.id} value={r.id} className="text-lg py-3">{r.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
-                            {selectedRubro && (
-                                <>
-                                    <div className="flex gap-1">
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline" 
-                                            className="flex-1 text-xs h-7"
-                                            onClick={() => setSelectedRubroSectors(getRubroSectors(selectedRubro))}
-                                        >
-                                            Seleccionar Todos
-                                        </Button>
-                                        <Button 
-                                            size="sm" 
-                                            variant="ghost" 
-                                            className="text-xs h-7"
-                                            onClick={() => setSelectedRubroSectors([])}
-                                        >
-                                            Ninguno
-                                        </Button>
-                                    </div>
-                                    <div className="h-32 overflow-y-auto border rounded bg-gray-50 p-1">
-                                        {getRubroSectors(selectedRubro).map(sector => (
-                                            <div key={sector} className="flex items-center gap-2 p-1 hover:bg-white rounded cursor-pointer" onClick={() => {
+                        {selectedRubro && (
+                            <>
+                                <div className="flex gap-2">
+                                    <Button 
+                                        size="lg" 
+                                        variant="outline" 
+                                        className="flex-1 text-base h-12"
+                                        onClick={() => setSelectedRubroSectors(getRubroSectors(selectedRubro))}
+                                    >
+                                        Seleccionar Todos
+                                    </Button>
+                                    <Button 
+                                        size="lg" 
+                                        variant="ghost" 
+                                        className="text-base h-12"
+                                        onClick={() => setSelectedRubroSectors([])}
+                                    >
+                                        Ninguno
+                                    </Button>
+                                </div>
+                                <div className="max-h-[200px] overflow-y-auto border-2 rounded-lg bg-white p-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {getRubroSectors(selectedRubro).map(sector => (
+                                        <div 
+                                            key={sector} 
+                                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                                                selectedRubroSectors.includes(sector) 
+                                                    ? 'bg-primary/10 border-2 border-primary' 
+                                                    : 'bg-gray-50 border-2 border-transparent hover:border-gray-300'
+                                            }`}
+                                            onClick={() => {
                                                 if (selectedRubroSectors.includes(sector)) {
                                                     setSelectedRubroSectors(selectedRubroSectors.filter(s => s !== sector));
                                                 } else {
                                                     setSelectedRubroSectors([...selectedRubroSectors, sector]);
                                                 }
-                                            }}>
-                                                <input type="checkbox" checked={selectedRubroSectors.includes(sector)} readOnly className="h-3 w-3 rounded border-gray-300" />
-                                                <span className="text-xs truncate">{sector}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                            
-                            <Button size="sm" className="w-full text-xs" onClick={handleBulkImport} disabled={selectedRubroSectors.length === 0}>
-                                Importar ({selectedRubroSectors.length})
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-left-2">
-                            <Input 
-                                placeholder="Nombre del sector" 
-                                value={newSectorName}
-                                onChange={(e) => setNewSectorName(e.target.value)}
-                                className="bg-white"
-                                autoFocus
-                            />
-                            <div className="flex gap-2">
-                                <Button size="sm" className="flex-1" onClick={handleCreateSector}>Crear</Button>
-                                <Button size="sm" variant="ghost" onClick={() => setIsAddingSector(false)}>Cancelar</Button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {selectedSectorId && (
-                     <Card className="bg-white shadow-sm">
-                        <CardContent className="p-4 space-y-3">
-                            <div className="text-xs font-bold text-muted-foreground uppercase">Estado Actual</div>
-                            <div className={`flex items-center gap-2 font-bold ${complianceStatus.color}`}>
-                                {complianceStatus.icon}
-                                {complianceStatus.label}
-                            </div>
-                            
-                            <Button variant="secondary" size="sm" className="w-full gap-2 text-xs">
-                                <Camera className="h-3 w-3" /> Captura Rápida
-                            </Button>
-                        </CardContent>
-                     </Card>
-                )}
-            </div>
-
-            {/* Main Content: Editor */}
-            <div className="flex-1 overflow-hidden flex flex-col bg-white">
-                <ScrollArea className="flex-1 p-4">
-                    {selectedSectorId && measurement ? (
-                        <div className="space-y-4">
-                            {type === 'lighting' ? (
-                                <LightingGridEditor measurement={measurement} />
-                            ) : (
-                                <MeasurementEditor measurement={measurement} />
-                            )}
-                        </div>
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8 text-center opacity-60">
-                            <div className="bg-gray-100 p-4 rounded-full mb-4">
-                                <FileText className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-lg font-medium mb-1">Seleccione un sector</h3>
-                            <p className="text-sm max-w-xs">
-                                Elija un sector existente, cree uno nuevo o importe desde rubros para comenzar.
-                            </p>
-                        </div>
-                    )}
-                </ScrollArea>
-                
-                {selectedSectorId && (
-                    <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
-                        <div className="text-xs text-muted-foreground">
-                            {measurement?.points?.length || 0} puntos registrados
-                        </div>
-                        <Button onClick={() => {
-                            toast({ title: "Guardado", description: "Los datos se han guardado localmente." });
-                            // In real app, this might trigger a sync
-                        }} className="gap-2 bg-green-600 hover:bg-green-700">
-                            <Save className="h-4 w-4" /> Guardar Cambios
-                        </Button>
+                                            }}
+                                        >
+                                            <input type="checkbox" checked={selectedRubroSectors.includes(sector)} readOnly className="h-5 w-5 rounded" />
+                                            <span className="text-base font-medium">{sector}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Button size="lg" className="w-full h-14 text-lg" onClick={handleBulkImport} disabled={selectedRubroSectors.length === 0}>
+                                    Importar {selectedRubroSectors.length} Sectores
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                        <Input 
+                            placeholder="Nombre del nuevo sector" 
+                            value={newSectorName}
+                            onChange={(e) => setNewSectorName(e.target.value)}
+                            className="h-14 text-lg bg-white max-w-md"
+                            autoFocus
+                        />
+                        <Button size="lg" className="h-14 px-8 text-base" onClick={handleCreateSector}>Crear Sector</Button>
+                        <Button size="lg" variant="ghost" className="h-14" onClick={() => setIsAddingSector(false)}>Cancelar</Button>
                     </div>
                 )}
+            </div>
+            
+            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                {/* LEFT: Quick navigation for existing sectors */}
+                {sectors.length > 0 && (
+                    <div className="hidden md:block w-56 border-r bg-gray-50/50 overflow-y-auto">
+                        <div className="p-3">
+                            <span className="text-xs font-bold uppercase text-gray-500">Sectores ({sectors.length})</span>
+                        </div>
+                        {sectors.map(sector => {
+                            const sectorMeasurement = sector.measurements.find(m => m.type === type);
+                            const status = sectorMeasurement?.status;
+                            return (
+                                <div 
+                                    key={sector.id}
+                                    onClick={() => setSelectedSectorId(sector.id)}
+                                    className={`p-3 cursor-pointer border-l-4 transition-all ${
+                                        selectedSectorId === sector.id 
+                                            ? 'bg-primary/10 border-primary font-semibold' 
+                                            : 'border-transparent hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {status === 'compliant' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                                        {status === 'non_compliant' && <AlertTriangle className="h-4 w-4 text-red-600" />}
+                                        {!status && <div className="h-4 w-4 rounded-full bg-gray-300" />}
+                                        <span className="text-sm truncate">{sector.name}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+                
+                {/* MAIN: Measurement Editor - LARGE */}
+                <div className="flex-1 overflow-hidden flex flex-col bg-white p-0">
+                    <ScrollArea className="flex-1">
+                        {selectedSectorId && measurement ? (
+                            <div className="p-4">
+                                {type === 'lighting' ? (
+                                    <LightingGridEditor measurement={measurement} />
+                                ) : (
+                                    <MeasurementEditor measurement={measurement} />
+                                )}
+                            </div>
+                        ) : (
+                            <div className="h-full flex items-center justify-center p-8">
+                                <div className="text-center space-y-4">
+                                    <Building2 className="h-16 w-16 text-gray-300 mx-auto" />
+                                    <p className="text-xl text-gray-500">Seleccione un sector existente o cree uno nuevo para comenzar.</p>
+                                </div>
+                            </div>
+                        )}
+                    </ScrollArea>
+                </div>
             </div>
         </div>
       </DialogContent>

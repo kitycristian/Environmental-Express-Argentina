@@ -137,16 +137,16 @@ export function LightingGridEditor({ measurement }: { measurement: Measurement }
   };
 
   return (
-    <Card className="border shadow-sm overflow-hidden bg-white">
-      <CardHeader className="py-3 px-4 bg-gray-50 border-b flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-            <Grid3X3 className="h-4 w-4 text-primary" />
-            <span className="font-bold text-sm uppercase">Datos de Iluminación</span>
+    <Card className="border-2 shadow-lg overflow-hidden bg-white">
+      <CardHeader className="py-4 px-6 bg-primary/5 border-b flex flex-row items-center justify-between">
+        <div className="flex items-center gap-3">
+            <Grid3X3 className="h-6 w-6 text-primary" />
+            <span className="font-bold text-xl uppercase text-primary">Datos de Iluminación</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
             <Button 
-              size="sm" 
-              className="h-7 gap-1 bg-primary text-white text-xs"
+              size="lg" 
+              className="h-12 gap-2 bg-green-600 hover:bg-green-700 text-white text-base px-6"
               onClick={() => {
                 toast({
                   title: "Medición guardada",
@@ -154,80 +154,80 @@ export function LightingGridEditor({ measurement }: { measurement: Measurement }
                 });
               }}
             >
-              <Save className="h-3 w-3" /> Guardar
+              <Save className="h-5 w-5" /> Guardar Datos
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              className="h-12 w-12 text-muted-foreground hover:text-destructive"
               onClick={() => {
                 if(confirm('¿Eliminar esta medición?')) deleteMeasurement(measurement.sectorId, measurement.id);
               }}
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-5 w-5" />
             </Button>
         </div>
       </CardHeader>
       
       <CardContent className="p-0">
         <div className="flex flex-col md:flex-row">
-            {/* LEFT COLUMN: Dimensions & Config */}
-            <div className="w-full md:w-64 bg-gray-50/50 border-r p-4 space-y-4">
-                <div className="space-y-1">
-                    <Label className="text-xs font-bold uppercase text-gray-500">Puesto / Sección</Label>
+            {/* LEFT COLUMN: Dimensions & Config - LARGE for field use */}
+            <div className="w-full md:w-80 bg-gray-50/50 border-r p-5 space-y-5 overflow-y-auto">
+                <div className="space-y-2">
+                    <Label className="text-base font-bold text-gray-700">Puesto / Sección</Label>
                     <DebouncedInput 
-                       className="h-7 bg-white text-xs" 
+                       className="h-12 bg-white text-base" 
                        placeholder="Ej. Línea de Cajas"
                        value={measurement.name || ''}
                        onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { name: val as string })}
                     />
                 </div>
 
-                <div className="space-y-1">
-                    <Label className="text-xs font-bold uppercase text-gray-500">Hora Medición</Label>
+                <div className="space-y-2">
+                    <Label className="text-base font-bold text-gray-700">Hora Medición</Label>
                     <DebouncedInput 
                        type="time"
-                       className="h-7 bg-white text-xs" 
+                       className="h-12 bg-white text-lg" 
                        value={measurement.details?.startTime || ''}
                        onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { details: { ...measurement.details, startTime: val as string } })}
                     />
                 </div>
 
-                <div>
-                    <Label className="text-xs font-bold uppercase text-gray-500 mb-2 block">Dimensiones (m)</Label>
-                    <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-3">
+                    <Label className="text-base font-bold text-gray-700">Dimensiones (metros)</Label>
+                    <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                             <Label className="text-[10px] text-gray-400">Ancho</Label>
+                             <Label className="text-sm text-gray-500">Ancho</Label>
                              <DebouncedInput 
                                type="number" 
-                               className="h-7 bg-white text-xs" 
+                               className="h-12 bg-white text-lg text-center" 
                                value={measurement.config?.width || ''}
                                onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, width: parseFloat(val as string) } })}
                              />
                         </div>
                         <div className="space-y-1">
-                             <Label className="text-[10px] text-gray-400">Largo</Label>
+                             <Label className="text-sm text-gray-500">Largo</Label>
                              <DebouncedInput 
                                type="number" 
-                               className="h-7 bg-white text-xs" 
+                               className="h-12 bg-white text-lg text-center" 
                                value={measurement.config?.length || ''}
                                onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, length: parseFloat(val as string) } })}
                              />
                         </div>
                         <div className="space-y-1">
-                             <Label className="text-[10px] text-gray-400">Alto</Label>
+                             <Label className="text-sm text-gray-500">Alto</Label>
                              <DebouncedInput 
                                type="number" 
-                               className="h-7 bg-white text-xs" 
+                               className="h-12 bg-white text-lg text-center" 
                                value={measurement.config?.height || ''}
                                onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, height: parseFloat(val as string) } })}
                              />
                         </div>
                          <div className="space-y-1">
-                             <Label className="text-[10px] text-gray-400">Plano Trab.</Label>
+                             <Label className="text-sm text-gray-500">Plano Trabajo</Label>
                              <DebouncedInput 
                                type="number" 
-                               className="h-7 bg-white text-xs" 
+                               className="h-12 bg-white text-lg text-center" 
                                value={measurement.config?.workPlaneHeight || ''}
                                onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, workPlaneHeight: parseFloat(val as string) } })}
                              />
@@ -235,67 +235,79 @@ export function LightingGridEditor({ measurement }: { measurement: Measurement }
                     </div>
                 </div>
 
-                <div className="pt-2 border-t">
-                     <Label className="text-xs font-bold uppercase text-gray-500 mb-2 block">Tipo de Ilum.</Label>
-                     <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
+                <div className="pt-4 border-t space-y-3">
+                     <Label className="text-base font-bold text-gray-700">Tipo de Iluminación</Label>
+                     <div className="grid grid-cols-2 gap-2">
+                        <div 
+                            className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer border-2 transition-all ${
+                                measurement.config?.lightingType === 'mixed' ? 'bg-primary/10 border-primary' : 'bg-white border-gray-200'
+                            }`}
+                            onClick={() => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightingType: 'mixed' } })}
+                        >
                             <Checkbox 
                                 id="type-mixed" 
                                 checked={measurement.config?.lightingType === 'mixed'}
-                                onCheckedChange={() => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightingType: 'mixed' } })}
+                                className="h-5 w-5"
                             />
-                            <label htmlFor="type-mixed" className="text-xs font-medium leading-none cursor-pointer">Mixta</label>
+                            <label htmlFor="type-mixed" className="text-base font-medium cursor-pointer">Mixta</label>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div 
+                            className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer border-2 transition-all ${
+                                measurement.config?.lightingType === 'artificial' ? 'bg-primary/10 border-primary' : 'bg-white border-gray-200'
+                            }`}
+                            onClick={() => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightingType: 'artificial' } })}
+                        >
                             <Checkbox 
                                 id="type-artificial" 
                                 checked={measurement.config?.lightingType === 'artificial'}
-                                onCheckedChange={() => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightingType: 'artificial' } })}
+                                className="h-5 w-5"
                             />
-                            <label htmlFor="type-artificial" className="text-xs font-medium leading-none cursor-pointer">Artificial</label>
+                            <label htmlFor="type-artificial" className="text-base font-medium cursor-pointer">Artificial</label>
                         </div>
                      </div>
+                </div>
                      
-                     <Label className="text-xs font-bold uppercase text-gray-500 mt-3 mb-2 block">Sistema Ilum.</Label>
+                <div className="space-y-2">
+                     <Label className="text-base font-bold text-gray-700">Sistema Iluminación</Label>
                      <Select 
                         value={measurement.config?.lightingSystemType || 'general'} 
                         onValueChange={(val: any) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, lightingSystemType: val } })}
                      >
-                        <SelectTrigger className="h-7 text-xs bg-white w-full">
+                        <SelectTrigger className="h-12 text-base bg-white w-full">
                             <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="general">General</SelectItem>
-                            <SelectItem value="localized">Localizada</SelectItem>
-                            <SelectItem value="mixed">Mixta</SelectItem>
+                            <SelectItem value="general" className="text-base py-3">General</SelectItem>
+                            <SelectItem value="localized" className="text-base py-3">Localizada</SelectItem>
+                            <SelectItem value="mixed" className="text-base py-3">Mixta</SelectItem>
                         </SelectContent>
                      </Select>
                 </div>
 
-                <div className="pt-2 border-t space-y-2">
-                     <div className="space-y-1">
-                        <Label className="text-xs font-bold uppercase text-gray-500">Artefacto</Label>
+                <div className="pt-4 border-t space-y-3">
+                     <div className="space-y-2">
+                        <Label className="text-base font-bold text-gray-700">Tipo Artefacto</Label>
                         <Select 
                             value={measurement.config?.artifactType || ''} 
                             onValueChange={(val: any) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, artifactType: val } })}
                         >
-                        <SelectTrigger className="h-7 text-xs bg-white">
+                        <SelectTrigger className="h-12 text-base bg-white">
                             <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="LED">LED</SelectItem>
-                            <SelectItem value="Descarga">Descarga</SelectItem>
-                            <SelectItem value="Incandescente">Incandescente</SelectItem>
-                            <SelectItem value="Fluorescente">Fluorescente</SelectItem>
-                            <SelectItem value="Halógena">Halógena</SelectItem>
+                            <SelectItem value="LED" className="text-base py-3">LED</SelectItem>
+                            <SelectItem value="Descarga" className="text-base py-3">Descarga</SelectItem>
+                            <SelectItem value="Incandescente" className="text-base py-3">Incandescente</SelectItem>
+                            <SelectItem value="Fluorescente" className="text-base py-3">Fluorescente</SelectItem>
+                            <SelectItem value="Halógena" className="text-base py-3">Halógena</SelectItem>
                         </SelectContent>
                         </Select>
                      </div>
-                     <div className="space-y-1">
-                        <Label className="text-xs font-bold uppercase text-gray-500">Medición OFF (Lux)</Label>
+                     <div className="space-y-2">
+                        <Label className="text-base font-bold text-gray-700">Medición OFF (Lux)</Label>
                         <DebouncedInput 
                             type="number"
-                            className="h-7 bg-white text-xs border-gray-300"
+                            className="h-12 bg-white text-lg text-center border-2"
                             placeholder="0"
                             value={measurement.config?.luxOff || ''}
                             onDebouncedChange={(val) => updateMeasurement(measurement.sectorId, measurement.id, { config: { ...measurement.config, luxOff: parseFloat(val as string) } })}
@@ -306,64 +318,64 @@ export function LightingGridEditor({ measurement }: { measurement: Measurement }
 
             {/* RIGHT COLUMN: Grid & Results */}
             <div className="flex-1 p-4 flex flex-col gap-4">
-                 {/* Top Stats Bar */}
-                <div className="grid grid-cols-4 gap-2 text-center bg-gray-50 p-2 rounded border">
-                    <div>
-                        <div className="text-[10px] uppercase text-gray-500 font-bold">Puntos</div>
-                        <div className="text-lg font-bold">{points.length}</div>
+                 {/* Top Stats Bar - LARGE for field use */}
+                <div className="grid grid-cols-4 gap-4 text-center bg-gradient-to-r from-blue-50 to-primary/5 p-4 rounded-xl border-2">
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <div className="text-sm uppercase text-gray-500 font-bold">Puntos</div>
+                        <div className="text-3xl font-bold text-gray-800">{points.length}</div>
                     </div>
-                    <div>
-                        <div className="text-[10px] uppercase text-gray-500 font-bold">Promedio</div>
-                        <div className="text-lg font-bold text-blue-600">{eAvg} <span className="text-xs text-gray-400">Lux</span></div>
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <div className="text-sm uppercase text-gray-500 font-bold">Promedio</div>
+                        <div className="text-3xl font-bold text-blue-600">{eAvg} <span className="text-base text-gray-400">Lux</span></div>
                     </div>
-                    <div>
-                        <div className="text-[10px] uppercase text-gray-500 font-bold">Mínimo</div>
-                        <div className="text-lg font-bold">{eMin} <span className="text-xs text-gray-400">Lux</span></div>
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <div className="text-sm uppercase text-gray-500 font-bold">Mínimo</div>
+                        <div className="text-3xl font-bold text-gray-800">{eMin} <span className="text-base text-gray-400">Lux</span></div>
                     </div>
-                    <div>
-                         <div className="text-[10px] uppercase text-gray-500 font-bold">Uniformidad</div>
-                         <div className={`text-lg font-bold ${compliesUniformity ? 'text-green-600' : 'text-orange-500'}`}>{uniformity}</div>
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                         <div className="text-sm uppercase text-gray-500 font-bold">Uniformidad</div>
+                         <div className={`text-3xl font-bold ${compliesUniformity ? 'text-green-600' : 'text-orange-500'}`}>{uniformity}</div>
                     </div>
                 </div>
 
-                {/* Grid Controls */}
-                <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold uppercase text-gray-500">
-                        Valores por Punto (Lux)
+                {/* Grid Controls - LARGE */}
+                <div className="flex items-center justify-between bg-white p-3 rounded-lg border">
+                    <Label className="text-lg font-bold text-gray-700">
+                        Valores de Medición (Lux)
                     </Label>
-                    <div className="flex items-center gap-2">
-                        <Label className="text-xs text-gray-400">Cant. Puntos:</Label>
+                    <div className="flex items-center gap-3">
+                        <Label className="text-base text-gray-500">Cantidad de Puntos:</Label>
                         <Input 
                            type="number" 
-                           className="h-6 w-16 text-xs text-center" 
+                           className="h-12 w-24 text-xl text-center font-bold" 
                            value={gridSize}
                            onChange={(e) => handleGridResize(parseInt(e.target.value) || 0)}
                         />
                     </div>
                 </div>
 
-                {/* The Grid - IMPROVED: Row-based Input */}
-                <div className="flex-1 bg-gray-100/50 rounded border p-4 overflow-y-auto max-h-[400px]">
-                  <div className="space-y-4">
-                     {/* Rows Container */}
-                     <div className="space-y-2">
-                        {Array.from({ length: Math.ceil(points.length / 5) }).map((_, rowIndex) => (
-                           <div key={rowIndex} className="flex gap-2">
-                              {/* Row Index Indicator (Optional) */}
-                              <div className="flex items-center justify-center w-6 text-xs text-gray-400 font-mono">
-                                 R{rowIndex + 1}
+                {/* The Grid - LARGE INPUTS for field use */}
+                <div className="flex-1 bg-gray-100/50 rounded-xl border-2 p-6 overflow-y-auto">
+                  <div className="space-y-6">
+                     {/* Rows Container - 3 columns for larger inputs */}
+                     <div className="space-y-4">
+                        {Array.from({ length: Math.ceil(points.length / 3) }).map((_, rowIndex) => (
+                           <div key={rowIndex} className="flex gap-4 items-center">
+                              {/* Row Index Indicator */}
+                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold">
+                                 {rowIndex + 1}
                               </div>
                               
-                              {/* Points in this row (Chunk of 5) */}
-                              {points.slice(rowIndex * 5, (rowIndex + 1) * 5).map((point, colIndex) => {
-                                 const absoluteIndex = rowIndex * 5 + colIndex;
+                              {/* Points in this row (Chunk of 3 for larger inputs) */}
+                              {points.slice(rowIndex * 3, (rowIndex + 1) * 3).map((point, colIndex) => {
+                                 const absoluteIndex = rowIndex * 3 + colIndex;
                                  return (
-                                    <div key={point.id} className="relative group flex-1">
+                                    <div key={point.id} className="relative flex-1">
                                       <DebouncedInput 
                                          id={`lux-input-${absoluteIndex}`}
                                          type="number"
-                                         className="h-9 text-center font-mono text-sm bg-white border-gray-200 focus:border-blue-500 transition-colors px-1 w-full"
-                                         placeholder="-"
+                                         className="h-16 text-center font-mono text-2xl bg-white border-2 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-xl w-full"
+                                         placeholder="—"
                                          value={point.values.lux || ''}
                                          onDebouncedChange={(val) => updatePoint(measurement.sectorId, measurement.id, point.id, { values: { ...point.values, lux: val } })}
                                          onKeyDown={(e) => {
@@ -372,37 +384,40 @@ export function LightingGridEditor({ measurement }: { measurement: Measurement }
                                                  const nextInput = document.getElementById(`lux-input-${absoluteIndex + 1}`);
                                                  if (nextInput) {
                                                      nextInput.focus();
-                                                 } else {
-                                                     // If last input, maybe add a new row? 
-                                                     // For now just blur or stay
                                                  }
                                              }
                                          }}
                                       />
-                                      <span className="absolute -top-2 -left-1 text-[9px] font-bold text-gray-400 bg-white px-1 border rounded shadow-sm z-10 pointer-events-none">
-                                         {absoluteIndex + 1}
+                                      <span className="absolute -top-3 left-3 text-sm font-bold text-white bg-primary px-2 py-0.5 rounded-full z-10 pointer-events-none">
+                                         P{absoluteIndex + 1}
                                       </span>
                                     </div>
                                  );
                               })}
+                              {/* Fill empty slots in last row */}
+                              {rowIndex === Math.ceil(points.length / 3) - 1 && 
+                                Array.from({ length: 3 - (points.length % 3 || 3) }).map((_, i) => (
+                                  <div key={`empty-${i}`} className="flex-1" />
+                                ))
+                              }
                            </div>
                         ))}
                      </div>
                      
-                     {/* Quick Actions */}
-                     <div className="flex gap-2 justify-end pt-2">
-                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleGridResize(gridSize + 5)}>
-                            <Plus className="h-3 w-3 mr-1" /> Agregar Fila
+                     {/* Quick Actions - LARGE */}
+                     <div className="flex gap-3 justify-center pt-4">
+                         <Button variant="outline" size="lg" className="h-14 text-lg px-8" onClick={() => handleGridResize(gridSize + 3)}>
+                            <Plus className="h-5 w-5 mr-2" /> Agregar Fila (+3 puntos)
                          </Button>
                      </div>
                   </div>
                 </div>
 
-                {/* Footer: Observations */}
-                <div className="pt-2">
-                    <Label className="text-xs font-bold uppercase text-gray-500 mb-1 block">Observaciones</Label>
+                {/* Footer: Observations - LARGE */}
+                <div className="pt-4">
+                    <Label className="text-base font-bold text-gray-700 mb-2 block">Observaciones</Label>
                     <Textarea 
-                         className="h-12 text-xs resize-none bg-white" 
+                         className="h-20 text-base resize-none bg-white border-2" 
                          placeholder="Ej. Artefacto sucio, afectado por calor, faltante..."
                          value={measurement.observations || ''}
                          onChange={(e) => updateMeasurement(measurement.sectorId, measurement.id, { observations: e.target.value })}
