@@ -32,6 +32,8 @@ export default function ClientsPage() {
   const [selectedClientHistory, setSelectedClientHistory] = useState<Client | null>(null);
   const [importData, setImportData] = useState<string>("");
   const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [sectorsCsvInput, setSectorsCsvInput] = useState<string>("");
+  const [showSectorsCsvInput, setShowSectorsCsvInput] = useState(false);
 
   // Form state
   const [selectedRubroId, setSelectedRubroId] = useState<string>("");
@@ -112,6 +114,20 @@ export default function ClientsPage() {
       setClientSectors([...clientSectors, ...newSectors]);
       toast({ title: `${newSectors.length} sectores importados del rubro` });
     }
+  };
+
+  const handleImportSectorsFromCsv = () => {
+    if (!sectorsCsvInput.trim()) return;
+    const newSectors = sectorsCsvInput
+      .split(/[,;\n]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    const existingSectors = new Set(clientSectors);
+    const uniqueNew = newSectors.filter(s => !existingSectors.has(s));
+    setClientSectors([...clientSectors, ...uniqueNew]);
+    setSectorsCsvInput("");
+    setShowSectorsCsvInput(false);
+    toast({ title: `${uniqueNew.length} sectores importados` });
   };
 
   const handleDelete = (id: string) => {
@@ -445,7 +461,25 @@ export default function ClientsPage() {
                 <Button type="button" variant="outline" onClick={handleAddSector} data-testid="button-add-sector">
                   <Plus className="h-4 w-4" />
                 </Button>
+                <Button type="button" variant="outline" onClick={() => setShowSectorsCsvInput(!showSectorsCsvInput)} data-testid="button-toggle-csv">
+                  <FileUp className="h-4 w-4" />
+                </Button>
               </div>
+              
+              {showSectorsCsvInput && (
+                <div className="space-y-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100">
+                  <p className="text-xs text-muted-foreground">Pegue sectores separados por coma, punto y coma o salto de línea:</p>
+                  <textarea
+                    className="w-full h-20 p-2 text-sm border rounded-md font-mono"
+                    placeholder="Sector 1, Sector 2, Sector 3&#10;o uno por línea..."
+                    value={sectorsCsvInput}
+                    onChange={(e) => setSectorsCsvInput(e.target.value)}
+                  />
+                  <Button type="button" size="sm" onClick={handleImportSectorsFromCsv} disabled={!sectorsCsvInput.trim()}>
+                    Importar Sectores
+                  </Button>
+                </div>
+              )}
               
               {clientSectors.length > 0 ? (
                 <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg border">
