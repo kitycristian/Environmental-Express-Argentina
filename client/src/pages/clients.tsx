@@ -27,8 +27,11 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClientHistory, setSelectedClientHistory] = useState<Client | null>(null);
+  const [importData, setImportData] = useState<string>("");
+  const [importPreview, setImportPreview] = useState<any[]>([]);
 
   // Form state
   const [selectedRubroId, setSelectedRubroId] = useState<string>("");
@@ -140,6 +143,53 @@ export default function ClientsPage() {
     return history.filter(h => h.establishment.name === clientName).sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
   };
 
+  const parseCSV = (csv: string) => {
+    const lines = csv.trim().split('\n');
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(';').map(h => h.trim().toLowerCase());
+    const results: any[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(';').map(v => v.trim());
+      if (values.length >= 2) {
+        const obj: any = {};
+        headers.forEach((h, idx) => { obj[h] = values[idx] || ''; });
+        results.push({
+          name: obj['nombre'] || obj['name'] || values[0],
+          razonSocial: obj['razon social'] || obj['razonsocial'] || values[1] || values[0],
+          cuit: obj['cuit'] || values[2] || '',
+          address: obj['direccion'] || obj['address'] || '',
+          city: obj['ciudad'] || obj['city'] || '',
+          province: obj['provincia'] || obj['province'] || '',
+          phone: obj['telefono'] || obj['phone'] || '',
+          email: obj['email'] || '',
+          contactName: obj['contacto'] || obj['contactname'] || '',
+        });
+      }
+    }
+    return results;
+  };
+
+  const handleImportChange = (text: string) => {
+    setImportData(text);
+    setImportPreview(parseCSV(text));
+  };
+
+  const handleImportClients = () => {
+    importPreview.forEach(client => {
+      createClient.mutate({
+        ...client,
+        conditionIva: 'Responsable Inscripto',
+        postalCode: '',
+        notes: '',
+        sectors: [],
+      });
+    });
+    setIsImportDialogOpen(false);
+    setImportData('');
+    setImportPreview([]);
+    toast({ title: `${importPreview.length} clientes importados correctamente` });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -147,10 +197,67 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-primary">Gestión de Clientes (CRM)</h1>
           <p className="text-muted-foreground">Administre su base de datos de empresas y contactos.</p>
         </div>
-        <Button onClick={handleAdd} className="gap-2">
-          <UserPlus className="h-4 w-4" /> Nuevo Cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)} className="gap-2">
+            <FileUp className="h-4 w-4" /> Importar
+          </Button>
+          <Button onClick={handleAdd} className="gap-2">
+            <UserPlus className="h-4 w-4" /> Nuevo Cliente
+          </Button>
+        </div>
       </div>
+
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importar Clientes desde CSV</DialogTitle>
+            <DialogDescription>
+              Pegue datos en formato CSV separados por punto y coma (;). Columnas: Nombre;Razon Social;CUIT;Direccion;Ciudad;Provincia;Telefono;Email;Contacto
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <textarea 
+              className="w-full h-40 p-3 text-sm border rounded-md font-mono"
+              placeholder="Nombre;Razon Social;CUIT;Direccion;Ciudad;Provincia;Telefono;Email;Contacto&#10;Empresa ABC;ABC S.A.;30-12345678-9;Calle 123;Buenos Aires;Buenos Aires;11-4444-5555;info@abc.com;Juan Perez"
+              value={importData}
+              onChange={(e) => handleImportChange(e.target.value)}
+            />
+            {importPreview.length > 0 && (
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-muted px-3 py-2 text-sm font-medium">Vista previa ({importPreview.length} clientes)</div>
+                <div className="max-h-48 overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Nombre</TableHead>
+                        <TableHead className="text-xs">Razón Social</TableHead>
+                        <TableHead className="text-xs">CUIT</TableHead>
+                        <TableHead className="text-xs">Ciudad</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {importPreview.slice(0, 10).map((c, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-xs py-1">{c.name}</TableCell>
+                          <TableCell className="text-xs py-1">{c.razonSocial}</TableCell>
+                          <TableCell className="text-xs py-1">{c.cuit}</TableCell>
+                          <TableCell className="text-xs py-1">{c.city}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsImportDialogOpen(false); setImportData(''); setImportPreview([]); }}>Cancelar</Button>
+            <Button onClick={handleImportClients} disabled={importPreview.length === 0}>
+              Importar {importPreview.length} Clientes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex items-center gap-2 bg-card p-2 rounded-lg border shadow-sm max-w-md">
         <Search className="h-4 w-4 text-muted-foreground ml-2" />
