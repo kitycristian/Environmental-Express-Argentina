@@ -273,7 +273,24 @@ export default function Dashboard() {
                  "group cursor-pointer transition-all relative overflow-hidden",
                  isActive ? "border-green-500 shadow-md bg-green-50/10" : "hover:border-primary/50 hover:shadow-lg"
                )}
-               onClick={() => setActiveMeasurementType(type)}
+               onClick={() => {
+                 const sheetRoutes: Record<string, string> = {
+                   'lighting': '/lighting-sheet',
+                   'grounding': '/grounding',
+                   'noise': '/noise-sheet',
+                   'thermal_load': '/thermal-sheet',
+                   'cold_stress': '/cold-sheet',
+                   'chemical_agents': '/chemical-sheet',
+                   'particulate_matter': '/particulate-sheet',
+                   'ventilation': '/ventilation-sheet'
+                 };
+                 const route = sheetRoutes[type];
+                 if (route) {
+                   setLocation(route);
+                 } else {
+                   setActiveMeasurementType(type);
+                 }
+               }}
              >
                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                  {getIcon(type)}
@@ -320,20 +337,39 @@ export default function Dashboard() {
                             isActive ? "text-green-700 hover:text-green-800 font-medium" : "group-hover:text-primary"
                         )}
                         onClick={(e) => {
-                            e.stopPropagation(); // Prevent card click
-                            if (type === 'lighting') {
-                                setLocation('/lighting-sheet');
-                            } else if (type === 'grounding') {
-                                setLocation('/grounding');
-                            } else {
-                                setActiveMeasurementType(type);
+                            e.stopPropagation();
+                            const sheetRoutes: Record<string, string> = {
+                              'lighting': '/lighting-sheet',
+                              'grounding': '/grounding',
+                              'noise': '/noise-sheet',
+                              'thermal_load': '/thermal-sheet',
+                              'cold_stress': '/cold-sheet',
+                              'chemical_agents': '/chemical-sheet',
+                              'particulate_matter': '/particulate-sheet',
+                              'ventilation': '/ventilation-sheet'
+                            };
+                            const route = sheetRoutes[type];
+                            if (route) {
+                              setLocation(route);
                             }
                         }}
                     >
                         {isActive ? "Carga Rápida" : "Comenzar"} 
                         <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
-                    <Link href={type === 'lighting' ? '/lighting-sheet' : type === 'grounding' ? '/grounding' : `/campaign/${type}`}>
+                    <Link href={(() => {
+                      const routes: Record<string, string> = {
+                        'lighting': '/lighting-sheet',
+                        'grounding': '/grounding',
+                        'noise': '/noise-sheet',
+                        'thermal_load': '/thermal-sheet',
+                        'cold_stress': '/cold-sheet',
+                        'chemical_agents': '/chemical-sheet',
+                        'particulate_matter': '/particulate-sheet',
+                        'ventilation': '/ventilation-sheet'
+                      };
+                      return routes[type] || `/campaign/${type}`;
+                    })()}>
                         <Button 
                             variant="ghost" 
                             size="icon" 

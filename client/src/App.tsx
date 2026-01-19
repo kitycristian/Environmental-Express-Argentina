@@ -12,6 +12,12 @@ import GroundingSelector from "@/pages/grounding-selector";
 import GroundingProtocol from "@/pages/grounding-protocol";
 import GroundingContinuity from "@/pages/grounding-continuity";
 import GroundingElectrical from "@/pages/grounding-electrical";
+import NoiseSheet from "@/pages/noise-sheet";
+import ThermalSheet from "@/pages/thermal-sheet";
+import ColdSheet from "@/pages/cold-sheet";
+import ChemicalSheet from "@/pages/chemical-sheet";
+import ParticulateSheet from "@/pages/particulate-sheet";
+import VentilationSheet from "@/pages/ventilation-sheet";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
@@ -68,6 +74,24 @@ function Router() {
   }
   if (location === "/grounding/electrical") {
     return <ProtectedRoute component={GroundingElectrical} />;
+  }
+  if (location === "/noise-sheet") {
+    return <ProtectedRoute component={NoiseSheet} />;
+  }
+  if (location === "/thermal-sheet") {
+    return <ProtectedRoute component={ThermalSheet} />;
+  }
+  if (location === "/cold-sheet") {
+    return <ProtectedRoute component={ColdSheet} />;
+  }
+  if (location === "/chemical-sheet") {
+    return <ProtectedRoute component={ChemicalSheet} />;
+  }
+  if (location === "/particulate-sheet") {
+    return <ProtectedRoute component={ParticulateSheet} />;
+  }
+  if (location === "/ventilation-sheet") {
+    return <ProtectedRoute component={VentilationSheet} />;
   }
 
   return (
