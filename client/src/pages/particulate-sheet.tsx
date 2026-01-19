@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Save, FileDown } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ArrowLeft, Plus, Trash2, Save, FileDown, FileUp } from "lucide-react";
+import { useClients } from "@/lib/hooks";
 
 interface ParticulateRow {
   id: string;
@@ -26,6 +28,23 @@ export default function ParticulateSheet() {
     { id: "1", sector: "", puestoTrabajo: "", tipoMaterial: "", fraccion: "", tiempoMuestreo: "", caudal: "", valorMedido: "", limitePermisible: "", cumple: "", observaciones: "" }
   ]);
   const [observacionesGenerales, setObservacionesGenerales] = useState("");
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const { data: clients = [] } = useClients();
+
+  const handleImportSectors = () => {
+    const client = clients.find(c => c.id === selectedClientId);
+    if (client && Array.isArray(client.sectors)) {
+      const newRows = (client.sectors as string[]).map((sectorName, index) => ({
+        id: String(rows.length + index + 1),
+        sector: sectorName,
+        puestoTrabajo: "", tipoMaterial: "", fraccion: "", tiempoMuestreo: "", caudal: "", valorMedido: "", limitePermisible: "", cumple: "", observaciones: ""
+      }));
+      setRows([...rows, ...newRows]);
+      setImportDialogOpen(false);
+      setSelectedClientId("");
+    }
+  };
 
   const addRow = () => {
     setRows([...rows, {
@@ -85,6 +104,9 @@ export default function ParticulateSheet() {
               <SelectItem value="completo">Completo</SelectItem>
             </SelectContent>
           </Select>
+          <Button size="sm" variant="outline" onClick={() => setImportDialogOpen(true)} data-testid="button-import">
+            <FileUp className="h-4 w-4 mr-1" /> Importar
+          </Button>
           <Button size="sm" variant="outline" data-testid="button-export">
             <FileDown className="h-4 w-4 mr-1" /> Exportar
           </Button>
@@ -93,6 +115,32 @@ export default function ParticulateSheet() {
           </Button>
         </div>
       </div>
+
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Importar Sectores del Cliente</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+              <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
+              <SelectContent>
+                {clients.filter(c => c.sectors && (c.sectors as string[]).length > 0).map(client => (
+                  <SelectItem key={client.id} value={client.id}>{client.name} ({(client.sectors as string[]).length} sectores)</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedClientId && (
+              <div className="p-3 bg-muted rounded text-sm">
+                <p className="font-medium mb-2">Sectores:</p>
+                <div className="flex flex-wrap gap-1">{(clients.find(c => c.id === selectedClientId)?.sectors as string[] || []).map((s, i) => (<span key={i} className="px-2 py-0.5 bg-white border rounded text-xs">{s}</span>))}</div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleImportSectors} disabled={!selectedClientId}>Importar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex-1 overflow-auto p-4">
         <div className="bg-white rounded border shadow-sm">

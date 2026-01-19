@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail, FileText, Calendar, RotateCcw, Tag } from "lucide-react";
+import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail, FileText, Calendar, RotateCcw, Tag, X, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -32,6 +32,8 @@ export default function ClientsPage() {
 
   // Form state
   const [selectedRubroId, setSelectedRubroId] = useState<string>("");
+  const [clientSectors, setClientSectors] = useState<string[]>([]);
+  const [newSectorName, setNewSectorName] = useState("");
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -57,6 +59,7 @@ export default function ClientsPage() {
       contactName: formData.get('contactName') as string,
       notes: formData.get('notes') as string,
       rubroId: selectedRubroId || undefined,
+      sectors: clientSectors,
     };
 
     if (editingClient) {
@@ -68,18 +71,44 @@ export default function ClientsPage() {
     setIsDialogOpen(false);
     setEditingClient(null);
     setSelectedRubroId("");
+    setClientSectors([]);
+    setNewSectorName("");
   };
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
     setSelectedRubroId(client.rubroId || "");
+    setClientSectors(client.sectors || []);
     setIsDialogOpen(true);
   };
 
   const handleAdd = () => {
     setEditingClient(null);
     setSelectedRubroId("");
+    setClientSectors([]);
+    setNewSectorName("");
     setIsDialogOpen(true);
+  };
+
+  const handleAddSector = () => {
+    if (newSectorName.trim() && !clientSectors.includes(newSectorName.trim())) {
+      setClientSectors([...clientSectors, newSectorName.trim()]);
+      setNewSectorName("");
+    }
+  };
+
+  const handleRemoveSector = (sector: string) => {
+    setClientSectors(clientSectors.filter(s => s !== sector));
+  };
+
+  const handleImportRubroSectors = () => {
+    const rubro = rubros.find(r => r.id === selectedRubroId);
+    if (rubro && Array.isArray(rubro.sectors)) {
+      const existingSectors = new Set(clientSectors);
+      const newSectors = (rubro.sectors as string[]).filter(s => !existingSectors.has(s));
+      setClientSectors([...clientSectors, ...newSectors]);
+      toast({ title: `${newSectors.length} sectores importados del rubro` });
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -194,6 +223,23 @@ export default function ClientsPage() {
                     <span className="font-semibold text-gray-600">Contacto:</span> {client.contactName}
                   </div>
                 )}
+                {client.sectors && (client.sectors as string[]).length > 0 && (
+                  <div className="mt-3 pt-2 border-t">
+                    <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground mb-2">
+                      <Layers className="h-3 w-3" /> {(client.sectors as string[]).length} Sectores
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {(client.sectors as string[]).slice(0, 5).map((sector, i) => (
+                        <span key={i} className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                          {sector}
+                        </span>
+                      ))}
+                      {(client.sectors as string[]).length > 5 && (
+                        <span className="text-[10px] text-muted-foreground">+{(client.sectors as string[]).length - 5} más</span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 <Button 
                   variant="outline" 
@@ -258,11 +304,67 @@ export default function ClientsPage() {
                         ))}
                      </SelectContent>
                    </Select>
-                   <p className="text-[10px] text-muted-foreground">
-                      * Asigne un rubro para habilitar la importación rápida de sectores.
-                   </p>
+                   <div className="flex items-center gap-2">
+                     <p className="text-[10px] text-muted-foreground flex-1">
+                        * Asigne un rubro para habilitar la importación rápida de sectores.
+                     </p>
+                     {selectedRubroId && (
+                       <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={handleImportRubroSectors}>
+                         <FileUp className="h-3 w-3 mr-1" /> Importar Sectores del Rubro
+                       </Button>
+                     )}
+                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold border-b pb-2 text-primary flex items-center gap-2">
+                <Layers className="h-4 w-4" /> Sectores del Establecimiento
+              </h3>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Defina los sectores/áreas de trabajo para importar rápidamente en las planillas de medición.
+              </p>
+              
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Nombre del sector (ej: Oficinas, Taller, Depósito...)" 
+                  value={newSectorName}
+                  onChange={(e) => setNewSectorName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSector())}
+                  className="flex-1"
+                  data-testid="input-new-sector"
+                />
+                <Button type="button" variant="outline" onClick={handleAddSector} data-testid="button-add-sector">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {clientSectors.length > 0 ? (
+                <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg border">
+                  {clientSectors.map((sector, index) => (
+                    <span 
+                      key={index} 
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-white border rounded-md text-sm"
+                      data-testid={`sector-tag-${index}`}
+                    >
+                      {sector}
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveSector(sector)}
+                        className="text-red-400 hover:text-red-600 ml-1"
+                        data-testid={`button-remove-sector-${index}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic text-center py-4 bg-muted/30 rounded border border-dashed">
+                  No hay sectores definidos. Agregue sectores manualmente o importe desde un rubro.
+                </p>
+              )}
             </div>
 
             <div className="space-y-4">

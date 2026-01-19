@@ -18,6 +18,7 @@ export interface Client {
   email: string;
   contactName: string; // Persona de contacto
   rubroId?: string; // ID of the assigned rubro
+  sectors?: string[]; // Custom sectors for this client
   notes?: string;
   createdAt: string;
 }

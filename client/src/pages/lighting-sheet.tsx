@@ -3,8 +3,11 @@ import { useStore } from "@/lib/store";
 import { Link } from "wouter";
 import { MeasurementType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useClients } from "@/lib/hooks";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const type: MeasurementType = 'lighting';
 
@@ -18,6 +21,9 @@ export default function LightingSheet() {
   const addSectorWithMeasurement = useStore((state) => state.addSectorWithMeasurement);
 
   const [visiblePoints, setVisiblePoints] = useState(15);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const { data: clients = [] } = useClients();
 
   const activeSectors = sectors.filter(s => s.measurements.some(m => m.type === type));
 
@@ -29,6 +35,24 @@ export default function LightingSheet() {
       activity: "",
       workersCount: 0
     }, type);
+  };
+
+  const handleImportSectors = () => {
+    const client = clients.find(c => c.id === selectedClientId);
+    if (client && Array.isArray(client.sectors)) {
+      const clientSectors = client.sectors as string[];
+      clientSectors.forEach((sectorName, index) => {
+        addSectorWithMeasurement({
+          name: sectorName,
+          description: "",
+          dimensions: "",
+          activity: "",
+          workersCount: 0
+        }, type);
+      });
+      setImportDialogOpen(false);
+      setSelectedClientId("");
+    }
   };
 
   const calculateRoomIndex = (l: number, w: number, h: number) => {
@@ -94,10 +118,53 @@ export default function LightingSheet() {
           </Link>
           <h1 className="text-sm font-bold text-gray-800">MEMORIA DE CALCULOS - ILUMINACIÓN</h1>
         </div>
-        <Button onClick={handleAddRow} size="sm" className="h-8 text-xs" data-testid="btn-add-row">
-          <Plus className="h-4 w-4 mr-1" /> Agregar Fila
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setImportDialogOpen(true)} variant="outline" size="sm" className="h-8 text-xs" data-testid="btn-import">
+            <FileUp className="h-4 w-4 mr-1" /> Importar Sectores
+          </Button>
+          <Button onClick={handleAddRow} size="sm" className="h-8 text-xs" data-testid="btn-add-row">
+            <Plus className="h-4 w-4 mr-1" /> Agregar Fila
+          </Button>
+        </div>
       </div>
+
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Importar Sectores del Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+              <SelectTrigger data-testid="select-client-import">
+                <SelectValue placeholder="Seleccione un cliente..." />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.filter(c => c.sectors && (c.sectors as string[]).length > 0).map(client => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name} ({(client.sectors as string[]).length} sectores)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedClientId && (
+              <div className="p-3 bg-muted rounded text-sm">
+                <p className="font-medium mb-2">Sectores a importar:</p>
+                <div className="flex flex-wrap gap-1">
+                  {(clients.find(c => c.id === selectedClientId)?.sectors as string[] || []).map((s, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-white border rounded text-xs">{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleImportSectors} disabled={!selectedClientId} data-testid="btn-confirm-import">
+              Importar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Spreadsheet Table */}
       <div className="flex-1 overflow-auto p-2">

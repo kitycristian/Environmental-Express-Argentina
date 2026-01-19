@@ -48,6 +48,7 @@ export const clients = pgTable("clients", {
   email: text("email").notNull(),
   contactName: text("contact_name").notNull(),
   rubroId: varchar("rubro_id").references(() => rubros.id),
+  sectors: jsonb("sectors").notNull().default('[]'), // Array of sector names for this client
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
