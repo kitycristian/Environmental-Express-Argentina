@@ -39,11 +39,188 @@ const initialEstablishment: Establishment = {
   responsible: '',
 };
 
+// Helper to create measurement points
+const pt = (id: string, lux: string) => ({ id, label: '', values: { lux } });
+
+// Sample data for demonstration
+const sampleSectors: Sector[] = [
+  {
+    id: 'sample-1',
+    name: 'Salón de Ventas',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm1',
+      type: 'lighting',
+      sectorId: 'sample-1',
+      status: 'pending',
+      points: [pt('p1','332'), pt('p2','316'), pt('p3','354'), pt('p4','360'), pt('p5','374'), pt('p6','341'), pt('p7','354'), pt('p8','404'), pt('p9','380')],
+      observations: '',
+      config: { width: 76, length: 54, height: 5.6, limit: 500 }
+    }]
+  },
+  {
+    id: 'sample-2',
+    name: 'Salón de Ventas',
+    description: 'Línea de Cajas',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm2',
+      type: 'lighting',
+      sectorId: 'sample-2',
+      status: 'pending',
+      points: [pt('p1','366'), pt('p2','396'), pt('p3','411'), pt('p4','352'), pt('p5','397'), pt('p6','420'), pt('p7','418'), pt('p8','410'), pt('p9','310')],
+      observations: '',
+      config: { width: 5.2, length: 31, height: 4.2, limit: 500 }
+    }]
+  },
+  {
+    id: 'sample-3',
+    name: 'Salón de Ventas',
+    description: 'Atención al Cliente',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm3',
+      type: 'lighting',
+      sectorId: 'sample-3',
+      status: 'pending',
+      points: [pt('p1','425'), pt('p2','483'), pt('p3','410'), pt('p4','421'), pt('p5','400'), pt('p6','326'), pt('p7','212'), pt('p8','313'), pt('p9','212')],
+      observations: '',
+      config: { width: 2.8, length: 5.6, height: 4.2, limit: 500 }
+    }]
+  },
+  {
+    id: 'sample-4',
+    name: 'Depósito de Línea de Cajas',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm4',
+      type: 'lighting',
+      sectorId: 'sample-4',
+      status: 'pending',
+      points: [pt('p1','76'), pt('p2','78'), pt('p3','71')],
+      observations: '',
+      config: { limit: 100 }
+    }]
+  },
+  {
+    id: 'sample-5',
+    name: 'Depósito de Tesorería',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm5',
+      type: 'lighting',
+      sectorId: 'sample-5',
+      status: 'pending',
+      points: [pt('p1','183'), pt('p2','186'), pt('p3','197'), pt('p4','168'), pt('p5','162'), pt('p6','241'), pt('p7','210'), pt('p8','168'), pt('p9','308')],
+      observations: '',
+      config: { width: 3.6, length: 3.9, height: 2.9, limit: 100 }
+    }]
+  },
+  {
+    id: 'sample-6',
+    name: 'Tesorería',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm6',
+      type: 'lighting',
+      sectorId: 'sample-6',
+      status: 'pending',
+      points: [pt('p1','307'), pt('p2','333'), pt('p3','375'), pt('p4','233'), pt('p5','169'), pt('p6','266'), pt('p7','140'), pt('p8','177')],
+      observations: '',
+      config: { width: 3.85, length: 6.3, height: 2.9, limit: 500 }
+    }]
+  },
+  {
+    id: 'sample-7',
+    name: 'TOMRA',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm7',
+      type: 'lighting',
+      sectorId: 'sample-7',
+      status: 'pending',
+      points: [pt('p1','96'), pt('p2','95'), pt('p3','97')],
+      observations: '',
+      config: { limit: 200 }
+    }]
+  },
+  {
+    id: 'sample-8',
+    name: 'Recepción de Mercadería',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm8',
+      type: 'lighting',
+      sectorId: 'sample-8',
+      status: 'pending',
+      points: [pt('p1','305'), pt('p2','294'), pt('p3','315'), pt('p4','262'), pt('p5','311'), pt('p6','290'), pt('p7','279'), pt('p8','232'), pt('p9','221')],
+      observations: '',
+      config: { width: 11.6, length: 8.6, height: 3.8, limit: 200 }
+    }]
+  },
+  {
+    id: 'sample-9',
+    name: 'Panadería',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm9',
+      type: 'lighting',
+      sectorId: 'sample-9',
+      status: 'pending',
+      points: [pt('p1','85'), pt('p2','90'), pt('p3','66'), pt('p4','64'), pt('p5','106'), pt('p6','117'), pt('p7','129'), pt('p8','133'), pt('p9','165')],
+      observations: '',
+      config: { width: 9.7, length: 8, height: 3, limit: 300 }
+    }]
+  },
+  {
+    id: 'sample-10',
+    name: 'Rotisería',
+    description: '',
+    dimensions: '',
+    activity: '',
+    workersCount: 0,
+    measurements: [{
+      id: 'm10',
+      type: 'lighting',
+      sectorId: 'sample-10',
+      status: 'pending',
+      points: [pt('p1','210'), pt('p2','190'), pt('p3','227'), pt('p4','201'), pt('p5','225'), pt('p6','236'), pt('p7','232'), pt('p8','201'), pt('p9','190')],
+      observations: '',
+      config: { width: 5.8, length: 4.2, height: 0.8, limit: 220 }
+    }]
+  },
+];
+
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
       establishment: initialEstablishment,
-      sectors: [],
+      sectors: sampleSectors,
 
       updateEstablishment: (data) => 
         set((state) => ({ establishment: { ...state.establishment, ...data } })),
