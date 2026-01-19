@@ -8,6 +8,10 @@ import SectorDetail from "@/pages/sector-detail"; // Keeping it for backward com
 import MeasurementCampaign from "@/pages/measurement-campaign";
 import MeasurementEntry from "@/pages/measurement-entry";
 import LightingSheet from "@/pages/lighting-sheet";
+import GroundingSelector from "@/pages/grounding-selector";
+import GroundingProtocol from "@/pages/grounding-protocol";
+import GroundingContinuity from "@/pages/grounding-continuity";
+import GroundingElectrical from "@/pages/grounding-electrical";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
@@ -52,6 +56,18 @@ function Router() {
   // Fullscreen pages without Layout
   if (location === "/lighting-sheet") {
     return <ProtectedRoute component={LightingSheet} />;
+  }
+  if (location === "/grounding") {
+    return <ProtectedRoute component={GroundingSelector} />;
+  }
+  if (location === "/grounding/protocol") {
+    return <ProtectedRoute component={GroundingProtocol} />;
+  }
+  if (location === "/grounding/continuity") {
+    return <ProtectedRoute component={GroundingContinuity} />;
+  }
+  if (location === "/grounding/electrical") {
+    return <ProtectedRoute component={GroundingElectrical} />;
   }
 
   return (

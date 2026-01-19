@@ -323,6 +323,8 @@ export default function Dashboard() {
                             e.stopPropagation(); // Prevent card click
                             if (type === 'lighting') {
                                 setLocation('/lighting-sheet');
+                            } else if (type === 'grounding') {
+                                setLocation('/grounding');
                             } else {
                                 setActiveMeasurementType(type);
                             }
@@ -331,7 +333,7 @@ export default function Dashboard() {
                         {isActive ? "Carga Rápida" : "Comenzar"} 
                         <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
-                    <Link href={type === 'lighting' ? '/lighting-sheet' : `/campaign/${type}`}>
+                    <Link href={type === 'lighting' ? '/lighting-sheet' : type === 'grounding' ? '/grounding' : `/campaign/${type}`}>
                         <Button 
                             variant="ghost" 
                             size="icon" 
