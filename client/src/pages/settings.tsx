@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit, Save, Users, Settings, Wrench, Building2, UserPlus, Key, Shield } from "lucide-react";
+import { Plus, Trash2, Edit, Save, Users, Settings, Wrench, Building2, UserPlus, Key, Shield, PenTool, Upload, X } from "lucide-react";
+import { useStore } from "@/lib/store";
 import { Instrument, Rubro } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useRubros, useCreateRubro, useUpdateRubro, useDeleteRubro, useInstruments, useCreateInstrument, useUpdateInstrument, useDeleteInstrument } from "@/lib/hooks";
@@ -404,31 +405,139 @@ function InstrumentsSettings() {
 }
 
 function GeneralSettings() {
+    const { toast } = useToast();
+    const digitalSignature = useStore((state) => state.digitalSignature);
+    const setDigitalSignature = useStore((state) => state.setDigitalSignature);
+    const signatoryName = useStore((state) => state.signatoryName);
+    const setSignatoryName = useStore((state) => state.setSignatoryName);
+    const signatoryTitle = useStore((state) => state.signatoryTitle);
+    const setSignatoryTitle = useStore((state) => state.setSignatoryTitle);
+    const signatoryRegistration = useStore((state) => state.signatoryRegistration);
+    const setSignatoryRegistration = useStore((state) => state.setSignatoryRegistration);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 500000) {
+                toast({ title: "Error", description: "La imagen no debe superar 500KB", variant: "destructive" });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setDigitalSignature(reader.result as string);
+                toast({ title: "Firma cargada correctamente" });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveSignature = () => {
+        setDigitalSignature(null);
+        toast({ title: "Firma eliminada" });
+    };
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Configuración General</CardTitle>
-                <CardDescription>Opciones globales de la aplicación.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-0.5">
-                        <Label className="text-base">Modo Oscuro</Label>
-                        <p className="text-sm text-muted-foreground">Cambiar apariencia de la interfaz</p>
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <PenTool className="h-5 w-5" /> Firma Digital
+                    </CardTitle>
+                    <CardDescription>Configure su firma para incluirla en informes y presupuestos.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Nombre del Firmante</Label>
+                                <Input 
+                                    placeholder="Ing. Juan Pérez" 
+                                    value={signatoryName || ''} 
+                                    onChange={(e) => setSignatoryName(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Título / Cargo</Label>
+                                <Input 
+                                    placeholder="Lic. en Higiene y Seguridad" 
+                                    value={signatoryTitle || ''} 
+                                    onChange={(e) => setSignatoryTitle(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Matrícula / Registro</Label>
+                                <Input 
+                                    placeholder="Mat. Prov. N° 12345" 
+                                    value={signatoryRegistration || ''} 
+                                    onChange={(e) => setSignatoryRegistration(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <Label>Imagen de Firma (PNG/JPG, máx 500KB)</Label>
+                            {digitalSignature ? (
+                                <div className="relative border rounded-lg p-4 bg-white">
+                                    <img 
+                                        src={digitalSignature} 
+                                        alt="Firma Digital" 
+                                        className="max-h-32 mx-auto"
+                                    />
+                                    <Button 
+                                        variant="destructive" 
+                                        size="icon" 
+                                        className="absolute top-2 right-2 h-6 w-6"
+                                        onClick={handleRemoveSignature}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                                    <span className="text-sm text-muted-foreground">Clic para subir imagen</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/png,image/jpeg" 
+                                        className="hidden" 
+                                        onChange={handleFileUpload}
+                                    />
+                                </label>
+                            )}
+                            {digitalSignature && (
+                                <p className="text-xs text-green-600 flex items-center gap-1">
+                                    <Shield className="h-3 w-3" /> Firma configurada correctamente
+                                </p>
+                            )}
+                        </div>
                     </div>
-                    <Button variant="outline" disabled>Próximamente</Button>
-                </div>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-0.5">
-                        <Label className="text-base">Backup Automático</Label>
-                        <p className="text-sm text-muted-foreground">Realizar copias de seguridad diarias</p>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Configuración General</CardTitle>
+                    <CardDescription>Opciones globales de la aplicación.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Modo Oscuro</Label>
+                            <p className="text-sm text-muted-foreground">Cambiar apariencia de la interfaz</p>
+                        </div>
+                        <Button variant="outline" disabled>Próximamente</Button>
                     </div>
-                    <div className="flex items-center gap-2">
-                         <span className="text-xs text-green-600 font-medium">Activado</span>
-                         <Shield className="h-4 w-4 text-green-600" />
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Backup Automático</Label>
+                            <p className="text-sm text-muted-foreground">Realizar copias de seguridad diarias</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <span className="text-xs text-green-600 font-medium">Activado</span>
+                             <Shield className="h-4 w-4 text-green-600" />
+                        </div>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
     )
 }

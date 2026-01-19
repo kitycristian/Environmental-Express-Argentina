@@ -7,6 +7,12 @@ interface AppState {
   establishment: Establishment;
   sectors: Sector[];
   
+  // Digital Signature
+  digitalSignature: string | null;
+  signatoryName: string | null;
+  signatoryTitle: string | null;
+  signatoryRegistration: string | null;
+  
   // Actions
   updateEstablishment: (data: Partial<Establishment>) => void;
   
@@ -27,6 +33,12 @@ interface AppState {
   loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
   resetStore: () => void;
   saveInspection: () => void;
+  
+  // Signature Actions
+  setDigitalSignature: (signature: string | null) => void;
+  setSignatoryName: (name: string | null) => void;
+  setSignatoryTitle: (title: string | null) => void;
+  setSignatoryRegistration: (registration: string | null) => void;
 }
 
 const initialEstablishment: Establishment = {
@@ -221,6 +233,12 @@ export const useStore = create<AppState>()(
     (set) => ({
       establishment: initialEstablishment,
       sectors: sampleSectors,
+      
+      // Digital Signature initial state
+      digitalSignature: null,
+      signatoryName: null,
+      signatoryTitle: null,
+      signatoryRegistration: null,
 
       updateEstablishment: (data) => 
         set((state) => ({ establishment: { ...state.establishment, ...data } })),
@@ -392,6 +410,12 @@ export const useStore = create<AppState>()(
         savedInspections.push(inspectionData);
         localStorage.setItem('syh-saved-inspections', JSON.stringify(savedInspections));
       },
+
+      // Signature Actions
+      setDigitalSignature: (signature) => set({ digitalSignature: signature }),
+      setSignatoryName: (name) => set({ signatoryName: name }),
+      setSignatoryTitle: (title) => set({ signatoryTitle: title }),
+      setSignatoryRegistration: (registration) => set({ signatoryRegistration: registration }),
     }),
     {
       name: 'syh-relevamiento-working-state-v3',
