@@ -50,24 +50,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const NavContent = () => (
-    <nav className="flex flex-col gap-2 p-4 h-full">
+    <nav className="flex flex-col gap-2 p-4 h-full bg-[#003366]">
       <div className="mb-6 px-2 flex flex-col items-center text-center gap-3">
         <img src={logoUrl} alt="Environmental Express Argentina" className="h-28 w-auto object-contain hover:scale-105 transition-transform duration-300" />
       </div>
 
       {user && (
-        <div className="mb-6 px-2 py-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded-full">
-            <User className="h-4 w-4 text-primary" />
+        <div className="mb-6 px-2 py-3 bg-white/10 rounded-lg border border-white/20 flex items-center gap-3">
+          <div className="bg-white/20 p-2 rounded-full">
+            <User className="h-4 w-4 text-white" />
           </div>
           <div className="flex flex-col overflow-hidden">
-            <span className="font-bold text-xs truncate">{user.name}</span>
-            <span className="text-[10px] text-gray-500 capitalize">{user.role}</span>
+            <span className="font-bold text-xs truncate text-white">{user.name}</span>
+            <span className="text-[10px] text-white/70 capitalize">{user.role}</span>
           </div>
         </div>
       )}
       
-      <div onClick={() => setNewInspectionOpen(true)} className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted cursor-pointer text-primary`}>
+      <div onClick={() => setNewInspectionOpen(true)} className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 cursor-pointer text-[#4CAF50]`}>
           <PlusCircle className="h-4 w-4" />
           Nueva Inspección
       </div>
@@ -75,21 +75,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {user?.role === 'admin' && (
         <>
           <Link href="/reports">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/reports' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/reports' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
               <FileStack className="h-4 w-4" />
               Informes
             </div>
           </Link>
 
           <Link href="/budget-generator">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/budget-generator' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/budget-generator' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
               <FileText className="h-4 w-4" />
               Generador Presupuestos
             </div>
           </Link>
 
           <Link href="/clients">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/clients' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/clients' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
               <Users className="h-4 w-4" />
               Clientes (CRM)
             </div>
@@ -97,19 +97,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <div className="mt-8 px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
+      <div className="mt-8 px-2 text-xs font-medium text-white/50 uppercase tracking-wider">
         Navegación
       </div>
       
       <Link href="/">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
           <Home className="h-4 w-4" />
           Tablero Activo
         </div>
       </Link>
 
       <Link href="/instruments">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/instruments' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/instruments' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
           <Wrench className="h-4 w-4" />
           Instrumentos
         </div>
@@ -117,15 +117,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {user?.role === 'admin' && (
         <Link href="/settings">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted ${location === '/settings' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'} cursor-pointer`} onClick={() => setOpen(false)}>
+            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/settings' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
             <Settings className="h-4 w-4" />
             Configuración
             </div>
         </Link>
       )}
 
-      <div className="mt-auto pt-4 border-t border-gray-100">
-        <div onClick={handleLogout} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 cursor-pointer">
+      <div className="mt-auto pt-4 border-t border-white/20">
+        <div onClick={handleLogout} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 cursor-pointer">
           <LogOut className="h-4 w-4" />
           Cerrar Sesión
         </div>
