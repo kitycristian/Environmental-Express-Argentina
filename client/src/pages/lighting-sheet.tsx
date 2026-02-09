@@ -210,7 +210,7 @@ export default function LightingSheet() {
   };
 
   const detectHeaderRow = (data: string[][]): { headerRow: number; dataStart: number } => {
-    const keywords = ['sector', 'subsector', 'ancho', 'largo', 'alto', 'dimensiones', 'puesto', 'descripcion'];
+    const keywords = ['sector', 'subsector', 'ancho', 'largo', 'alto', 'dimensiones', 'puesto', 'descripcion', 'iluminancia', 'valor', 'ptos'];
     let bestRow = 0;
     let bestScore = 0;
     for (let r = 0; r < Math.min(data.length, 10); r++) {
@@ -291,59 +291,103 @@ export default function LightingSheet() {
     ? buildCombinedHeaders(gsPreviewData, Math.max(gsHeaderRow, gsDataStartRow - 1))
     : [];
 
+  const findLuxColumns = (): { startCol: number; endCol: number } => {
+    const mappedCols = [gsColumnMap.sector, gsColumnMap.subsector, gsColumnMap.ancho, 
+      gsColumnMap.largo, gsColumnMap.alto, gsColumnMap.limite].filter(c => c >= 0);
+    
+    const headers = combinedHeaders.map(h => h.toLowerCase());
+    let luxStart = -1;
+    let luxEnd = -1;
+    
+    for (let i = 0; i < headers.length; i++) {
+      const h = headers[i];
+      if (h.match(/^\d+$/) || h.includes('iluminancia') || h.includes('punto')) {
+        if (luxStart < 0) luxStart = i;
+      }
+      if (h.includes('valor max') || h.includes('max')) {
+        luxEnd = i;
+        break;
+      }
+    }
+    
+    if (luxStart < 0) {
+      const afterMapped = Math.max(...mappedCols) + 1;
+      const firstDataRow = gsPreviewData[gsDataStartRow];
+      if (firstDataRow) {
+        for (let i = afterMapped; i < firstDataRow.length; i++) {
+          const val = String(firstDataRow[i] || '');
+          if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
+            if (luxStart < 0) luxStart = i;
+            luxEnd = i + 1;
+          } else if (luxStart >= 0) {
+            break;
+          }
+        }
+      }
+    }
+    
+    return { startCol: luxStart >= 0 ? luxStart : 0, endCol: luxEnd >= 0 ? luxEnd : combinedHeaders.length };
+  };
+
   const handleImportFromGoogleSheets = () => {
     const dataRows = gsPreviewData.slice(gsDataStartRow);
     if (dataRows.length === 0) {
       toast({ title: "Sin datos", description: "La hoja no tiene filas de datos para importar", variant: "destructive" });
       return;
     }
+    
+    const { startCol: luxStartCol, endCol: luxEndCol } = findLuxColumns();
+    
     let imported = 0;
+    let currentSectorId: string | null = null;
+    let currentMeasurementId: string | null = null;
+    
     dataRows.forEach((row) => {
-      const sectorName = gsColumnMap.sector >= 0 ? row[gsColumnMap.sector] : '';
-      if (!sectorName || !sectorName.trim()) return;
+      const sectorNum = gsColumnMap.sector >= 0 ? String(row[gsColumnMap.sector] || '').trim() : '';
+      const subsectorName = gsColumnMap.subsector >= 0 ? String(row[gsColumnMap.subsector] || '').trim() : '';
+      
+      const isSectorRow = sectorNum !== '' && subsectorName !== '';
+      const isContinuationRow = sectorNum === '' && currentSectorId !== null;
+      
+      if (isSectorRow) {
+        addSectorWithMeasurement({
+          name: subsectorName,
+          description: '',
+          dimensions: '',
+          activity: '',
+          workersCount: 0
+        }, type);
 
-      addSectorWithMeasurement({
-        name: sectorName.trim(),
-        description: gsColumnMap.subsector >= 0 ? (row[gsColumnMap.subsector] || '').trim() : '',
-        dimensions: '',
-        activity: '',
-        workersCount: 0
-      }, type);
-
-      const newSectors = useStore.getState().sectors;
-      const lastSector = newSectors[newSectors.length - 1];
-      const measurement = lastSector?.measurements.find(m => m.type === type);
-      if (measurement) {
-        const config: Record<string, any> = {};
-        if (gsColumnMap.ancho >= 0 && row[gsColumnMap.ancho]) config.width = parseFloat(row[gsColumnMap.ancho]) || 0;
-        if (gsColumnMap.largo >= 0 && row[gsColumnMap.largo]) config.length = parseFloat(row[gsColumnMap.largo]) || 0;
-        if (gsColumnMap.alto >= 0 && row[gsColumnMap.alto]) config.height = parseFloat(row[gsColumnMap.alto]) || 0;
-        if (gsColumnMap.limite >= 0 && row[gsColumnMap.limite]) config.limit = parseFloat(row[gsColumnMap.limite]) || 0;
-        if (Object.keys(config).length > 0) {
-          updateMeasurement(lastSector.id, measurement.id, { config: { ...measurement.config, ...config } });
+        const newSectors = useStore.getState().sectors;
+        const lastSector = newSectors[newSectors.length - 1];
+        const measurement = lastSector?.measurements.find(m => m.type === type);
+        currentSectorId = lastSector?.id || null;
+        currentMeasurementId = measurement?.id || null;
+        
+        if (measurement && currentSectorId) {
+          const config: Record<string, any> = {};
+          if (gsColumnMap.ancho >= 0 && row[gsColumnMap.ancho]) config.width = parseFloat(row[gsColumnMap.ancho]) || 0;
+          if (gsColumnMap.largo >= 0 && row[gsColumnMap.largo]) config.length = parseFloat(row[gsColumnMap.largo]) || 0;
+          if (gsColumnMap.alto >= 0 && row[gsColumnMap.alto]) config.height = parseFloat(row[gsColumnMap.alto]) || 0;
+          if (gsColumnMap.limite >= 0 && row[gsColumnMap.limite]) config.limit = parseFloat(row[gsColumnMap.limite]) || 0;
+          if (Object.keys(config).length > 0) {
+            updateMeasurement(currentSectorId, measurement.id, { config: { ...measurement.config, ...config } });
+          }
         }
-
-        const luxStartCol = Math.max(
-          gsColumnMap.sector, gsColumnMap.subsector, gsColumnMap.ancho, 
-          gsColumnMap.largo, gsColumnMap.alto, gsColumnMap.limite
-        ) + 1;
-        for (let c = luxStartCol; c < row.length; c++) {
-          const val = row[c];
+        imported++;
+      }
+      
+      if ((isSectorRow || isContinuationRow) && currentSectorId && currentMeasurementId) {
+        for (let c = luxStartCol; c < luxEndCol && c < row.length; c++) {
+          const val = String(row[c] || '').trim();
           if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
-            const existingPoints = useStore.getState().sectors.find(s => s.id === lastSector.id)?.measurements.find(m => m.id === measurement.id)?.points || [];
-            const emptyPoint = existingPoints.find(p => !p.values.lux || p.values.lux === '');
-            if (emptyPoint) {
-              updatePoint(lastSector.id, measurement.id, emptyPoint.id, { values: { lux: val } });
-            } else {
-              addPoint(lastSector.id, measurement.id, { values: { lux: val } });
-            }
+            addPoint(currentSectorId, currentMeasurementId, { values: { lux: val } });
           }
         }
       }
-      imported++;
     });
     setGsDialogOpen(false);
-    toast({ title: `${imported} sectores importados desde Google Sheets` });
+    toast({ title: `${imported} sectores importados con todos sus puntos de medición` });
   };
 
   const cellClass = "border px-1 py-0.5 text-xs text-center";
@@ -618,8 +662,8 @@ export default function LightingSheet() {
           <thead>
             <tr>
               <th rowSpan={2} className={headerClass} style={{ width: '30px' }}>#</th>
-              <th rowSpan={2} className={headerClass} style={{ width: '120px' }}>Sector</th>
-              <th rowSpan={2} className={headerClass} style={{ width: '150px' }}>Subsector</th>
+              <th rowSpan={2} className={headerClass} style={{ width: '180px' }}>Sector</th>
+              <th rowSpan={2} className={headerClass} style={{ minWidth: '200px' }}>Subsector</th>
               <th colSpan={3} className={headerClass}>Dimensiones</th>
               <th rowSpan={2} className={headerClass} style={{ width: '40px' }}>K</th>
               <th rowSpan={2} className={headerClass} style={{ width: '40px' }}>Min</th>
@@ -662,20 +706,22 @@ export default function LightingSheet() {
               return (
                 <tr key={sector.id} className="hover:bg-gray-50" data-testid={`row-sector-${rowIndex}`}>
                   <td className={cn(cellClass, "bg-gray-50 font-bold")}>{rowIndex + 1}</td>
-                  <td className={cellClass}>
+                  <td className={cn(cellClass, "text-left")}>
                     <input
-                      className={inputClass}
+                      className={cn(inputClass, "text-left")}
                       value={sector.name}
                       onChange={(e) => updateSector(sector.id, { name: e.target.value })}
+                      title={sector.name}
                       data-testid={`input-name-${rowIndex}`}
                     />
                   </td>
-                  <td className={cellClass}>
+                  <td className={cn(cellClass, "text-left")}>
                     <input
-                      className={inputClass}
+                      className={cn(inputClass, "text-left")}
                       value={sector.description || ''}
                       onChange={(e) => updateSector(sector.id, { description: e.target.value })}
                       placeholder="Subsector..."
+                      title={sector.description || ''}
                       data-testid={`input-subsector-${rowIndex}`}
                     />
                   </td>
