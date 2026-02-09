@@ -8,6 +8,7 @@ import {
   insertInspectionSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
+import { listSpreadsheets, getSpreadsheetSheets, readSheetData } from "./google-sheets";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -255,6 +256,36 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Error deleting inspection" });
+    }
+  });
+
+  // ============= GOOGLE SHEETS =============
+
+  app.get("/api/google-sheets/spreadsheets", async (req, res) => {
+    try {
+      const files = await listSpreadsheets();
+      res.json(files);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Error listing spreadsheets" });
+    }
+  });
+
+  app.get("/api/google-sheets/:spreadsheetId/sheets", async (req, res) => {
+    try {
+      const sheets = await getSpreadsheetSheets(req.params.spreadsheetId);
+      res.json(sheets);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Error fetching sheets" });
+    }
+  });
+
+  app.get("/api/google-sheets/:spreadsheetId/data", async (req, res) => {
+    try {
+      const range = req.query.range as string || 'A1:Z1000';
+      const data = await readSheetData(req.params.spreadsheetId, range);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Error reading sheet data" });
     }
   });
 
