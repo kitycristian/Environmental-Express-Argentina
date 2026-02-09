@@ -12,11 +12,12 @@ import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone,
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useRubros, useInspections } from "@/lib/hooks";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useRubros, useCreateRubro, useInspections } from "@/lib/hooks";
 
 export default function ClientsPage() {
   const { data: clients = [] } = useClients();
   const { data: rubros = [] } = useRubros();
+  const createRubro = useCreateRubro();
   const createClient = useCreateClient();
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
@@ -34,6 +35,8 @@ export default function ClientsPage() {
   const [importPreview, setImportPreview] = useState<any[]>([]);
   const [sectorsCsvInput, setSectorsCsvInput] = useState<string>("");
   const [showSectorsCsvInput, setShowSectorsCsvInput] = useState(false);
+  const [showNewRubroInput, setShowNewRubroInput] = useState(false);
+  const [newRubroName, setNewRubroName] = useState("");
 
   // Form state
   const [selectedRubroId, setSelectedRubroId] = useState<string>("");
@@ -417,16 +420,50 @@ export default function ClientsPage() {
                 </div>
                 <div className="space-y-2 col-span-2">
                    <Label htmlFor="rubro">Rubro / Actividad</Label>
-                   <Select value={selectedRubroId} onValueChange={setSelectedRubroId}>
-                     <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un rubro..." />
-                     </SelectTrigger>
-                     <SelectContent>
-                        {rubros.map(r => (
-                            <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                        ))}
-                     </SelectContent>
-                   </Select>
+                   {showNewRubroInput ? (
+                     <div className="flex gap-2">
+                       <Input
+                         placeholder="Nombre del nuevo rubro..."
+                         value={newRubroName}
+                         onChange={(e) => setNewRubroName(e.target.value)}
+                         className="flex-1"
+                         autoFocus
+                       />
+                       <Button type="button" size="sm" onClick={() => {
+                         if (newRubroName.trim()) {
+                           createRubro.mutate({ name: newRubroName.trim(), sectors: [] }, {
+                             onSuccess: (data: any) => {
+                               setSelectedRubroId(data.id);
+                               setNewRubroName("");
+                               setShowNewRubroInput(false);
+                               toast({ title: `Rubro "${newRubroName.trim()}" creado` });
+                             }
+                           });
+                         }
+                       }}>
+                         Crear
+                       </Button>
+                       <Button type="button" variant="outline" size="sm" onClick={() => { setShowNewRubroInput(false); setNewRubroName(""); }}>
+                         Cancelar
+                       </Button>
+                     </div>
+                   ) : (
+                     <div className="flex gap-2">
+                       <Select value={selectedRubroId} onValueChange={setSelectedRubroId}>
+                         <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Seleccione un rubro..." />
+                         </SelectTrigger>
+                         <SelectContent>
+                            {rubros.map(r => (
+                                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                            ))}
+                         </SelectContent>
+                       </Select>
+                       <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => setShowNewRubroInput(true)} title="Crear nuevo rubro">
+                         <Plus className="h-4 w-4" />
+                       </Button>
+                     </div>
+                   )}
                    <div className="flex items-center gap-2">
                      <p className="text-[10px] text-muted-foreground flex-1">
                         * Asigne un rubro para habilitar la importación rápida de sectores.
