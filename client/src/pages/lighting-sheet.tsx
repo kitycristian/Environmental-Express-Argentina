@@ -38,6 +38,8 @@ export default function LightingSheet() {
   const [selectedSheet, setSelectedSheet] = useState<string>("");
   const [gsPreviewData, setGsPreviewData] = useState<string[][]>([]);
   const [gsAllSheetsData, setGsAllSheetsData] = useState<Record<string, string[][]>>({});
+  const [gsHeaderRow, setGsHeaderRow] = useState(0);
+  const [gsDataStartRow, setGsDataStartRow] = useState(1);
   const [gsColumnMap, setGsColumnMap] = useState<Record<string, number>>({
     sector: 0, subsector: 1, ancho: 2, largo: 3, alto: 4, limite: 5
   });
@@ -192,20 +194,74 @@ export default function LightingSheet() {
     }
   };
 
-  const autoMapColumns = (data: string[][]) => {
-    if (data.length > 0) {
-      const headers = data[0].map((h: string) => String(h ?? '').toLowerCase().trim());
-      const autoMap: Record<string, number> = { sector: -1, subsector: -1, ancho: -1, largo: -1, alto: -1, limite: -1 };
-      headers.forEach((h: string, i: number) => {
-        if (h.includes('sector') && !h.includes('sub')) autoMap.sector = i;
-        if (h.includes('subsector') || h.includes('puesto') || h.includes('descripcion')) autoMap.subsector = i;
-        if (h.includes('ancho') || h === 'w') autoMap.ancho = i;
-        if (h.includes('largo') || h === 'l') autoMap.largo = i;
-        if (h.includes('alto') || h === 'h' || h.includes('altura')) autoMap.alto = i;
-        if (h.includes('limite') || h.includes('límite') || h.includes('legal') || h.includes('lux min')) autoMap.limite = i;
-      });
-      setGsColumnMap(autoMap);
+  const buildCombinedHeaders = (data: string[][], upToRow: number): string[] => {
+    if (data.length === 0) return [];
+    const maxCols = Math.max(...data.slice(0, upToRow + 1).map(r => r.length));
+    const combined: string[] = [];
+    for (let col = 0; col < maxCols; col++) {
+      const parts: string[] = [];
+      for (let row = 0; row <= upToRow && row < data.length; row++) {
+        const val = String(data[row]?.[col] ?? '').trim();
+        if (val && !parts.includes(val)) parts.push(val);
+      }
+      combined.push(parts.join(' - ') || `Columna ${col + 1}`);
     }
+    return combined;
+  };
+
+  const detectHeaderRow = (data: string[][]): { headerRow: number; dataStart: number } => {
+    const keywords = ['sector', 'subsector', 'ancho', 'largo', 'alto', 'dimensiones', 'puesto', 'descripcion'];
+    let bestRow = 0;
+    let bestScore = 0;
+    for (let r = 0; r < Math.min(data.length, 10); r++) {
+      const rowText = (data[r] || []).map(c => String(c ?? '').toLowerCase().trim());
+      let score = 0;
+      rowText.forEach(cell => {
+        keywords.forEach(kw => { if (cell.includes(kw)) score++; });
+      });
+      if (score > bestScore) {
+        bestScore = score;
+        bestRow = r;
+      }
+    }
+    let dataStart = bestRow + 1;
+    for (let r = bestRow + 1; r < Math.min(data.length, bestRow + 5); r++) {
+      const rowText = (data[r] || []).map(c => String(c ?? '').toLowerCase().trim());
+      const hasSubHeaders = rowText.some(cell => 
+        keywords.some(kw => cell.includes(kw)) || cell === 'ancho' || cell === 'largo' || cell === 'alto'
+      );
+      if (hasSubHeaders) {
+        dataStart = r + 1;
+      } else {
+        break;
+      }
+    }
+    return { headerRow: bestRow, dataStart };
+  };
+
+  const autoMapColumns = (data: string[][], headerRowOverride?: number) => {
+    if (data.length === 0) return;
+    
+    const { headerRow: detectedHeaderRow, dataStart: detectedDataStart } = detectHeaderRow(data);
+    const hRow = headerRowOverride ?? detectedHeaderRow;
+    setGsHeaderRow(hRow);
+    if (headerRowOverride === undefined) {
+      setGsDataStartRow(detectedDataStart);
+    }
+
+    const allHeaders = buildCombinedHeaders(data, Math.max(hRow, detectedDataStart - 1));
+    const searchTexts = allHeaders.map(h => h.toLowerCase());
+    
+    const autoMap: Record<string, number> = { sector: -1, subsector: -1, ancho: -1, largo: -1, alto: -1, limite: -1 };
+    searchTexts.forEach((h: string, i: number) => {
+      if (h.includes('sector') && !h.includes('sub')) autoMap.sector = i;
+      if (h.includes('subsector') || h.includes('puesto') || h.includes('descripcion') || h.includes('descripción')) autoMap.subsector = i;
+      if (h.includes('ancho') || h === 'w') autoMap.ancho = i;
+      if (h.includes('largo') || h === 'l') autoMap.largo = i;
+      if (h.includes('alto') || h === 'h' || h.includes('altura')) autoMap.alto = i;
+      if (h.includes('limite') || h.includes('límite') || h.includes('legal') || h.includes('lux min')) autoMap.limite = i;
+    });
+    setGsColumnMap(autoMap);
   };
 
   const handleSelectSheet = async (sheetTitle: string) => {
@@ -231,12 +287,16 @@ export default function LightingSheet() {
     }
   };
 
+  const combinedHeaders = gsPreviewData.length > 0 
+    ? buildCombinedHeaders(gsPreviewData, Math.max(gsHeaderRow, gsDataStartRow - 1))
+    : [];
+
   const handleImportFromGoogleSheets = () => {
-    if (gsPreviewData.length < 2) {
+    const dataRows = gsPreviewData.slice(gsDataStartRow);
+    if (dataRows.length === 0) {
       toast({ title: "Sin datos", description: "La hoja no tiene filas de datos para importar", variant: "destructive" });
       return;
     }
-    const dataRows = gsPreviewData.slice(1);
     let imported = 0;
     dataRows.forEach((row) => {
       const sectorName = gsColumnMap.sector >= 0 ? row[gsColumnMap.sector] : '';
@@ -454,6 +514,34 @@ export default function LightingSheet() {
               <Button variant="ghost" size="sm" onClick={() => setGsStep('sheets')} className="mb-2">
                 <ArrowLeft className="h-4 w-4 mr-1" /> Volver
               </Button>
+
+              <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded border">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Fila de datos desde:</Label>
+                  <Select
+                    value={String(gsDataStartRow)}
+                    onValueChange={(v) => {
+                      const newStart = parseInt(v);
+                      setGsDataStartRow(newStart);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs" data-testid="gs-data-start">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {gsPreviewData.slice(0, 15).map((row, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          Fila {i + 1}: {row.slice(0, 3).filter(Boolean).join(' | ').substring(0, 40)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Total filas a importar:</Label>
+                  <p className="text-sm font-medium pt-1">{Math.max(0, gsPreviewData.length - gsDataStartRow)} filas</p>
+                </div>
+              </div>
               
               <div className="grid grid-cols-2 gap-3">
                 {(['sector', 'subsector', 'ancho', 'largo', 'alto', 'limite'] as const).map(field => (
@@ -468,8 +556,8 @@ export default function LightingSheet() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">-- No mapear --</SelectItem>
-                        {gsPreviewData[0]?.map((header, i) => (
-                          <SelectItem key={i} value={String(i)}>{header || `Columna ${i + 1}`}</SelectItem>
+                        {combinedHeaders.map((header, i) => (
+                          <SelectItem key={i} value={String(i)}>{header}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -486,24 +574,24 @@ export default function LightingSheet() {
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr className="bg-blue-900 text-white">
-                        {gsPreviewData[0].map((h, i) => (
-                          <th key={i} className="border border-blue-800 px-2 py-1 whitespace-nowrap">{h || `Col ${i + 1}`}</th>
+                        {combinedHeaders.map((h, i) => (
+                          <th key={i} className="border border-blue-800 px-2 py-1 whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {gsPreviewData.slice(1, 6).map((row, ri) => (
-                        <tr key={ri} className="hover:bg-gray-50">
-                          {row.map((cell, ci) => (
-                            <td key={ci} className="border px-2 py-0.5 whitespace-nowrap">{cell}</td>
+                      {gsPreviewData.slice(gsDataStartRow, gsDataStartRow + 5).map((row, ri) => (
+                        <tr key={ri} className={ri === 0 ? "bg-green-50 font-medium" : "hover:bg-gray-50"}>
+                          {combinedHeaders.map((_, ci) => (
+                            <td key={ci} className="border px-2 py-0.5 whitespace-nowrap">{row[ci] ?? ''}</td>
                           ))}
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {gsPreviewData.length > 6 && (
+                  {gsPreviewData.length - gsDataStartRow > 5 && (
                     <p className="text-xs text-center py-1 text-muted-foreground">
-                      ... y {gsPreviewData.length - 6} filas más
+                      ... y {gsPreviewData.length - gsDataStartRow - 5} filas más
                     </p>
                   )}
                 </div>
@@ -515,7 +603,7 @@ export default function LightingSheet() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setGsDialogOpen(false)}>Cancelar</Button>
               <Button onClick={handleImportFromGoogleSheets} disabled={gsColumnMap.sector < 0} data-testid="btn-gs-import">
-                Importar {gsPreviewData.length > 1 ? `${gsPreviewData.length - 1} filas` : ''}
+                Importar {Math.max(0, gsPreviewData.length - gsDataStartRow)} filas
               </Button>
             </DialogFooter>
           )}
