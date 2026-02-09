@@ -29,9 +29,9 @@ export default function LightingSheet() {
   const { data: clients = [] } = useClients();
 
   const [gsDialogOpen, setGsDialogOpen] = useState(false);
-  const [gsStep, setGsStep] = useState<'spreadsheets' | 'sheets' | 'preview'>('spreadsheets');
+  const [gsStep, setGsStep] = useState<'url' | 'sheets' | 'preview'>('url');
   const [gsLoading, setGsLoading] = useState(false);
-  const [spreadsheets, setSpreadsheets] = useState<any[]>([]);
+  const [gsUrl, setGsUrl] = useState("");
   const [selectedSpreadsheet, setSelectedSpreadsheet] = useState<string>("");
   const [sheetsList, setSheetsList] = useState<any[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>("");
@@ -117,31 +117,32 @@ export default function LightingSheet() {
     updatePoint(sectorId, measurementId, pointId, { values: { ...point.values, lux: value } });
   };
 
-  const handleOpenGoogleSheets = async () => {
+  const handleOpenGoogleSheets = () => {
     setGsDialogOpen(true);
-    setGsStep('spreadsheets');
-    setGsLoading(true);
+    setGsStep('url');
+    setGsUrl("");
     setSelectedSpreadsheet("");
     setSelectedSheet("");
     setGsPreviewData([]);
-    try {
-      const res = await fetch('/api/google-sheets/spreadsheets');
-      if (!res.ok) throw new Error('Error al conectar con Google Sheets');
-      const data = await res.json();
-      setSpreadsheets(data);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setGsLoading(false);
-    }
+    setSheetsList([]);
   };
 
-  const handleSelectSpreadsheet = async (id: string) => {
+  const extractSpreadsheetId = (url: string): string | null => {
+    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  };
+
+  const handleLoadFromUrl = async () => {
+    const id = extractSpreadsheetId(gsUrl);
+    if (!id) {
+      toast({ title: "URL inválida", description: "Pegá la URL completa de tu hoja de Google Sheets", variant: "destructive" });
+      return;
+    }
     setSelectedSpreadsheet(id);
     setGsLoading(true);
     try {
       const res = await fetch(`/api/google-sheets/${id}/sheets`);
-      if (!res.ok) throw new Error('Error al obtener hojas');
+      if (!res.ok) throw new Error('No se pudo acceder a esa hoja. Verificá que esté compartida.');
       const data = await res.json();
       setSheetsList(data);
       setGsStep('sheets');
@@ -327,40 +328,31 @@ export default function LightingSheet() {
             </div>
           )}
 
-          {!gsLoading && gsStep === 'spreadsheets' && (
-            <div className="space-y-2 py-2">
-              <Label>Seleccioná una hoja de cálculo:</Label>
-              {spreadsheets.length === 0 ? (
-                <p className="text-sm text-muted-foreground p-4 text-center">No se encontraron hojas de cálculo en tu Google Drive</p>
-              ) : (
-                <div className="space-y-1 max-h-60 overflow-auto">
-                  {spreadsheets.map((file: any) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center gap-3 p-2 rounded border hover:bg-muted cursor-pointer transition-colors"
-                      onClick={() => handleSelectSpreadsheet(file.id)}
-                      data-testid={`gs-file-${file.id}`}
-                    >
-                      <Sheet className="h-4 w-4 text-green-600 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{file.name}</p>
-                        {file.modifiedTime && (
-                          <p className="text-xs text-muted-foreground">
-                            Modificado: {new Date(file.modifiedTime).toLocaleDateString('es-AR')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {!gsLoading && gsStep === 'url' && (
+            <div className="space-y-3 py-2">
+              <Label>Pegá la URL de tu hoja de Google Sheets:</Label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2 text-sm"
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                value={gsUrl}
+                onChange={(e) => setGsUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLoadFromUrl()}
+                data-testid="input-gs-url"
+              />
+              <p className="text-xs text-muted-foreground">
+                Copiá la URL desde la barra de direcciones de tu navegador cuando tengas la hoja abierta.
+              </p>
+              <Button onClick={handleLoadFromUrl} disabled={!gsUrl.trim()} className="w-full" data-testid="btn-gs-load">
+                Cargar hoja
+              </Button>
             </div>
           )}
 
           {!gsLoading && gsStep === 'sheets' && (
             <div className="space-y-2 py-2">
-              <Button variant="ghost" size="sm" onClick={() => setGsStep('spreadsheets')} className="mb-2">
-                <ArrowLeft className="h-4 w-4 mr-1" /> Volver a lista
+              <Button variant="ghost" size="sm" onClick={() => setGsStep('url')} className="mb-2">
+                <ArrowLeft className="h-4 w-4 mr-1" /> Cambiar URL
               </Button>
               <Label>Seleccioná la hoja/pestaña:</Label>
               <div className="space-y-1">
