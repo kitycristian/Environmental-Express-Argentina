@@ -50,37 +50,39 @@ export default function GroundingContinuity() {
     }
   };
 
-  const cellClass = "border border-gray-300 px-1 py-0.5 text-xs text-center";
+  const cellClass = "border px-1 py-0.5 text-xs text-center";
   const inputClass = "w-full h-6 text-xs text-center border-0 bg-transparent focus:bg-yellow-50 focus:outline-none";
-  const headerClass = "border border-gray-400 bg-yellow-100 px-1 py-1 text-xs font-bold text-center whitespace-nowrap";
+  const headerClass = "border border-blue-800 px-1 py-1 text-xs font-bold text-center whitespace-nowrap bg-blue-900 text-white";
 
   return (
-    <div className="min-h-screen bg-white flex flex-col text-xs">
-      <div className="bg-gray-100 border-b px-3 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-gray-50 flex flex-col text-xs">
+      <div className="bg-white border-b px-4 py-2 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-4">
           <Link href="/grounding">
-            <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" data-testid="btn-back">
-              <ArrowLeft className="h-4 w-4" /> Volver
+            <Button variant="ghost" size="sm" data-testid="btn-back">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Volver
             </Button>
           </Link>
           <h1 className="text-sm font-bold text-gray-800" data-testid="heading-continuity">DETALLE DE RESULTADOS - Ensayos de Continuidad y Corte Automático</h1>
         </div>
-        <Button onClick={addRow} size="sm" className="h-8 text-xs" data-testid="btn-add-row">
+        <Button onClick={addRow} size="sm" data-testid="btn-add-row">
           <Plus className="h-4 w-4 mr-1" /> Agregar Fila
         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto p-2">
+      <div className="flex-1 overflow-auto p-4">
+        <div className="bg-white rounded border shadow-sm">
+          <div className="overflow-x-auto">
         <table className="w-full border-collapse text-xs" style={{ minWidth: '1200px' }}>
           <thead>
             <tr>
               <th className={headerClass} style={{ width: '40px' }}>Med. N°</th>
               <th className={headerClass} style={{ width: '250px' }}>Descripción Tablero</th>
               <th className={headerClass} style={{ width: '80px' }}>Disyuntor N°</th>
-              <th className={cn(headerClass, "bg-blue-100")} style={{ width: '80px' }}>RPAT [Ω]</th>
-              <th className={cn(headerClass, "bg-green-100")} style={{ width: '100px' }}>Corriente de Corte (mA)</th>
-              <th className={cn(headerClass, "bg-green-100")} style={{ width: '100px' }}>Corriente de CC (A)</th>
-              <th className={cn(headerClass, "bg-orange-100")} style={{ width: '100px' }}>Tiempo de Respuesta(ms)</th>
+              <th className={headerClass} style={{ width: '80px' }}>RPAT [Ω]</th>
+              <th className={headerClass} style={{ width: '100px' }}>Corriente de Corte (mA)</th>
+              <th className={headerClass} style={{ width: '100px' }}>Corriente de CC (A)</th>
+              <th className={headerClass} style={{ width: '100px' }}>Tiempo de Respuesta(ms)</th>
               <th className={headerClass} style={{ width: '200px' }}>Observaciones</th>
               <th className={headerClass} style={{ width: '30px' }}></th>
             </tr>
@@ -119,6 +121,8 @@ export default function GroundingContinuity() {
             ))}
           </tbody>
         </table>
+          </div>
+        </div>
       </div>
     </div>
   );

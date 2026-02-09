@@ -102,27 +102,27 @@ export default function LightingSheet() {
     updatePoint(sectorId, measurementId, pointId, { values: { ...point.values, lux: value } });
   };
 
-  const cellClass = "border border-gray-300 px-1 py-0.5 text-xs text-center";
+  const cellClass = "border px-1 py-0.5 text-xs text-center";
   const inputClass = "w-full h-6 text-xs text-center border-0 bg-transparent focus:bg-yellow-50 focus:outline-none";
-  const headerClass = "border border-gray-400 bg-yellow-100 px-1 py-1 text-xs font-bold text-center whitespace-nowrap";
+  const headerClass = "border border-blue-800 px-1 py-1 text-xs font-bold text-center whitespace-nowrap bg-blue-900 text-white";
 
   return (
-    <div className="min-h-screen bg-white flex flex-col text-xs">
+    <div className="min-h-screen bg-gray-50 flex flex-col text-xs">
       {/* Header */}
-      <div className="bg-gray-100 border-b px-3 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border-b px-4 py-2 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-4">
           <Link href="/">
-            <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" data-testid="btn-back">
-              <ArrowLeft className="h-4 w-4" /> Volver
+            <Button variant="ghost" size="sm" data-testid="btn-back">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Volver
             </Button>
           </Link>
-          <h1 className="text-sm font-bold text-gray-800">MEMORIA DE CALCULOS - ILUMINACIÓN</h1>
+          <h1 className="text-sm font-bold text-gray-800" data-testid="heading-lighting">MEMORIA DE CALCULOS - ILUMINACIÓN</h1>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setImportDialogOpen(true)} variant="outline" size="sm" className="h-8 text-xs" data-testid="btn-import">
-            <FileUp className="h-4 w-4 mr-1" /> Importar Sectores
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportDialogOpen(true)} data-testid="btn-import">
+            <FileUp className="h-4 w-4 mr-1" /> Importar
           </Button>
-          <Button onClick={handleAddRow} size="sm" className="h-8 text-xs" data-testid="btn-add-row">
+          <Button onClick={handleAddRow} size="sm" data-testid="btn-add-row">
             <Plus className="h-4 w-4 mr-1" /> Agregar Fila
           </Button>
         </div>
@@ -174,31 +174,33 @@ export default function LightingSheet() {
       </Dialog>
 
       {/* Spreadsheet Table */}
-      <div className="flex-1 overflow-auto p-2">
+      <div className="flex-1 overflow-auto p-4">
+        <div className="bg-white rounded border shadow-sm">
+          <div className="overflow-x-auto">
         <table className="w-full border-collapse text-xs" style={{ minWidth: '1800px' }}>
           <thead>
             <tr>
               <th rowSpan={2} className={headerClass} style={{ width: '30px' }}>#</th>
               <th rowSpan={2} className={headerClass} style={{ width: '120px' }}>Sector</th>
               <th rowSpan={2} className={headerClass} style={{ width: '150px' }}>Subsector</th>
-              <th colSpan={3} className={cn(headerClass, "bg-blue-100")}>Dimensiones</th>
+              <th colSpan={3} className={headerClass}>Dimensiones</th>
               <th rowSpan={2} className={headerClass} style={{ width: '40px' }}>K</th>
               <th rowSpan={2} className={headerClass} style={{ width: '40px' }}>Min</th>
               <th rowSpan={2} className={headerClass} style={{ width: '40px' }}>Ptos</th>
-              <th colSpan={visiblePoints} className={cn(headerClass, "bg-green-100")}>Iluminancia por Punto Monitoreado (LUX)</th>
-              <th rowSpan={2} className={cn(headerClass, "bg-orange-100")} style={{ width: '50px' }}>E mínima</th>
-              <th rowSpan={2} className={cn(headerClass, "bg-orange-100")} style={{ width: '50px' }}>E media</th>
-              <th rowSpan={2} className={cn(headerClass, "bg-purple-100")} style={{ width: '60px' }}>Límite Legal</th>
-              <th rowSpan={2} className={cn(headerClass, "bg-red-100")} style={{ width: '60px' }}>Cumple E mínima</th>
-              <th rowSpan={2} className={cn(headerClass, "bg-red-100")} style={{ width: '60px' }}>Cumple Límite</th>
+              <th colSpan={visiblePoints} className={headerClass}>Iluminancia por Punto Monitoreado (LUX)</th>
+              <th rowSpan={2} className={headerClass} style={{ width: '50px' }}>E mínima</th>
+              <th rowSpan={2} className={headerClass} style={{ width: '50px' }}>E media</th>
+              <th rowSpan={2} className={headerClass} style={{ width: '60px' }}>Límite Legal</th>
+              <th rowSpan={2} className={headerClass} style={{ width: '60px' }}>Cumple E mínima</th>
+              <th rowSpan={2} className={headerClass} style={{ width: '60px' }}>Cumple Límite</th>
               <th rowSpan={2} className={headerClass} style={{ width: '30px' }}></th>
             </tr>
             <tr>
-              <th className={cn(headerClass, "bg-blue-100")} style={{ width: '50px' }}>Ancho</th>
-              <th className={cn(headerClass, "bg-blue-100")} style={{ width: '50px' }}>Largo</th>
-              <th className={cn(headerClass, "bg-blue-100")} style={{ width: '50px' }}>Alto</th>
+              <th className={headerClass} style={{ width: '50px' }}>Ancho</th>
+              <th className={headerClass} style={{ width: '50px' }}>Largo</th>
+              <th className={headerClass} style={{ width: '50px' }}>Alto</th>
               {Array.from({ length: visiblePoints }).map((_, i) => (
-                <th key={i} className={cn(headerClass, "bg-green-100")} style={{ width: '45px' }}>{i + 1}</th>
+                <th key={i} className={headerClass} style={{ width: '45px' }}>{i + 1}</th>
               ))}
             </tr>
           </thead>
@@ -240,7 +242,7 @@ export default function LightingSheet() {
                       data-testid={`input-subsector-${rowIndex}`}
                     />
                   </td>
-                  <td className={cn(cellClass, "bg-blue-50/50")}>
+                  <td className={cn(cellClass)}>
                     <input
                       type="number"
                       className={inputClass}
@@ -250,7 +252,7 @@ export default function LightingSheet() {
                       data-testid={`input-width-${rowIndex}`}
                     />
                   </td>
-                  <td className={cn(cellClass, "bg-blue-50/50")}>
+                  <td className={cn(cellClass)}>
                     <input
                       type="number"
                       className={inputClass}
@@ -260,7 +262,7 @@ export default function LightingSheet() {
                       data-testid={`input-length-${rowIndex}`}
                     />
                   </td>
-                  <td className={cn(cellClass, "bg-blue-50/50")}>
+                  <td className={cn(cellClass)}>
                     <input
                       type="number"
                       className={inputClass}
@@ -278,7 +280,7 @@ export default function LightingSheet() {
                     const isEditable = point !== undefined;
                     const isNext = colIndex === points.length;
                     return (
-                      <td key={colIndex} className={cn(cellClass, "bg-green-50/30")}>
+                      <td key={colIndex} className={cn(cellClass)}>
                         {isEditable ? (
                           <input
                             type="number"
@@ -300,9 +302,9 @@ export default function LightingSheet() {
                       </td>
                     );
                   })}
-                  <td className={cn(cellClass, "bg-orange-50 font-bold")}>{eMin || '-'}</td>
-                  <td className={cn(cellClass, "bg-orange-50 font-bold")}>{eAvg || '-'}</td>
-                  <td className={cn(cellClass, "bg-purple-50")}>
+                  <td className={cn(cellClass, "font-bold")}>{eMin || '-'}</td>
+                  <td className={cn(cellClass, "font-bold")}>{eAvg || '-'}</td>
+                  <td className={cn(cellClass)}>
                     <input
                       type="number"
                       className={cn(inputClass, "font-bold")}
@@ -312,10 +314,10 @@ export default function LightingSheet() {
                       data-testid={`input-limit-${rowIndex}`}
                     />
                   </td>
-                  <td className={cn(cellClass, uniformityCheck ? "bg-green-200" : "bg-red-200", "font-bold")}>
+                  <td className={cn(cellClass, "font-bold", values.length > 0 ? (uniformityCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700") : "")}>
                     {values.length > 0 ? (uniformityCheck ? "SI" : "NO") : "-"}
                   </td>
-                  <td className={cn(cellClass, limitCheck ? "bg-green-200" : "bg-red-200", "font-bold")}>
+                  <td className={cn(cellClass, "font-bold", limit > 0 ? (limitCheck ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700") : "")}>
                     {limit > 0 ? (limitCheck ? "SI" : "NO") : "-"}
                   </td>
                   <td className={cellClass}>
@@ -339,6 +341,8 @@ export default function LightingSheet() {
             )}
           </tbody>
         </table>
+          </div>
+        </div>
       </div>
     </div>
   );
