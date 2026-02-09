@@ -23,7 +23,7 @@ export default function LightingSheet() {
   const addSectorWithMeasurement = useStore((state) => state.addSectorWithMeasurement);
 
   const { toast } = useToast();
-  const [visiblePoints, setVisiblePoints] = useState(15);
+  const [visiblePointsOverride, setVisiblePointsOverride] = useState<number | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const { data: clients = [] } = useClients();
@@ -45,6 +45,12 @@ export default function LightingSheet() {
   });
 
   const activeSectors = sectors.filter(s => s.measurements.some(m => m.type === type));
+
+  const maxPointsInData = Math.max(9, ...activeSectors.map(s => {
+    const m = s.measurements.find(m => m.type === type);
+    return m ? m.points.length : 0;
+  }));
+  const visiblePoints = visiblePointsOverride ?? maxPointsInData;
 
   const handleAddRow = () => {
     addSectorWithMeasurement({
@@ -259,8 +265,13 @@ export default function LightingSheet() {
       if (h.includes('ancho') || h === 'w') autoMap.ancho = i;
       if (h.includes('largo') || h === 'l') autoMap.largo = i;
       if (h.includes('alto') || h === 'h' || h.includes('altura')) autoMap.alto = i;
-      if (h.includes('limite') || h.includes('límite') || h.includes('legal') || h.includes('lux min')) autoMap.limite = i;
+      if ((h.includes('limite') && h.includes('legal')) || h.includes('límite legal') || h.includes('lux min')) autoMap.limite = i;
     });
+    if (autoMap.limite < 0) {
+      searchTexts.forEach((h: string, i: number) => {
+        if (h.includes('limite') || h.includes('límite')) autoMap.limite = i;
+      });
+    }
     setGsColumnMap(autoMap);
   };
 
@@ -272,7 +283,7 @@ export default function LightingSheet() {
       if (selectedSpreadsheet === 'local-file' && gsAllSheetsData[sheetTitle]) {
         data = gsAllSheetsData[sheetTitle];
       } else {
-        const range = encodeURIComponent(`${sheetTitle}!A1:Z200`);
+        const range = encodeURIComponent(`${sheetTitle}!A1:AZ200`);
         const res = await fetch(`/api/google-sheets/${selectedSpreadsheet}/data?range=${range}`);
         if (!res.ok) throw new Error('Error al leer datos');
         data = await res.json();
@@ -291,6 +302,8 @@ export default function LightingSheet() {
     ? buildCombinedHeaders(gsPreviewData, Math.max(gsHeaderRow, gsDataStartRow - 1))
     : [];
 
+  const resultHeaderKeywords = ['valor max', 'valor min', 'e mínima', 'e minima', 'e media', 'e. media', 'limite', 'límite', 'cumple', 'uniformidad'];
+  
   const findLuxColumns = (): { startCol: number; endCol: number } => {
     const mappedCols = [gsColumnMap.sector, gsColumnMap.subsector, gsColumnMap.ancho, 
       gsColumnMap.largo, gsColumnMap.alto, gsColumnMap.limite].filter(c => c >= 0);
@@ -301,20 +314,23 @@ export default function LightingSheet() {
     
     for (let i = 0; i < headers.length; i++) {
       const h = headers[i];
-      if (h.match(/^\d+$/) || h.includes('iluminancia') || h.includes('punto')) {
+      const isResultCol = resultHeaderKeywords.some(kw => h.includes(kw));
+      
+      if (!isResultCol && (h.match(/^\d+$/) || h.includes('iluminancia') || h.includes('punto'))) {
         if (luxStart < 0) luxStart = i;
-      }
-      if (h.includes('valor max') || h.includes('max')) {
-        luxEnd = i;
+        luxEnd = i + 1;
+      } else if (luxStart >= 0 && isResultCol) {
         break;
       }
     }
     
     if (luxStart < 0) {
-      const afterMapped = Math.max(...mappedCols) + 1;
+      const afterMapped = Math.max(...mappedCols, 0) + 1;
       const firstDataRow = gsPreviewData[gsDataStartRow];
       if (firstDataRow) {
         for (let i = afterMapped; i < firstDataRow.length; i++) {
+          const h = (headers[i] || '').toLowerCase();
+          if (resultHeaderKeywords.some(kw => h.includes(kw))) break;
           const val = String(firstDataRow[i] || '');
           if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
             if (luxStart < 0) luxStart = i;
@@ -326,7 +342,7 @@ export default function LightingSheet() {
       }
     }
     
-    return { startCol: luxStart >= 0 ? luxStart : 0, endCol: luxEnd >= 0 ? luxEnd : combinedHeaders.length };
+    return { startCol: luxStart >= 0 ? luxStart : 0, endCol: luxEnd >= 0 ? luxEnd : Math.max(...mappedCols, 0) + 1 };
   };
 
   const handleImportFromGoogleSheets = () => {
@@ -346,8 +362,16 @@ export default function LightingSheet() {
       const sectorNum = gsColumnMap.sector >= 0 ? String(row[gsColumnMap.sector] || '').trim() : '';
       const subsectorName = gsColumnMap.subsector >= 0 ? String(row[gsColumnMap.subsector] || '').trim() : '';
       
+      const hasLuxData = (() => {
+        for (let c = luxStartCol; c < luxEndCol && c < row.length; c++) {
+          const val = String(row[c] || '').trim();
+          if (val && !isNaN(parseFloat(val)) && parseFloat(val) > 0) return true;
+        }
+        return false;
+      })();
+      
       const isSectorRow = sectorNum !== '' && subsectorName !== '';
-      const isContinuationRow = sectorNum === '' && currentSectorId !== null;
+      const isContinuationRow = sectorNum === '' && currentSectorId !== null && hasLuxData;
       
       if (isSectorRow) {
         addSectorWithMeasurement({
@@ -386,6 +410,13 @@ export default function LightingSheet() {
         }
       }
     });
+    const currentSectors = useStore.getState().sectors.filter(s => s.measurements.some(m => m.type === type));
+    const maxActualPoints = Math.max(9, ...currentSectors.map(s => {
+      const m = s.measurements.find(m => m.type === type);
+      return m ? m.points.length : 0;
+    }));
+    setVisiblePointsOverride(maxActualPoints);
+    
     setGsDialogOpen(false);
     toast({ title: `${imported} sectores importados con todos sus puntos de medición` });
   };
@@ -658,7 +689,7 @@ export default function LightingSheet() {
       <div className="flex-1 overflow-auto p-4">
         <div className="bg-white rounded border shadow-sm">
           <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-xs" style={{ minWidth: '1800px' }}>
+        <table className="w-full border-collapse text-xs" style={{ minWidth: `${800 + visiblePoints * 50}px` }}>
           <thead>
             <tr>
               <th rowSpan={2} className={headerClass} style={{ width: '30px' }}>#</th>
