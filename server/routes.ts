@@ -8,7 +8,8 @@ import {
   insertInspectionSchema,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
-import { listSpreadsheets, getSpreadsheetSheets, readSheetData } from "./google-sheets";
+import { getSpreadsheetSheets, readSheetData, parseExcelBuffer } from "./google-sheets";
+import multer from "multer";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -261,12 +262,17 @@ export async function registerRoutes(
 
   // ============= GOOGLE SHEETS =============
 
-  app.get("/api/google-sheets/spreadsheets", async (req, res) => {
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+  app.post("/api/upload-excel", upload.single('file'), async (req, res) => {
     try {
-      const files = await listSpreadsheets();
-      res.json(files);
+      if (!req.file) {
+        return res.status(400).json({ message: "No se recibió ningún archivo" });
+      }
+      const result = parseExcelBuffer(req.file.buffer);
+      res.json(result);
     } catch (error: any) {
-      res.status(500).json({ message: error.message || "Error listing spreadsheets" });
+      res.status(500).json({ message: error.message || "Error al procesar el archivo" });
     }
   });
 

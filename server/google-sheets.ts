@@ -1,10 +1,10 @@
-// Google Sheets integration via Replit connector
-import { google } from 'googleapis';
+// Google Sheets integration via Replit connector + Excel file parsing
+import * as XLSX from 'xlsx';
 
 let connectionSettings: any;
 
 async function getAccessToken() {
-  if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
+  if (connectionSettings && connectionSettings.settings?.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
     return connectionSettings.settings.access_token;
   }
   
@@ -19,7 +19,7 @@ async function getAccessToken() {
     throw new Error('X_REPLIT_TOKEN not found for repl/depl');
   }
 
-  connectionSettings = await fetch(
+  const response = await fetch(
     'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-sheet',
     {
       headers: {
@@ -27,63 +27,78 @@ async function getAccessToken() {
         'X_REPLIT_TOKEN': xReplitToken
       }
     }
-  ).then(res => res.json()).then(data => data.items?.[0]);
+  );
+  const data = await response.json();
+  connectionSettings = data.items?.[0];
 
-  const accessToken = connectionSettings?.settings?.access_token || connectionSettings.settings?.oauth?.credentials?.access_token;
+  const accessToken = connectionSettings?.settings?.access_token || connectionSettings?.settings?.oauth?.credentials?.access_token;
 
   if (!connectionSettings || !accessToken) {
-    throw new Error('Google Sheet not connected');
+    throw new Error('Google Sheet no conectado. Verificá la conexión en la configuración.');
   }
   return accessToken;
 }
 
-async function getUncachableGoogleSheetClient() {
-  const accessToken = await getAccessToken();
-
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({
-    access_token: accessToken
-  });
-
-  return google.sheets({ version: 'v4', auth: oauth2Client });
-}
-
-export async function listSpreadsheets() {
-  const accessToken = await getAccessToken();
-
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({ access_token: accessToken });
-
-  const drive = google.drive({ version: 'v3', auth: oauth2Client });
-  const response = await drive.files.list({
-    q: "mimeType='application/vnd.google-apps.spreadsheet'",
-    fields: 'files(id, name, modifiedTime)',
-    orderBy: 'modifiedTime desc',
-    pageSize: 50
-  });
-
-  return response.data.files || [];
-}
-
 export async function getSpreadsheetSheets(spreadsheetId: string) {
-  const client = await getUncachableGoogleSheetClient();
-  const response = await client.spreadsheets.get({
-    spreadsheetId,
-    fields: 'sheets.properties'
+  const accessToken = await getAccessToken();
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`;
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
   });
-
-  return (response.data.sheets || []).map(s => ({
+  
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const status = response.status;
+    const errMsg = err?.error?.message || '';
+    console.error('[google-sheets] Error fetching sheets:', status, JSON.stringify(err));
+    
+    if (status === 400 && errMsg.includes('not supported')) {
+      throw new Error('EXCEL_FILE:Este archivo es un Excel subido a Drive, no un Google Sheets nativo. Convertilo a Google Sheets (Archivo → Guardar como Google Sheets) o usá la opción "Subir archivo" para importar directamente.');
+    }
+    if (status === 404) {
+      throw new Error('No se encontró la hoja de cálculo. Verificá la URL.');
+    }
+    if (status === 403) {
+      throw new Error('Sin permiso para acceder a esta hoja. Asegurate de que esté compartida con tu cuenta de Google.');
+    }
+    throw new Error(errMsg || `Error al acceder a la hoja (${status})`);
+  }
+  
+  const data = await response.json();
+  return (data.sheets || []).map((s: any) => ({
     sheetId: s.properties?.sheetId,
     title: s.properties?.title
   }));
 }
 
 export async function readSheetData(spreadsheetId: string, range: string) {
-  const client = await getUncachableGoogleSheetClient();
-  const response = await client.spreadsheets.values.get({
-    spreadsheetId,
-    range
+  const accessToken = await getAccessToken();
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
   });
+  
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    console.error('[google-sheets] Error reading data:', response.status, JSON.stringify(err));
+    throw new Error(err?.error?.message || `Error al leer datos (${response.status})`);
+  }
+  
+  const data = await response.json();
+  return data.values || [];
+}
 
-  return response.data.values || [];
+export function parseExcelBuffer(buffer: Buffer): { sheets: string[]; data: Record<string, string[][]> } {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const result: Record<string, string[][]> = {};
+  
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    const rows: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    result[sheetName] = rows.filter(row => row.some(cell => cell !== '' && cell != null));
+  }
+  
+  return { sheets: workbook.SheetNames, data: result };
 }

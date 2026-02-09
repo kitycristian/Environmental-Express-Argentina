@@ -32,10 +32,12 @@ export default function LightingSheet() {
   const [gsStep, setGsStep] = useState<'url' | 'sheets' | 'preview'>('url');
   const [gsLoading, setGsLoading] = useState(false);
   const [gsUrl, setGsUrl] = useState("");
+  const [gsError, setGsError] = useState("");
   const [selectedSpreadsheet, setSelectedSpreadsheet] = useState<string>("");
   const [sheetsList, setSheetsList] = useState<any[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>("");
   const [gsPreviewData, setGsPreviewData] = useState<string[][]>([]);
+  const [gsAllSheetsData, setGsAllSheetsData] = useState<Record<string, string[][]>>({});
   const [gsColumnMap, setGsColumnMap] = useState<Record<string, number>>({
     sector: 0, subsector: 1, ancho: 2, largo: 3, alto: 4, limite: 5
   });
@@ -121,9 +123,11 @@ export default function LightingSheet() {
     setGsDialogOpen(true);
     setGsStep('url');
     setGsUrl("");
+    setGsError("");
     setSelectedSpreadsheet("");
     setSelectedSheet("");
     setGsPreviewData([]);
+    setGsAllSheetsData({});
     setSheetsList([]);
   };
 
@@ -140,9 +144,19 @@ export default function LightingSheet() {
     }
     setSelectedSpreadsheet(id);
     setGsLoading(true);
+    setGsError("");
     try {
       const res = await fetch(`/api/google-sheets/${id}/sheets`);
-      if (!res.ok) throw new Error('No se pudo acceder a esa hoja. Verificá que esté compartida.');
+      if (!res.ok) {
+        const errData = await res.json();
+        const msg = errData.message || 'No se pudo acceder a esa hoja.';
+        if (msg.startsWith('EXCEL_FILE:')) {
+          setGsError(msg.replace('EXCEL_FILE:', ''));
+        } else {
+          toast({ title: "Error", description: msg, variant: "destructive" });
+        }
+        return;
+      }
       const data = await res.json();
       setSheetsList(data);
       setGsStep('sheets');
@@ -153,28 +167,62 @@ export default function LightingSheet() {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setGsLoading(true);
+    setGsError("");
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload-excel', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Error al procesar el archivo');
+      }
+      const result = await res.json();
+      setGsAllSheetsData(result.data);
+      setSheetsList(result.sheets.map((name: string, i: number) => ({ sheetId: i, title: name })));
+      setSelectedSpreadsheet('local-file');
+      setGsStep('sheets');
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setGsLoading(false);
+    }
+  };
+
+  const autoMapColumns = (data: string[][]) => {
+    if (data.length > 0) {
+      const headers = data[0].map((h: string) => String(h ?? '').toLowerCase().trim());
+      const autoMap: Record<string, number> = { sector: -1, subsector: -1, ancho: -1, largo: -1, alto: -1, limite: -1 };
+      headers.forEach((h: string, i: number) => {
+        if (h.includes('sector') && !h.includes('sub')) autoMap.sector = i;
+        if (h.includes('subsector') || h.includes('puesto') || h.includes('descripcion')) autoMap.subsector = i;
+        if (h.includes('ancho') || h === 'w') autoMap.ancho = i;
+        if (h.includes('largo') || h === 'l') autoMap.largo = i;
+        if (h.includes('alto') || h === 'h' || h.includes('altura')) autoMap.alto = i;
+        if (h.includes('limite') || h.includes('límite') || h.includes('legal') || h.includes('lux min')) autoMap.limite = i;
+      });
+      setGsColumnMap(autoMap);
+    }
+  };
+
   const handleSelectSheet = async (sheetTitle: string) => {
     setSelectedSheet(sheetTitle);
     setGsLoading(true);
     try {
-      const range = encodeURIComponent(`${sheetTitle}!A1:Z200`);
-      const res = await fetch(`/api/google-sheets/${selectedSpreadsheet}/data?range=${range}`);
-      if (!res.ok) throw new Error('Error al leer datos');
-      const data = await res.json();
-      setGsPreviewData(data);
-      if (data.length > 0) {
-        const headers = data[0].map((h: string) => h?.toLowerCase().trim() || '');
-        const autoMap: Record<string, number> = { sector: -1, subsector: -1, ancho: -1, largo: -1, alto: -1, limite: -1 };
-        headers.forEach((h: string, i: number) => {
-          if (h.includes('sector') && !h.includes('sub')) autoMap.sector = i;
-          if (h.includes('subsector') || h.includes('puesto') || h.includes('descripcion')) autoMap.subsector = i;
-          if (h.includes('ancho') || h === 'w') autoMap.ancho = i;
-          if (h.includes('largo') || h === 'l') autoMap.largo = i;
-          if (h.includes('alto') || h === 'h' || h.includes('altura')) autoMap.alto = i;
-          if (h.includes('limite') || h.includes('límite') || h.includes('legal') || h.includes('lux min')) autoMap.limite = i;
-        });
-        setGsColumnMap(autoMap);
+      let data: string[][];
+      if (selectedSpreadsheet === 'local-file' && gsAllSheetsData[sheetTitle]) {
+        data = gsAllSheetsData[sheetTitle];
+      } else {
+        const range = encodeURIComponent(`${sheetTitle}!A1:Z200`);
+        const res = await fetch(`/api/google-sheets/${selectedSpreadsheet}/data?range=${range}`);
+        if (!res.ok) throw new Error('Error al leer datos');
+        data = await res.json();
       }
+      setGsPreviewData(data);
+      autoMapColumns(data);
       setGsStep('preview');
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -256,7 +304,7 @@ export default function LightingSheet() {
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={handleOpenGoogleSheets} data-testid="btn-google-sheets">
-            <Sheet className="h-4 w-4 mr-1" /> Google Sheets
+            <Sheet className="h-4 w-4 mr-1" /> Importar Excel/Sheets
           </Button>
           <Button size="sm" variant="outline" onClick={() => setImportDialogOpen(true)} data-testid="btn-import">
             <FileUp className="h-4 w-4 mr-1" /> Importar
@@ -329,23 +377,54 @@ export default function LightingSheet() {
           )}
 
           {!gsLoading && gsStep === 'url' && (
-            <div className="space-y-3 py-2">
-              <Label>Pegá la URL de tu hoja de Google Sheets:</Label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2 text-sm"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
-                value={gsUrl}
-                onChange={(e) => setGsUrl(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLoadFromUrl()}
-                data-testid="input-gs-url"
-              />
-              <p className="text-xs text-muted-foreground">
-                Copiá la URL desde la barra de direcciones de tu navegador cuando tengas la hoja abierta.
-              </p>
-              <Button onClick={handleLoadFromUrl} disabled={!gsUrl.trim()} className="w-full" data-testid="btn-gs-load">
-                Cargar hoja
-              </Button>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label className="font-semibold">Opción 1: Subir archivo Excel/CSV</Label>
+                <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-muted/50 transition-colors">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="excel-upload"
+                    data-testid="input-excel-upload"
+                  />
+                  <label htmlFor="excel-upload" className="cursor-pointer">
+                    <FileUp className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">Hacé clic para seleccionar un archivo</p>
+                    <p className="text-xs text-muted-foreground">.xlsx, .xls o .csv</p>
+                  </label>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground">o</span></div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-semibold">Opción 2: URL de Google Sheets</Label>
+                <input
+                  type="text"
+                  className="w-full border rounded px-3 py-2 text-sm"
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  value={gsUrl}
+                  onChange={(e) => { setGsUrl(e.target.value); setGsError(""); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLoadFromUrl()}
+                  data-testid="input-gs-url"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Solo funciona con hojas de cálculo nativas de Google Sheets (no archivos Excel subidos a Drive).
+                </p>
+                {gsError && (
+                  <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800">
+                    {gsError}
+                  </div>
+                )}
+                <Button onClick={handleLoadFromUrl} disabled={!gsUrl.trim()} className="w-full" data-testid="btn-gs-load">
+                  Cargar hoja
+                </Button>
+              </div>
             </div>
           )}
 
