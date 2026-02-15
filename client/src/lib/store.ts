@@ -55,7 +55,7 @@ const initialEstablishment: Establishment = {
 const pt = (id: string, lux: string) => ({ id, label: '', values: { lux } });
 
 // Sample data for demonstration
-const sampleSectors: Sector[] = [
+export const sampleSectors: Sector[] = [
   {
     id: 'sample-1',
     name: 'Salón de Ventas',

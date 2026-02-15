@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
-import { useStore } from "@/lib/store";
+import { useStore, sampleSectors } from "@/lib/store";
 import { Link } from "wouter";
 import { MeasurementType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, Trash2, FileUp, Sheet, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, FileUp, Sheet, Loader2, Database, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/lib/hooks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+// @ts-ignore
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+// @ts-ignore
+import { Document, Packer, Paragraph, TextRun, Table as DocxTable, TableRow as DocxTableRow, TableCell as DocxTableCell, WidthType, BorderStyle, AlignmentType, Header, Footer } from "docx";
+// @ts-ignore
+import { saveAs } from "file-saver";
 
 const type: MeasurementType = 'lighting';
 
@@ -421,6 +428,264 @@ export default function LightingSheet() {
     toast({ title: `${imported} sectores importados con todos sus puntos de medición` });
   };
 
+  const loadSampleData = () => {
+    useStore.getState().loadInspectionData(
+      { id: 'default', name: 'DORINKA SRL', razonSocial: 'DORINKA SRL', cuit: '', address: '', date: new Date().toISOString().split('T')[0], responsible: '' },
+      JSON.parse(JSON.stringify(sampleSectors))
+    );
+    toast({ title: "Datos cargados", description: "10 sectores con mediciones de iluminación DORINKA SRL" });
+  };
+
+  const downloadPDF = () => {
+    if (activeSectors.length === 0) {
+      toast({ title: "Sin datos", description: "Agregue sectores antes de exportar", variant: "destructive" });
+      return;
+    }
+
+    const maxPts = Math.max(...activeSectors.map(s => {
+      const m = s.measurements.find(m => m.type === type);
+      return m ? m.points.length : 0;
+    }));
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 51, 102);
+    doc.text('PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Resolución SRT N° 84/2012 - Dec. 351/79', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+
+    const pointHeaders = Array.from({ length: maxPts }, (_, i) => `P${i + 1}`);
+    const head = [['#', 'Sector', 'Subsector', 'Ancho', 'Largo', 'Alto', 'K', 'Min\nPtos', 'Ptos\nMed', ...pointHeaders, 'E mín', 'E media', 'Límite\nLegal', 'Cumple\nE mín', 'Cumple\nLímite']];
+
+    const body = activeSectors.map((sector, i) => {
+      const measurement = sector.measurements.find(m => m.type === type);
+      if (!measurement) return [];
+      const w = measurement.config?.width || 0;
+      const l = measurement.config?.length || 0;
+      const h = measurement.config?.height || 0;
+      const k = calculateRoomIndex(l, w, h);
+      const minPts = getMinPoints(k);
+      const pts = measurement.points;
+      const vals = pts.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
+      const eAvg = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+      const eMin = vals.length > 0 ? Math.min(...vals) : 0;
+      const limit = measurement.config?.limit || 0;
+      const uniformity = eMin >= (eAvg / 2);
+      const limitOk = limit > 0 ? eAvg >= limit : true;
+
+      const pointValues = Array.from({ length: maxPts }, (_, j) => {
+        const p = pts[j];
+        return p ? (p.values.lux || '-') : '-';
+      });
+
+      return [
+        i + 1,
+        sector.name,
+        sector.description || '',
+        w || '-',
+        l || '-',
+        h || '-',
+        k || '-',
+        minPts,
+        pts.length,
+        ...pointValues,
+        eMin || '-',
+        eAvg || '-',
+        limit || '-',
+        vals.length > 0 ? (uniformity ? 'SI' : 'NO') : '-',
+        limit > 0 ? (limitOk ? 'SI' : 'NO') : '-'
+      ];
+    });
+
+    const uniformityColIdx = 9 + maxPts + 3;
+    const limitColIdx = 9 + maxPts + 4;
+
+    autoTable(doc, {
+      startY: 28,
+      head,
+      body,
+      theme: 'grid',
+      styles: { fontSize: 6, cellPadding: 1, halign: 'center', valign: 'middle', lineWidth: 0.1 },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 5.5 },
+      columnStyles: {
+        0: { cellWidth: 8 },
+        1: { cellWidth: 28, halign: 'left' },
+        2: { cellWidth: 28, halign: 'left' },
+      },
+      didParseCell: (data: any) => {
+        if (data.section === 'body') {
+          if (data.column.index === uniformityColIdx || data.column.index === limitColIdx) {
+            const val = String(data.cell.raw);
+            if (val === 'SI') {
+              data.cell.styles.fillColor = [220, 252, 231];
+              data.cell.styles.textColor = [21, 128, 61];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (val === 'NO') {
+              data.cell.styles.fillColor = [254, 226, 226];
+              data.cell.styles.textColor = [185, 28, 28];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        }
+      },
+      margin: { left: 5, right: 5 },
+    });
+
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Environmental Express Argentina - Servicios de Higiene y Seguridad Laboral', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+      doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.getWidth() - 10, doc.internal.pageSize.getHeight() - 5, { align: 'right' });
+    }
+
+    doc.save('Protocolo_Iluminacion.pdf');
+    toast({ title: "PDF generado", description: "Protocolo_Iluminacion.pdf descargado" });
+  };
+
+  const downloadDOCX = async () => {
+    if (activeSectors.length === 0) {
+      toast({ title: "Sin datos", description: "Agregue sectores antes de exportar", variant: "destructive" });
+      return;
+    }
+
+    const maxPts = Math.max(...activeSectors.map(s => {
+      const m = s.measurements.find(m => m.type === type);
+      return m ? m.points.length : 0;
+    }));
+
+    const pointHeaders = Array.from({ length: maxPts }, (_, i) => `P${i + 1}`);
+    const allHeaders = ['#', 'Sector', 'Subsector', 'Ancho', 'Largo', 'Alto', 'K', 'Min Ptos', 'Ptos Med', ...pointHeaders, 'E mín', 'E media', 'Límite Legal', 'Cumple E mín', 'Cumple Límite'];
+
+    const borderStyle = {
+      top: { style: BorderStyle.SINGLE, size: 1, color: '003366' },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: '003366' },
+      left: { style: BorderStyle.SINGLE, size: 1, color: '003366' },
+      right: { style: BorderStyle.SINGLE, size: 1, color: '003366' },
+    };
+
+    const makeCell = (text: string, isHeader = false, isGreen = false, isRed = false) => {
+      return new DocxTableCell({
+        children: [new Paragraph({
+          children: [new TextRun({
+            text,
+            bold: isHeader || isGreen || isRed,
+            size: 14,
+            color: isHeader ? 'FFFFFF' : isGreen ? '15803D' : isRed ? 'B91C1C' : '000000',
+            font: 'Arial',
+          })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 20, after: 20 },
+        })],
+        shading: isHeader ? { fill: '003366' } : isGreen ? { fill: 'DCFCE7' } : isRed ? { fill: 'FEE2E2' } : undefined,
+        borders: borderStyle,
+        verticalAlign: 'center' as any,
+      });
+    };
+
+    const headerRow = new DocxTableRow({
+      children: allHeaders.map(h => makeCell(h, true)),
+      tableHeader: true,
+    });
+
+    const dataRows = activeSectors.map((sector, i) => {
+      const measurement = sector.measurements.find(m => m.type === type);
+      if (!measurement) return null;
+      const w = measurement.config?.width || 0;
+      const l = measurement.config?.length || 0;
+      const h = measurement.config?.height || 0;
+      const k = calculateRoomIndex(l, w, h);
+      const minPts = getMinPoints(k);
+      const pts = measurement.points;
+      const vals = pts.map(p => Number(p.values.lux) || 0).filter(v => v > 0);
+      const eAvg = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+      const eMin = vals.length > 0 ? Math.min(...vals) : 0;
+      const limit = measurement.config?.limit || 0;
+      const uniformity = eMin >= (eAvg / 2);
+      const limitOk = limit > 0 ? eAvg >= limit : true;
+
+      const pointValues = Array.from({ length: maxPts }, (_, j) => {
+        const p = pts[j];
+        return p ? (p.values.lux || '-') : '-';
+      });
+
+      const uniformityText = vals.length > 0 ? (uniformity ? 'SI' : 'NO') : '-';
+      const limitText = limit > 0 ? (limitOk ? 'SI' : 'NO') : '-';
+
+      const cellValues = [
+        String(i + 1), sector.name, sector.description || '',
+        w ? String(w) : '-', l ? String(l) : '-', h ? String(h) : '-',
+        k ? String(k) : '-', String(minPts), String(pts.length),
+        ...pointValues,
+        eMin ? String(eMin) : '-', eAvg ? String(eAvg) : '-', limit ? String(limit) : '-',
+        uniformityText, limitText
+      ];
+
+      return new DocxTableRow({
+        children: cellValues.map((val, ci) => {
+          const isUniformityCol = ci === cellValues.length - 2;
+          const isLimitCol = ci === cellValues.length - 1;
+          const isGreen = (isUniformityCol || isLimitCol) && val === 'SI';
+          const isRed = (isUniformityCol || isLimitCol) && val === 'NO';
+          return makeCell(val, false, isGreen, isRed);
+        }),
+      });
+    }).filter(Boolean) as any[];
+
+    const table = new DocxTable({
+      rows: [headerRow, ...dataRows],
+      width: { size: 100, type: WidthType.PERCENTAGE },
+    });
+
+    const docDocument = new Document({
+      sections: [{
+        properties: {
+          page: {
+            size: { orientation: 'landscape' as any },
+            margin: { top: 720, bottom: 720, left: 720, right: 720 },
+          },
+        },
+        headers: {
+          default: new Header({
+            children: [new Paragraph({
+              children: [new TextRun({ text: 'PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL', bold: true, size: 24, color: '003366', font: 'Arial' })],
+              alignment: AlignmentType.CENTER,
+            })],
+          }),
+        },
+        footers: {
+          default: new Footer({
+            children: [new Paragraph({
+              children: [new TextRun({ text: 'Environmental Express Argentina - Servicios de Higiene y Seguridad Laboral', size: 16, color: '666666', font: 'Arial' })],
+              alignment: AlignmentType.CENTER,
+            })],
+          }),
+        },
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL', bold: true, size: 28, color: '003366', font: 'Arial' })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Resolución SRT N° 84/2012 - Dec. 351/79', size: 20, color: '666666', font: 'Arial' })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+          }),
+          table,
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(docDocument);
+    saveAs(blob, 'Protocolo_Iluminacion.docx');
+    toast({ title: "DOCX generado", description: "Protocolo_Iluminacion.docx descargado" });
+  };
+
   const cellClass = "border px-1 py-0.5 text-xs text-center";
   const inputClass = "w-full h-6 text-xs text-center border-0 bg-transparent focus:bg-yellow-50 focus:outline-none";
   const headerClass = "border border-blue-800 px-1 py-1 text-xs font-bold text-center whitespace-nowrap bg-blue-900 text-white";
@@ -438,6 +703,15 @@ export default function LightingSheet() {
           <h1 className="text-sm font-bold text-gray-800" data-testid="heading-lighting">MEMORIA DE CALCULOS - ILUMINACIÓN</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" onClick={loadSampleData} className="bg-orange-500 hover:bg-orange-600 text-white" data-testid="btn-load-sample">
+            <Database className="h-4 w-4 mr-1" /> Cargar Datos Informe
+          </Button>
+          <Button size="sm" variant="outline" onClick={downloadPDF} data-testid="btn-download-pdf">
+            <FileDown className="h-4 w-4 mr-1" /> PDF
+          </Button>
+          <Button size="sm" variant="outline" onClick={downloadDOCX} data-testid="btn-download-docx">
+            <FileDown className="h-4 w-4 mr-1" /> DOCX
+          </Button>
           <Button size="sm" variant="outline" onClick={handleOpenGoogleSheets} data-testid="btn-google-sheets">
             <Sheet className="h-4 w-4 mr-1" /> Importar Excel/Sheets
           </Button>
