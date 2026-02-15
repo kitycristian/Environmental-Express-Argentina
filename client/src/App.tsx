@@ -12,6 +12,7 @@ import GroundingSelector from "@/pages/grounding-selector";
 import GroundingProtocol from "@/pages/grounding-protocol";
 import GroundingContinuity from "@/pages/grounding-continuity";
 import GroundingElectrical from "@/pages/grounding-electrical";
+import PanelAnalyzer from "@/pages/panel-analyzer";
 import NoiseSheet from "@/pages/noise-sheet";
 import ThermalSheet from "@/pages/thermal-sheet";
 import ColdSheet from "@/pages/cold-sheet";
@@ -74,6 +75,9 @@ function Router() {
   }
   if (location === "/grounding/electrical") {
     return <ProtectedRoute component={GroundingElectrical} />;
+  }
+  if (location === "/grounding/panel-analyzer") {
+    return <ProtectedRoute component={PanelAnalyzer} />;
   }
   if (location === "/noise-sheet") {
     return <ProtectedRoute component={NoiseSheet} />;

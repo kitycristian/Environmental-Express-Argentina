@@ -10,6 +10,7 @@ import {
 import { fromError } from "zod-validation-error";
 import { getSpreadsheetSheets, readSheetData, parseExcelBuffer } from "./google-sheets";
 import multer from "multer";
+import OpenAI from "openai";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -292,6 +293,90 @@ export async function registerRoutes(
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Error reading sheet data" });
+    }
+  });
+
+  // ============= PANEL ANALYZER (AI Vision) =============
+
+  const openai = new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  });
+
+  const panelUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+  app.post("/api/analyze-panel", panelUpload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Se requiere una imagen del tablero eléctrico" });
+      }
+
+      const base64Image = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype || 'image/jpeg';
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `Sos un ingeniero electricista especializado en inspección de tableros eléctricos según normativa argentina (Reglamentación AEA 90364, Ley 19.587, Dec. 351/79). 
+Analizá la imagen del tablero eléctrico y proporcioná un informe técnico detallado en español.
+
+Tu respuesta DEBE seguir EXACTAMENTE este formato con las secciones marcadas con ##:
+
+## Estado General
+Descripción general del estado del tablero, tipo de tablero, material del gabinete, estado de la puerta/tapa.
+
+## Componentes Identificados
+Lista de todos los componentes visibles (termomagnéticas, diferenciales, bornes, cables, barras, etc.) con su estado individual.
+
+## No Conformidades Detectadas
+Lista numerada de cada problema o irregularidad encontrada, indicando:
+- Descripción del problema
+- Riesgo asociado
+- Normativa incumplida (si aplica)
+
+## Mejoras Recomendadas
+Lista numerada de mejoras a realizar, ordenadas por prioridad (crítica, alta, media, baja):
+- [CRÍTICA] Mejoras urgentes de seguridad
+- [ALTA] Mejoras importantes
+- [MEDIA] Mejoras recomendables
+- [BAJA] Mejoras opcionales
+
+## Clasificación de Riesgo
+Clasificación general: BAJO / MEDIO / ALTO / CRÍTICO
+Justificación breve de la clasificación.`
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analizá este tablero eléctrico y dame un informe técnico completo con el estado actual, no conformidades y mejoras necesarias."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                  detail: "high"
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 4000,
+      });
+
+      const analysis = response.choices[0]?.message?.content || "No se pudo generar el análisis.";
+      
+      res.json({ 
+        analysis,
+        timestamp: new Date().toISOString(),
+        filename: req.file.originalname
+      });
+    } catch (error: any) {
+      console.error("Error analyzing panel:", error);
+      res.status(500).json({ message: error.message || "Error al analizar el tablero" });
     }
   });
 

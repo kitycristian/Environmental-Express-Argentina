@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, FileSpreadsheet, Zap, Cable } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Zap, Cable, Camera } from "lucide-react";
 
 const measurementTypes = [
   {
@@ -24,6 +24,13 @@ const measurementTypes = [
     description: 'Ensayos de Continuidad Eléctrica del Conductor de PAT',
     icon: Cable,
     route: '/grounding/electrical'
+  },
+  {
+    id: 'panel-analyzer',
+    title: 'Analizador de Tableros',
+    description: 'Análisis de fotos de tableros eléctricos con IA - Estado y mejoras',
+    icon: Camera,
+    route: '/grounding/panel-analyzer'
   }
 ];
 
@@ -40,7 +47,7 @@ export default function GroundingSelector() {
           <h1 className="text-2xl font-bold text-gray-800" data-testid="heading-grounding">Puesta a Tierra - Seleccionar Tipo de Medición</h1>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {measurementTypes.map((type) => (
             <Link key={type.id} href={type.route}>
               <Card className="cursor-pointer hover:shadow-lg transition-shadow hover:border-primary" data-testid={`card-${type.id}`}>
