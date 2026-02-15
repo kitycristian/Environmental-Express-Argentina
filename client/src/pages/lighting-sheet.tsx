@@ -533,7 +533,7 @@ export default function LightingSheet() {
     };
 
     const addFooter = () => {
-      const pn = doc.internal.getCurrentPageInfo().pageNumber;
+      const pn = (doc as any).internal.getCurrentPageInfo().pageNumber;
       doc.setDrawColor(0, 51, 102);
       doc.setLineWidth(0.5);
       doc.line(m, ph - 15, pw - m, ph - 15);
@@ -867,7 +867,7 @@ export default function LightingSheet() {
           const isLimitCol = ci === cellValues.length - 1;
           const isGreen = (isUniformityCol || isLimitCol) && val === 'SI';
           const isRed = (isUniformityCol || isLimitCol) && val === 'NO';
-          return makeCell(val, false, isGreen, isRed);
+          return makeCell(String(val), false, isGreen, isRed);
         }),
       });
     }).filter(Boolean) as any[];
