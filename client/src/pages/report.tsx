@@ -18,6 +18,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useInstruments } from "@/lib/hooks";
 
 import { generateDocxReport } from "@/lib/docx-generator";
+
+const safeFormatDate = (dateStr: string | undefined, fmt: string, options?: { locale?: any }): string => {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      const parts = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (parts) {
+        const parsed = new Date(Number(parts[3]), Number(parts[2]) - 1, Number(parts[1]));
+        if (!isNaN(parsed.getTime())) return format(parsed, fmt, options);
+      }
+      return dateStr;
+    }
+    return format(d, fmt, options);
+  } catch { return dateStr || '-'; }
+};
 import { generatePDFReport } from "@/lib/pdf-generator";
 
 export default function Report() {
@@ -453,7 +469,7 @@ export default function Report() {
           <div className="grid grid-cols-3 gap-4">
               <div className="flex gap-2">
                 <span className="font-bold">Fecha de medición:</span>
-                <span className="border-b border-dotted border-gray-400 flex-1">{measurement.details?.measurementDate ? format(new Date(measurement.details.measurementDate), "dd/MM/yyyy") : '-'}</span>
+                <span className="border-b border-dotted border-gray-400 flex-1">{safeFormatDate(measurement.details?.measurementDate, "dd/MM/yyyy")}</span>
               </div>
               <div className="flex gap-2">
                 <span className="font-bold">Hora inicio:</span>
@@ -1719,7 +1735,7 @@ export default function Report() {
               </div>
               <div className="flex flex-col text-right">
                 <span className="font-bold text-gray-500 text-xs uppercase">Fecha de Medición</span>
-                <span className="font-semibold">{establishment.date ? format(new Date(establishment.date), "d 'de' MMMM, yyyy", { locale: es }) : '-'}</span>
+                <span className="font-semibold">{safeFormatDate(establishment.date, "d 'de' MMMM, yyyy", { locale: es })}</span>
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-gray-500 text-xs uppercase">Razón Social</span>
@@ -2081,7 +2097,7 @@ export default function Report() {
                                                     {MEASUREMENT_LABELS[m.type]}
                                                 </span>
                                                 <span className="text-xs text-gray-500">
-                                                    {m.details?.measurementDate ? format(new Date(m.details.measurementDate), "d/MM/yyyy") : ''} 
+                                                    {safeFormatDate(m.details?.measurementDate, "d/MM/yyyy")} 
                                                     {m.details?.startTime ? ` - ${m.details.startTime}` : ''}
                                                 </span>
                                             </div>
