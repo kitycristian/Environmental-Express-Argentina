@@ -2,9 +2,17 @@ import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Upload, Camera, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, FileText } from "lucide-react";
+import { ArrowLeft, Upload, Camera, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, FileText, Download, FileImage, FileType } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+// @ts-ignore
+import jsPDF from "jspdf";
+// @ts-ignore
+import { saveAs } from "file-saver";
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, Header, Footer } from "docx";
+// @ts-ignore
+import html2canvas from "html2canvas";
 
 interface AnalysisResult {
   analysis: string;
@@ -122,6 +130,253 @@ export default function PanelAnalyzer() {
     });
   };
 
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const loadImageAsBase64 = (url: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = url;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+    });
+  };
+
+  const downloadPDF = async (result: AnalysisResult) => {
+    try {
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.width;
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      doc.setFillColor(0, 51, 102);
+      doc.rect(0, 0, pageWidth, 35, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(255, 255, 255);
+      doc.text("INFORME TÉCNICO", pageWidth / 2, 15, { align: "center" });
+      doc.setFontSize(11);
+      doc.text("Tablero Eléctrico - Environmental Express Argentina", pageWidth / 2, 23, { align: "center" });
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Fecha: ${new Date(result.timestamp).toLocaleString('es-AR')}  |  Archivo: ${result.filename}`, pageWidth / 2, 30, { align: "center" });
+      y = 45;
+
+      try {
+        const imgData = await loadImageAsBase64(result.imageUrl);
+        const imgWidth = 70;
+        const imgHeight = 50;
+        doc.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight);
+        y += imgHeight + 10;
+      } catch {
+        y += 5;
+      }
+
+      const secs = parseAnalysis(result.analysis);
+      const riskSec = secs.find(s => s.title.toLowerCase().includes('clasificación') || s.title.toLowerCase().includes('riesgo'));
+      if (riskSec) {
+        const r = parseRiskLevel(riskSec.content);
+        const riskColors: Record<string, number[]> = {
+          'BAJO': [34, 139, 34], 'MEDIO': [218, 165, 32], 'ALTO': [255, 140, 0], 'CRÍTICO': [200, 0, 0]
+        };
+        const c = riskColors[r.level] || [100, 100, 100];
+        doc.setFillColor(c[0], c[1], c[2]);
+        doc.roundedRect(pageWidth - margin - 50, 45, 50, 12, 2, 2, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`Riesgo: ${r.level}`, pageWidth - margin - 25, 52.5, { align: "center" });
+      }
+
+      for (const section of secs) {
+        if (y > 270) { doc.addPage(); y = margin; }
+        doc.setFillColor(0, 51, 102);
+        doc.rect(margin, y, contentWidth, 7, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(255, 255, 255);
+        doc.text(section.title, margin + 3, y + 5);
+        y += 10;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(50, 50, 50);
+        const lines = doc.splitTextToSize(section.content.trim(), contentWidth - 4);
+        for (const line of lines) {
+          if (y > 280) { doc.addPage(); y = margin; }
+          doc.text(line, margin + 2, y);
+          y += 4.5;
+        }
+        y += 4;
+      }
+
+      if (secs.length === 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(50, 50, 50);
+        const lines = doc.splitTextToSize(result.analysis, contentWidth);
+        for (const line of lines) {
+          if (y > 280) { doc.addPage(); y = margin; }
+          doc.text(line, margin, y);
+          y += 4.5;
+        }
+      }
+
+      const totalPages = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(150);
+        doc.text(`Environmental Express Argentina - Pág. ${i}/${totalPages}`, pageWidth / 2, 290, { align: "center" });
+      }
+
+      doc.save(`Informe_Tablero_${result.filename.replace(/\.[^/.]+$/, '')}.pdf`);
+      toast({ title: "PDF descargado", description: "El informe fue descargado correctamente" });
+    } catch (err: any) {
+      toast({ title: "Error", description: "No se pudo generar el PDF", variant: "destructive" });
+    }
+  };
+
+  const downloadDOCX = async (result: AnalysisResult) => {
+    try {
+      const secs = parseAnalysis(result.analysis);
+      const riskSec = secs.find(s => s.title.toLowerCase().includes('clasificación') || s.title.toLowerCase().includes('riesgo'));
+      const riskText = riskSec ? parseRiskLevel(riskSec.content).level : "";
+
+      const children: any[] = [];
+
+      children.push(new Paragraph({
+        children: [new TextRun({ text: "INFORME TÉCNICO - TABLERO ELÉCTRICO", bold: true, font: "Arial", size: 28, color: "003366" })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+      }));
+
+      children.push(new Paragraph({
+        children: [new TextRun({ text: "Environmental Express Argentina", font: "Arial", size: 22, color: "003366", bold: true })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      }));
+
+      const createBorderedCell = (text: string, bold = false, opts: any = {}) =>
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text, bold, font: "Arial", size: 20 })], alignment: opts.alignment || AlignmentType.LEFT })],
+          width: opts.width,
+          shading: opts.shading,
+          margins: { top: 80, bottom: 80, left: 100, right: 100 },
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+            left: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+            right: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+          },
+        });
+
+      children.push(new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({ children: [
+            createBorderedCell("Archivo:", true, { width: { size: 30, type: WidthType.PERCENTAGE }, shading: { fill: "E8EDF3" } }),
+            createBorderedCell(result.filename, false, { width: { size: 70, type: WidthType.PERCENTAGE } }),
+          ]}),
+          new TableRow({ children: [
+            createBorderedCell("Fecha:", true, { width: { size: 30, type: WidthType.PERCENTAGE }, shading: { fill: "E8EDF3" } }),
+            createBorderedCell(new Date(result.timestamp).toLocaleString('es-AR'), false, { width: { size: 70, type: WidthType.PERCENTAGE } }),
+          ]}),
+          ...(riskText ? [new TableRow({ children: [
+            createBorderedCell("Nivel de Riesgo:", true, { width: { size: 30, type: WidthType.PERCENTAGE }, shading: { fill: "E8EDF3" } }),
+            createBorderedCell(riskText, true, { width: { size: 70, type: WidthType.PERCENTAGE } }),
+          ]})] : []),
+        ],
+      }));
+
+      children.push(new Paragraph({ text: "", spacing: { after: 200 } }));
+
+      for (const section of secs) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: section.title, bold: true, font: "Arial", size: 22, color: "003366" })],
+          spacing: { before: 200, after: 100 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: "003366" } },
+        }));
+        const contentLines = section.content.trim().split('\n');
+        for (const line of contentLines) {
+          const isBullet = line.trim().startsWith('-') || line.trim().startsWith('•') || line.trim().startsWith('*');
+          children.push(new Paragraph({
+            children: [new TextRun({ text: isBullet ? line.trim().substring(1).trim() : line, font: "Arial", size: 20 })],
+            bullet: isBullet ? { level: 0 } : undefined,
+            spacing: { after: 60 },
+          }));
+        }
+      }
+
+      if (secs.length === 0) {
+        const lines = result.analysis.split('\n');
+        for (const line of lines) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: line, font: "Arial", size: 20 })],
+            spacing: { after: 60 },
+          }));
+        }
+      }
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          headers: {
+            default: new Header({
+              children: [new Paragraph({
+                children: [new TextRun({ text: "Environmental Express Argentina - Informe de Tablero Eléctrico", font: "Arial", size: 16, color: "999999" })],
+                alignment: AlignmentType.RIGHT,
+              })],
+            }),
+          },
+          footers: {
+            default: new Footer({
+              children: [new Paragraph({
+                children: [new TextRun({ text: "Environmental Express Argentina - Servicios de Higiene y Seguridad Laboral", font: "Arial", size: 14, color: "999999" })],
+                alignment: AlignmentType.CENTER,
+              })],
+            }),
+          },
+          children,
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `Informe_Tablero_${result.filename.replace(/\.[^/.]+$/, '')}.docx`);
+      toast({ title: "DOCX descargado", description: "El informe Word fue descargado correctamente" });
+    } catch (err: any) {
+      toast({ title: "Error", description: "No se pudo generar el DOCX", variant: "destructive" });
+    }
+  };
+
+  const downloadJPG = async () => {
+    if (!reportRef.current) return;
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+      });
+      canvas.toBlob((blob: Blob | null) => {
+        if (blob && currentResult) {
+          saveAs(blob, `Informe_Tablero_${currentResult.filename.replace(/\.[^/.]+$/, '')}.jpg`);
+          toast({ title: "JPG descargado", description: "La imagen del informe fue descargada correctamente" });
+        }
+      }, "image/jpeg", 0.92);
+    } catch (err: any) {
+      toast({ title: "Error", description: "No se pudo generar la imagen", variant: "destructive" });
+    }
+  };
+
   const currentResult = selectedResult !== null ? results[selectedResult] : null;
   const sections = currentResult ? parseAnalysis(currentResult.analysis) : [];
   const riskSection = sections.find(s => s.title.toLowerCase().includes('clasificación') || s.title.toLowerCase().includes('riesgo'));
@@ -149,6 +404,30 @@ export default function PanelAnalyzer() {
             id="panel-upload"
             data-testid="input-panel-upload"
           />
+          {currentResult && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" data-testid="btn-download-report">
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar Informe
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => downloadPDF(currentResult)} data-testid="btn-download-pdf">
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  Descargar PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadDOCX(currentResult)} data-testid="btn-download-docx">
+                  <FileType className="h-4 w-4 mr-2 text-blue-600" />
+                  Descargar Word (DOCX)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadJPG()} data-testid="btn-download-jpg">
+                  <FileImage className="h-4 w-4 mr-2 text-green-600" />
+                  Descargar Imagen (JPG)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={analyzing}
@@ -246,7 +525,7 @@ export default function PanelAnalyzer() {
 
             <div className="flex-1 overflow-y-auto p-6">
               {currentResult ? (
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div ref={reportRef} className="max-w-4xl mx-auto space-y-6">
                   <div className="flex gap-6">
                     <div className="flex-shrink-0">
                       <img
