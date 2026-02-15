@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,18 +56,21 @@ interface CompanyData {
 export default function ColdSheet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [rows, setRows] = useState<ColdRow[]>([
-    { id: "1", sector: "", puestoTrabajo: "", rangoTemp: "", ciclosExposicion: "", duracionCiclo: "", tiempoNetoExposicion: "", tiempoIntegracion: "", caracteristicasExposicion: "", tbs: "", velocidadViento: "", tee: "", tipoUniforme: "", equipoUtilizado: "", exposicionMas4h: "" }
-  ]);
-  const [company, setCompany] = useState<CompanyData>({
-    razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "",
-    fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "",
-    instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "",
-    condicionesAtm: ""
+  const [rows, setRows] = useState<ColdRow[]>(() => {
+    try { const s = sessionStorage.getItem('cold-rows'); return s ? JSON.parse(s) : [{ id: "1", sector: "", puestoTrabajo: "", rangoTemp: "", ciclosExposicion: "", duracionCiclo: "", tiempoNetoExposicion: "", tiempoIntegracion: "", caracteristicasExposicion: "", tbs: "", velocidadViento: "", tee: "", tipoUniforme: "", equipoUtilizado: "", exposicionMas4h: "" }]; } catch { return [{ id: "1", sector: "", puestoTrabajo: "", rangoTemp: "", ciclosExposicion: "", duracionCiclo: "", tiempoNetoExposicion: "", tiempoIntegracion: "", caracteristicasExposicion: "", tbs: "", velocidadViento: "", tee: "", tipoUniforme: "", equipoUtilizado: "", exposicionMas4h: "" }]; }
   });
-  const [observacionesGenerales, setObservacionesGenerales] = useState("");
-  const [conclusiones, setConclusiones] = useState("");
-  const [recomendaciones, setRecomendaciones] = useState("");
+  const [company, setCompany] = useState<CompanyData>(() => {
+    try { const s = sessionStorage.getItem('cold-company'); return s ? JSON.parse(s) : { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", condicionesAtm: "" }; } catch { return { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", condicionesAtm: "" }; }
+  });
+  const [observacionesGenerales, setObservacionesGenerales] = useState(() => {
+    try { return sessionStorage.getItem('cold-obs') || ""; } catch { return ""; }
+  });
+  const [conclusiones, setConclusiones] = useState(() => {
+    try { return sessionStorage.getItem('cold-conc') || ""; } catch { return ""; }
+  });
+  const [recomendaciones, setRecomendaciones] = useState(() => {
+    try { return sessionStorage.getItem('cold-rec') || ""; } catch { return ""; }
+  });
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
@@ -76,6 +79,12 @@ export default function ColdSheet() {
   const signatoryName = useStore((state) => state.signatoryName);
   const signatoryTitle = useStore((state) => state.signatoryTitle);
   const signatoryRegistration = useStore((state) => state.signatoryRegistration);
+
+  useEffect(() => { try { sessionStorage.setItem('cold-rows', JSON.stringify(rows)); } catch {} }, [rows]);
+  useEffect(() => { try { sessionStorage.setItem('cold-company', JSON.stringify(company)); } catch {} }, [company]);
+  useEffect(() => { try { sessionStorage.setItem('cold-obs', observacionesGenerales); } catch {} }, [observacionesGenerales]);
+  useEffect(() => { try { sessionStorage.setItem('cold-conc', conclusiones); } catch {} }, [conclusiones]);
+  useEffect(() => { try { sessionStorage.setItem('cold-rec', recomendaciones); } catch {} }, [recomendaciones]);
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);
@@ -208,7 +217,7 @@ export default function ColdSheet() {
       };
 
       const addFooter = () => {
-        const pn = doc.internal.getCurrentPageInfo().pageNumber;
+        const pn = (doc as any).internal.getCurrentPageInfo().pageNumber;
         doc.setDrawColor(0, 51, 102);
         doc.setLineWidth(0.5);
         doc.line(m, ph - 15, pw - m, ph - 15);
@@ -386,7 +395,7 @@ export default function ColdSheet() {
         if (signatoryRegistration) doc.text("Mat. " + signatoryRegistration, pw / 2, y, { align: "center" });
       }
 
-      const totalPages = doc.internal.getNumberOfPages();
+      const totalPages = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         addFooter();
