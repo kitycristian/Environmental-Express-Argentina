@@ -15,6 +15,7 @@ import autoTable from "jspdf-autotable";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, Header, Footer } from "docx";
 // @ts-ignore
 import { saveAs } from "file-saver";
+import { useStore } from "@/lib/store";
 
 interface NoiseRow {
   id: string;
@@ -76,6 +77,10 @@ export default function NoiseSheet() {
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
   const { data: clients = [] } = useClients();
+  const digitalSignature = useStore((state) => state.digitalSignature);
+  const signatoryName = useStore((state) => state.signatoryName);
+  const signatoryTitle = useStore((state) => state.signatoryTitle);
+  const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);
@@ -342,6 +347,29 @@ export default function NoiseSheet() {
         tableWidth: cw * 0.4
       });
 
+      if (digitalSignature || signatoryName) {
+        checkPage(40);
+        y += 10;
+        if (digitalSignature) {
+          try {
+            doc.addImage(digitalSignature, 'PNG', pw / 2 - 20, y, 40, 20);
+            y += 22;
+          } catch (e) {}
+        }
+        doc.setDrawColor(0, 0, 0);
+        doc.line(pw / 2 - 30, y, pw / 2 + 30, y);
+        y += 4;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        if (signatoryName) doc.text(signatoryName, pw / 2, y, { align: "center" });
+        y += 4;
+        doc.setFont("helvetica", "normal");
+        if (signatoryTitle) doc.text(signatoryTitle, pw / 2, y, { align: "center" });
+        y += 4;
+        if (signatoryRegistration) doc.text("Mat. " + signatoryRegistration, pw / 2, y, { align: "center" });
+      }
+
       const totalPages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
@@ -484,6 +512,33 @@ export default function NoiseSheet() {
         rows: [refHeaderRow, ...refDataRows],
         width: { size: 50, type: WidthType.PERCENTAGE }
       }));
+
+      if (signatoryName || digitalSignature) {
+        children.push(new Paragraph({ spacing: { before: 400 }, children: [] }));
+        children.push(new Paragraph({
+          children: [new TextRun({ text: "________________________", font: "Arial", size: 20 })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200 }
+        }));
+        if (signatoryName) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: signatoryName, bold: true, font: "Arial", size: 20 })],
+            alignment: AlignmentType.CENTER
+          }));
+        }
+        if (signatoryTitle) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: signatoryTitle, font: "Arial", size: 18 })],
+            alignment: AlignmentType.CENTER
+          }));
+        }
+        if (signatoryRegistration) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: "Mat. " + signatoryRegistration, font: "Arial", size: 18 })],
+            alignment: AlignmentType.CENTER
+          }));
+        }
+      }
 
       const docFile = new Document({
         sections: [{

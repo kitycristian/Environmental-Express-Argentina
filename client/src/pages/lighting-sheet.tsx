@@ -4,6 +4,8 @@ import { Link } from "wouter";
 import { MeasurementType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Trash2, FileUp, Sheet, Loader2, Database, FileDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/lib/hooks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +22,28 @@ import { saveAs } from "file-saver";
 
 const type: MeasurementType = 'lighting';
 
+interface CompanyData {
+  razonSocial: string;
+  direccion: string;
+  localidad: string;
+  provincia: string;
+  cp: string;
+  cuit: string;
+  fechaMedicion: string;
+  horaInicio: string;
+  horaFin: string;
+  turnos: string;
+  instrumento1: string;
+  instrumento1Serie: string;
+  instrumento1Cert: string;
+  instrumento1FechaCal: string;
+  instrumento2: string;
+  instrumento2Serie: string;
+  instrumento2Cert: string;
+  instrumento2FechaCal: string;
+  condicionesAtm: string;
+}
+
 export default function LightingSheet() {
   const sectors = useStore((state) => state.sectors);
   const updateSector = useStore((state) => state.updateSector);
@@ -28,12 +52,28 @@ export default function LightingSheet() {
   const updatePoint = useStore((state) => state.updatePoint);
   const deleteMeasurement = useStore((state) => state.deleteMeasurement);
   const addSectorWithMeasurement = useStore((state) => state.addSectorWithMeasurement);
+  const digitalSignature = useStore((state) => state.digitalSignature);
+  const signatoryName = useStore((state) => state.signatoryName);
+  const signatoryTitle = useStore((state) => state.signatoryTitle);
+  const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
   const { toast } = useToast();
   const [visiblePointsOverride, setVisiblePointsOverride] = useState<number | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const { data: clients = [] } = useClients();
+
+  const [company, setCompany] = useState<CompanyData>({
+    razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "",
+    fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "",
+    instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "",
+    instrumento2: "", instrumento2Serie: "", instrumento2Cert: "", instrumento2FechaCal: "",
+    condicionesAtm: ""
+  });
+  const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
+  const [observacionesGenerales, setObservacionesGenerales] = useState("");
+  const [conclusiones, setConclusiones] = useState("");
+  const [recomendaciones, setRecomendaciones] = useState("");
 
   const [gsDialogOpen, setGsDialogOpen] = useState(false);
   const [gsStep, setGsStep] = useState<'url' | 'sheets' | 'preview'>('url');
@@ -430,9 +470,32 @@ export default function LightingSheet() {
 
   const loadSampleData = () => {
     useStore.getState().loadInspectionData(
-      { id: 'default', name: 'DORINKA SRL', razonSocial: 'DORINKA SRL', cuit: '', address: '', date: new Date().toISOString().split('T')[0], responsible: '' },
+      { id: 'default', name: 'DORINKA SRL', razonSocial: 'DORINKA SRL', cuit: '30-67813830-0', address: 'Av. Villafañez y Dr. Manuel Navarro S/N', date: '2024-03-26', responsible: '' },
       JSON.parse(JSON.stringify(sampleSectors))
     );
+    setCompany({
+      razonSocial: "DORINKA SRL (Store #1026 Catamarca)",
+      direccion: "Av. Villafañez y Dr. Manuel Navarro S/N",
+      localidad: "San Fernando del Valle de Catamarca",
+      provincia: "Catamarca",
+      cp: "4700",
+      cuit: "30-67813830-0",
+      fechaMedicion: "26/03/2024",
+      horaInicio: "09:00",
+      horaFin: "13:30",
+      turnos: "2 Turnos de Trabajo. 6:00 AM - 23:30 PM",
+      instrumento1: "Luxómetro Digital - TES 1336A",
+      instrumento1Serie: "070203457",
+      instrumento1Cert: "24R00000821",
+      instrumento1FechaCal: "05/02/2024",
+      instrumento2: "",
+      instrumento2Serie: "",
+      instrumento2Cert: "",
+      instrumento2FechaCal: "",
+      condicionesAtm: "Medición con iluminación artificial"
+    });
+    setConclusiones("Analizando los resultados de la medición realizada, los sectores en general CUMPLEN con los valores mínimos de iluminancia establecidos en el Decreto 351/79 Anexo IV. Algunos sectores como Panadería presentan valores por debajo del límite mínimo, requiriendo acciones correctivas.");
+    setRecomendaciones("Reemplazar luminarias fuera de servicio. Implementar plan de mantenimiento preventivo de luminarias. Realizar limpieza periódica de difusores. Evaluar cambio a tecnología LED en sectores con bajo rendimiento lumínico.");
     toast({ title: "Datos cargados", description: "10 sectores con mediciones de iluminación DORINKA SRL" });
   };
 
@@ -448,14 +511,89 @@ export default function LightingSheet() {
     }));
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pw = doc.internal.pageSize.getWidth();
+    const ph = doc.internal.pageSize.getHeight();
+    const m = 10;
+    const cw = pw - m * 2;
+    let y = 0;
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 51, 102);
-    doc.text('PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL', doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Resolución SRT N° 84/2012 - Dec. 351/79', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+    const addHeader = () => {
+      doc.setFillColor(0, 51, 102);
+      doc.rect(0, 0, pw, 25, "F");
+      doc.setTextColor(255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL", pw / 2, 10, { align: "center" });
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text("Resolución SRT N° 84/2012 - Dec. 351/79", pw / 2, 16, { align: "center" });
+      doc.text("ENVIRONMENTAL EXPRESS ARGENTINA", pw / 2, 21, { align: "center" });
+      doc.setTextColor(0);
+      y = 30;
+    };
+
+    const addFooter = () => {
+      const pn = doc.internal.getCurrentPageInfo().pageNumber;
+      doc.setDrawColor(0, 51, 102);
+      doc.setLineWidth(0.5);
+      doc.line(m, ph - 15, pw - m, ph - 15);
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      doc.text("Environmental Express Argentina - Servicios de Higiene y Seguridad Laboral", m, ph - 10);
+      doc.text(`Página ${pn}`, pw - m, ph - 10, { align: "right" });
+    };
+
+    const checkPage = (need: number) => {
+      if (y + need > ph - 25) {
+        addFooter();
+        doc.addPage();
+        addHeader();
+      }
+    };
+
+    const sectionTitle = (text: string) => {
+      checkPage(15);
+      doc.setFillColor(0, 51, 102);
+      doc.rect(m, y, cw, 7, "F");
+      doc.setTextColor(255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text(text, m + 3, y + 5);
+      doc.setTextColor(0);
+      y += 10;
+    };
+
+    const labelValue = (label: string, value: string) => {
+      checkPage(6);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text(label + ":", m, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(value, m + doc.getTextWidth(label + ": ") + 1, y);
+      y += 5;
+    };
+
+    addHeader();
+
+    sectionTitle("DATOS DEL ESTABLECIMIENTO");
+    labelValue("Razón Social", company.razonSocial);
+    labelValue("Dirección", company.direccion);
+    labelValue("Localidad", `${company.localidad} - ${company.provincia} - C.P.: ${company.cp}`);
+    labelValue("C.U.I.T.", company.cuit);
+
+    sectionTitle("DATOS PARA LA MEDICIÓN");
+    labelValue("Instrumento 1", `${company.instrumento1} | Serie: ${company.instrumento1Serie}`);
+    labelValue("Certificado Cal.", `${company.instrumento1Cert} - Fecha: ${company.instrumento1FechaCal}`);
+    if (company.instrumento2) {
+      labelValue("Instrumento 2", `${company.instrumento2} | Serie: ${company.instrumento2Serie}`);
+      labelValue("Certificado Cal.", `${company.instrumento2Cert} - Fecha: ${company.instrumento2FechaCal}`);
+    }
+    labelValue("Fecha de medición", company.fechaMedicion);
+    labelValue("Horario", `Inicio: ${company.horaInicio} - Fin: ${company.horaFin}`);
+    labelValue("Turnos habituales", company.turnos);
+    labelValue("Condiciones Atmosféricas", company.condicionesAtm);
+
+    sectionTitle("DATOS DE LA MEDICIÓN");
 
     const pointHeaders = Array.from({ length: maxPts }, (_, i) => `P${i + 1}`);
     const head = [['#', 'Sector', 'Subsector', 'Ancho', 'Largo', 'Alto', 'K', 'Min\nPtos', 'Ptos\nMed', ...pointHeaders, 'E mín', 'E media', 'Límite\nLegal', 'Cumple\nE mín', 'Cumple\nLímite']];
@@ -504,7 +642,7 @@ export default function LightingSheet() {
     const limitColIdx = 9 + maxPts + 4;
 
     autoTable(doc, {
-      startY: 28,
+      startY: y,
       head,
       body,
       theme: 'grid',
@@ -531,16 +669,67 @@ export default function LightingSheet() {
           }
         }
       },
-      margin: { left: 5, right: 5 },
+      margin: { left: m, right: m },
     });
+
+    y = (doc as any).lastAutoTable.finalY + 5;
+
+    if (observacionesGenerales) {
+      checkPage(20);
+      sectionTitle("INFORMACIÓN ADICIONAL");
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(observacionesGenerales, cw);
+      doc.text(lines, m, y);
+      y += lines.length * 3.5 + 5;
+    }
+
+    if (conclusiones) {
+      checkPage(25);
+      sectionTitle("CONCLUSIONES");
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(conclusiones, cw);
+      doc.text(lines, m, y);
+      y += lines.length * 3.5 + 5;
+    }
+
+    if (recomendaciones) {
+      checkPage(25);
+      sectionTitle("RECOMENDACIONES");
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(recomendaciones, cw);
+      doc.text(lines, m, y);
+      y += lines.length * 3.5 + 5;
+    }
+
+    if (digitalSignature || signatoryName) {
+      checkPage(40);
+      y += 10;
+      if (digitalSignature) {
+        try {
+          doc.addImage(digitalSignature, 'PNG', pw/2 - 20, y, 40, 20);
+          y += 22;
+        } catch(e) {}
+      }
+      doc.setDrawColor(0, 0, 0);
+      doc.line(pw/2 - 30, y, pw/2 + 30, y);
+      y += 4;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      if (signatoryName) doc.text(signatoryName, pw/2, y, { align: "center" });
+      y += 4;
+      doc.setFont("helvetica", "normal");
+      if (signatoryTitle) doc.text(signatoryTitle, pw/2, y, { align: "center" });
+      y += 4;
+      if (signatoryRegistration) doc.text(`Mat. ${signatoryRegistration}`, pw/2, y, { align: "center" });
+    }
 
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(7);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Environmental Express Argentina - Servicios de Higiene y Seguridad Laboral', doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
-      doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.getWidth() - 10, doc.internal.pageSize.getHeight() - 5, { align: 'right' });
+      addFooter();
     }
 
     doc.save('Protocolo_Iluminacion.pdf');
@@ -586,6 +775,53 @@ export default function LightingSheet() {
         verticalAlign: 'center' as any,
       });
     };
+
+    const children: any[] = [];
+
+    const heading = (text: string, level: number = 1) => new Paragraph({
+      children: [new TextRun({ text, bold: true, font: "Arial", size: level === 1 ? 28 : 22, color: "003366" })],
+      spacing: { before: 200, after: 100 },
+      alignment: AlignmentType.LEFT
+    });
+
+    const labelVal = (label: string, value: string) => new Paragraph({
+      children: [
+        new TextRun({ text: label + ": ", bold: true, font: "Arial", size: 20 }),
+        new TextRun({ text: value, font: "Arial", size: 20 })
+      ],
+      spacing: { after: 40 }
+    });
+
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL', bold: true, size: 28, color: '003366', font: 'Arial' })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'Resolución SRT N° 84/2012 - Dec. 351/79', size: 20, color: '666666', font: 'Arial' })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+    }));
+
+    children.push(heading("Datos del Establecimiento"));
+    children.push(labelVal("Razón Social", company.razonSocial));
+    children.push(labelVal("Dirección", company.direccion));
+    children.push(labelVal("Localidad", `${company.localidad} - ${company.provincia} - C.P.: ${company.cp}`));
+    children.push(labelVal("C.U.I.T.", company.cuit));
+
+    children.push(heading("Datos para la Medición"));
+    children.push(labelVal("Instrumento 1", `${company.instrumento1} | Serie: ${company.instrumento1Serie}`));
+    children.push(labelVal("Certificado", `${company.instrumento1Cert} - Fecha: ${company.instrumento1FechaCal}`));
+    if (company.instrumento2) {
+      children.push(labelVal("Instrumento 2", `${company.instrumento2} | Serie: ${company.instrumento2Serie}`));
+      children.push(labelVal("Certificado", `${company.instrumento2Cert} - Fecha: ${company.instrumento2FechaCal}`));
+    }
+    children.push(labelVal("Fecha de medición", company.fechaMedicion));
+    children.push(labelVal("Horario", `Inicio: ${company.horaInicio} - Fin: ${company.horaFin}`));
+    children.push(labelVal("Turnos habituales", company.turnos));
+    children.push(labelVal("Condiciones Atmosféricas", company.condicionesAtm));
+
+    children.push(heading("Datos de la Medición"));
 
     const headerRow = new DocxTableRow({
       children: allHeaders.map(h => makeCell(h, true)),
@@ -641,6 +877,51 @@ export default function LightingSheet() {
       width: { size: 100, type: WidthType.PERCENTAGE },
     });
 
+    children.push(table);
+
+    if (observacionesGenerales) {
+      children.push(heading("Información Adicional"));
+      children.push(new Paragraph({ children: [new TextRun({ text: observacionesGenerales, font: "Arial", size: 18 })], spacing: { after: 100 } }));
+    }
+    if (conclusiones) {
+      children.push(heading("Conclusiones"));
+      children.push(new Paragraph({ children: [new TextRun({ text: conclusiones, font: "Arial", size: 18 })], spacing: { after: 100 } }));
+    }
+    if (recomendaciones) {
+      children.push(heading("Recomendaciones"));
+      children.push(new Paragraph({ children: [new TextRun({ text: recomendaciones, font: "Arial", size: 18 })], spacing: { after: 100 } }));
+    }
+
+    if (signatoryName || digitalSignature) {
+      children.push(new Paragraph({ spacing: { before: 400 }, children: [] }));
+      children.push(new Paragraph({
+        children: [new TextRun({ text: "________________________", font: "Arial", size: 20 })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 40 }
+      }));
+      if (signatoryName) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: signatoryName, bold: true, font: "Arial", size: 20 })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 20 }
+        }));
+      }
+      if (signatoryTitle) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: signatoryTitle, font: "Arial", size: 18 })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 20 }
+        }));
+      }
+      if (signatoryRegistration) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `Mat. ${signatoryRegistration}`, font: "Arial", size: 18 })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 20 }
+        }));
+      }
+    }
+
     const docDocument = new Document({
       sections: [{
         properties: {
@@ -652,8 +933,8 @@ export default function LightingSheet() {
         headers: {
           default: new Header({
             children: [new Paragraph({
-              children: [new TextRun({ text: 'PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL', bold: true, size: 24, color: '003366', font: 'Arial' })],
-              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: `${company.razonSocial} - Protocolo de Iluminación`, italics: true, size: 16, color: '999999', font: 'Arial' })],
+              alignment: AlignmentType.RIGHT,
             })],
           }),
         },
@@ -665,19 +946,7 @@ export default function LightingSheet() {
             })],
           }),
         },
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: 'PROTOCOLO DE MEDICIÓN DE ILUMINACIÓN EN EL AMBIENTE LABORAL', bold: true, size: 28, color: '003366', font: 'Arial' })],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 100 },
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: 'Resolución SRT N° 84/2012 - Dec. 351/79', size: 20, color: '666666', font: 'Arial' })],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 300 },
-          }),
-          table,
-        ],
+        children,
       }],
     });
 
@@ -723,6 +992,72 @@ export default function LightingSheet() {
           </Button>
         </div>
       </div>
+
+      {/* Tabs */}
+      <div className="bg-white border-b px-4">
+        <div className="flex gap-1 py-1">
+          {[
+            { key: 'datos' as const, label: 'Datos de Medición' },
+            { key: 'empresa' as const, label: 'Empresa' },
+            { key: 'instrumentos' as const, label: 'Instrumentos' },
+          ].map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-t transition-colors ${activeTab === tab.key ? 'bg-blue-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              data-testid={`tab-${tab.key}`}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab === 'empresa' && (
+        <div className="p-4 bg-white border-b space-y-3 max-w-4xl">
+          <h3 className="text-xs font-bold text-blue-900 border-b pb-1">Datos del Establecimiento</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-xs font-medium">Razón Social</label><Input className="mt-1 h-8 text-xs" value={company.razonSocial} onChange={e => setCompany({...company, razonSocial: e.target.value})} data-testid="input-razon-social" /></div>
+            <div><label className="text-xs font-medium">C.U.I.T.</label><Input className="mt-1 h-8 text-xs" value={company.cuit} onChange={e => setCompany({...company, cuit: e.target.value})} data-testid="input-cuit" /></div>
+            <div><label className="text-xs font-medium">Dirección</label><Input className="mt-1 h-8 text-xs" value={company.direccion} onChange={e => setCompany({...company, direccion: e.target.value})} data-testid="input-direccion" /></div>
+            <div><label className="text-xs font-medium">Localidad</label><Input className="mt-1 h-8 text-xs" value={company.localidad} onChange={e => setCompany({...company, localidad: e.target.value})} data-testid="input-localidad" /></div>
+            <div><label className="text-xs font-medium">Provincia</label><Input className="mt-1 h-8 text-xs" value={company.provincia} onChange={e => setCompany({...company, provincia: e.target.value})} data-testid="input-provincia" /></div>
+            <div><label className="text-xs font-medium">C.P.</label><Input className="mt-1 h-8 text-xs" value={company.cp} onChange={e => setCompany({...company, cp: e.target.value})} data-testid="input-cp" /></div>
+          </div>
+          <h3 className="text-xs font-bold text-blue-900 border-b pb-1 pt-2">Datos de la Medición</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className="text-xs font-medium">Fecha de Medición</label><Input className="mt-1 h-8 text-xs" value={company.fechaMedicion} onChange={e => setCompany({...company, fechaMedicion: e.target.value})} data-testid="input-fecha" /></div>
+            <div><label className="text-xs font-medium">Hora Inicio</label><Input className="mt-1 h-8 text-xs" value={company.horaInicio} onChange={e => setCompany({...company, horaInicio: e.target.value})} data-testid="input-hora-inicio" /></div>
+            <div><label className="text-xs font-medium">Hora Fin</label><Input className="mt-1 h-8 text-xs" value={company.horaFin} onChange={e => setCompany({...company, horaFin: e.target.value})} data-testid="input-hora-fin" /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-xs font-medium">Turnos habituales</label><Input className="mt-1 h-8 text-xs" value={company.turnos} onChange={e => setCompany({...company, turnos: e.target.value})} data-testid="input-turnos" /></div>
+            <div><label className="text-xs font-medium">Condiciones Atmosféricas</label><Input className="mt-1 h-8 text-xs" value={company.condicionesAtm} onChange={e => setCompany({...company, condicionesAtm: e.target.value})} data-testid="input-condiciones" /></div>
+          </div>
+          <h3 className="text-xs font-bold text-blue-900 border-b pb-1 pt-2">Observaciones / Conclusiones</h3>
+          <div className="space-y-2">
+            <div><label className="text-xs font-medium">Observaciones Generales</label><Textarea className="mt-1 text-xs min-h-[60px]" value={observacionesGenerales} onChange={e => setObservacionesGenerales(e.target.value)} data-testid="input-observaciones" /></div>
+            <div><label className="text-xs font-medium">Conclusiones</label><Textarea className="mt-1 text-xs min-h-[60px]" value={conclusiones} onChange={e => setConclusiones(e.target.value)} data-testid="input-conclusiones" /></div>
+            <div><label className="text-xs font-medium">Recomendaciones</label><Textarea className="mt-1 text-xs min-h-[60px]" value={recomendaciones} onChange={e => setRecomendaciones(e.target.value)} data-testid="input-recomendaciones" /></div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'instrumentos' && (
+        <div className="p-4 bg-white border-b space-y-3 max-w-4xl">
+          <h3 className="text-xs font-bold text-blue-900 border-b pb-1">Instrumento 1 - Luxómetro</h3>
+          <div className="grid grid-cols-4 gap-3">
+            <div><label className="text-xs font-medium">Descripción</label><Input className="mt-1 h-8 text-xs" value={company.instrumento1} onChange={e => setCompany({...company, instrumento1: e.target.value})} data-testid="input-inst1" /></div>
+            <div><label className="text-xs font-medium">N° Serie</label><Input className="mt-1 h-8 text-xs" value={company.instrumento1Serie} onChange={e => setCompany({...company, instrumento1Serie: e.target.value})} data-testid="input-inst1-serie" /></div>
+            <div><label className="text-xs font-medium">N° Certificado Cal.</label><Input className="mt-1 h-8 text-xs" value={company.instrumento1Cert} onChange={e => setCompany({...company, instrumento1Cert: e.target.value})} data-testid="input-inst1-cert" /></div>
+            <div><label className="text-xs font-medium">Fecha Calibración</label><Input className="mt-1 h-8 text-xs" value={company.instrumento1FechaCal} onChange={e => setCompany({...company, instrumento1FechaCal: e.target.value})} data-testid="input-inst1-fecha" /></div>
+          </div>
+          <h3 className="text-xs font-bold text-blue-900 border-b pb-1 pt-2">Instrumento 2 (opcional)</h3>
+          <div className="grid grid-cols-4 gap-3">
+            <div><label className="text-xs font-medium">Descripción</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2} onChange={e => setCompany({...company, instrumento2: e.target.value})} data-testid="input-inst2" /></div>
+            <div><label className="text-xs font-medium">N° Serie</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2Serie} onChange={e => setCompany({...company, instrumento2Serie: e.target.value})} data-testid="input-inst2-serie" /></div>
+            <div><label className="text-xs font-medium">N° Certificado Cal.</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2Cert} onChange={e => setCompany({...company, instrumento2Cert: e.target.value})} data-testid="input-inst2-cert" /></div>
+            <div><label className="text-xs font-medium">Fecha Calibración</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2FechaCal} onChange={e => setCompany({...company, instrumento2FechaCal: e.target.value})} data-testid="input-inst2-fecha" /></div>
+          </div>
+        </div>
+      )}
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="max-w-md">
@@ -960,6 +1295,7 @@ export default function LightingSheet() {
       </Dialog>
 
       {/* Spreadsheet Table */}
+      {activeTab === 'datos' && (
       <div className="flex-1 overflow-auto p-4">
         <div className="bg-white rounded border shadow-sm">
           <div className="overflow-x-auto">
@@ -1132,6 +1468,7 @@ export default function LightingSheet() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
