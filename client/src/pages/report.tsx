@@ -2,7 +2,7 @@ import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil, FileText, ImageIcon, Check, Trash2, Plus } from "lucide-react";
 import { Link } from "wouter";
-import { MEASUREMENT_LABELS, Measurement, MeasurementType, Instrument } from "@/lib/types";
+import { MEASUREMENT_LABELS, Measurement, MeasurementType, MeasurementPoint, Sector, Instrument } from "@/lib/types";
 import logoUrl from "@assets/image_1765761040646.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -33,20 +33,109 @@ export default function Report() {
   const [selectedType, setSelectedType] = useState<MeasurementType | 'all'>('all');
   const [isInstrumentDialogOpen, setIsInstrumentDialogOpen] = useState(false);
 
-  // Add function
+  const buildSessionMeasurement = (type: MeasurementType, sName: string, sRows: any[], comp: any, obsKey: string, concKey: string, recKey: string): Measurement => {
+    const mapNoise = (r: any, idx: number): MeasurementPoint => ({ id: `np-${idx}`, label: `Punto ${idx + 1}`, values: { puesto: r.puestoTrabajo || '', tiempo_exposicion: r.tiempoExposicion || '', tiempo_integracion: r.tiempoIntegracion || '', caracteristicas: r.tipoRuido || '', nivel_pico_c: '', nivel_continuo_eq: r.valorMedido || '', suma_fracciones: r.fraccion || '', dosis: r.dosisRuido || '', cumple: r.cumple || '' }, notes: r.observaciones || '' });
+    const mapThermal = (r: any, idx: number): MeasurementPoint => ({ id: `tp-${idx}`, label: `Punto ${idx + 1}`, values: { tbs: r.tbs || '', tbh: r.tbh || '', tg: r.tg || '', tgbh: r.tgbh || '', tgbhPonderado: r.tgbhPonderado || '', mi: '42', mii: '105' }, notes: r.puestoTrabajo || '' });
+    const mapCold = (r: any, idx: number): MeasurementPoint => ({ id: `cp-${idx}`, label: `Punto ${idx + 1}`, values: { temp: r.tbs || '', wind: r.velocidadViento || '', tee: r.tee || '' }, notes: r.puestoTrabajo || '' });
+
+    const mapFn = type === 'noise' ? mapNoise : type === 'thermal_load' ? mapThermal : mapCold;
+
+    let status: 'pending' | 'compliant' | 'non_compliant' = 'pending';
+    if (type === 'noise') {
+      const hasCumple = sRows.some((r: any) => r.cumple);
+      if (hasCumple) status = sRows.every((r: any) => r.cumple === 'SI') ? 'compliant' : 'non_compliant';
+    } else if (type === 'thermal_load') {
+      const hasCumple = sRows.some((r: any) => r.cumpleVla);
+      if (hasCumple) status = sRows.every((r: any) => r.cumpleVla === 'SI') ? 'compliant' : 'non_compliant';
+    }
+
+    return {
+      id: `${type}-session-${sName}`,
+      type,
+      sectorId: `${type}-session-${sName}`,
+      status,
+      points: sRows.map(mapFn),
+      observations: sessionStorage.getItem(obsKey) || undefined,
+      specificConclusions: sessionStorage.getItem(concKey) || undefined,
+      analysisAndImprovements: sessionStorage.getItem(recKey) || undefined,
+      config: type === 'thermal_load' ? { limit: Number(sRows[0]?.vla) || 29.5 } : undefined,
+      details: {
+        brand: comp.instrumento1 || '',
+        model: '',
+        serialNumber: comp.instrumento1Serie || '',
+        calibrationDate: comp.instrumento1FechaCal || '',
+        measurementDate: comp.fechaMedicion || '',
+        startTime: comp.horaInicio || '',
+        endTime: comp.horaFin || '',
+        workShifts: comp.turnos || comp.jornadaLaboral || '',
+        normalConditions: comp.condicionesNormales || '',
+        currentConditions: comp.condicionesMedicion || comp.condicionesAtm || '',
+      },
+    };
+  };
+
+  const getSessionSheetData = (storageKey: string, companyKey: string, type: MeasurementType, obsKey: string, concKey: string, recKey: string, filterFn: (r: any) => boolean): { sectorName: string; measurement: Measurement }[] => {
+    try {
+      const rowsStr = sessionStorage.getItem(storageKey);
+      const compStr = sessionStorage.getItem(companyKey);
+      if (!rowsStr) return [];
+      const rows = JSON.parse(rowsStr);
+      const comp = compStr ? JSON.parse(compStr) : {};
+      const filled = rows.filter(filterFn);
+      if (filled.length === 0) return [];
+      const groups: Record<string, any[]> = {};
+      filled.forEach((r: any) => {
+        const s = r.sector || 'Sin Sector';
+        if (!groups[s]) groups[s] = [];
+        groups[s].push(r);
+      });
+      return Object.entries(groups).map(([sName, sRows]) => ({
+        sectorName: sName,
+        measurement: buildSessionMeasurement(type, sName, sRows, comp, obsKey, concKey, recKey),
+      }));
+    } catch { return []; }
+  };
+
+  const getMergedSectors = (): Sector[] => {
+    const merged = [...sectors.map(s => ({ ...s, measurements: [...s.measurements] }))];
+
+    const addToMerged = (items: { sectorName: string; measurement: Measurement }[], type: MeasurementType) => {
+      items.forEach(({ sectorName, measurement }) => {
+        const existingSector = merged.find(s => s.name === sectorName);
+        if (existingSector) {
+          if (!existingSector.measurements.some(m => m.type === type)) {
+            existingSector.measurements.push(measurement);
+          }
+        } else {
+          merged.push({
+            id: `${type}-session-${sectorName}`,
+            name: sectorName,
+            measurements: [measurement],
+          });
+        }
+      });
+    };
+
+    addToMerged(getSessionSheetData('noise-rows', 'noise-company', 'noise', 'noise-obs', 'noise-conc', 'noise-rec', (r: any) => r.sector || r.puestoTrabajo || r.valorMedido), 'noise');
+    addToMerged(getSessionSheetData('thermal-rows', 'thermal-company', 'thermal_load', 'thermal-obs', 'thermal-conc', 'thermal-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh), 'thermal_load');
+    addToMerged(getSessionSheetData('cold-rows', 'cold-company', 'cold_stress', 'cold-obs', 'cold-conc', 'cold-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs), 'cold_stress');
+
+    return merged;
+  };
+
   const handleDocxExport = () => {
       toast({ title: "Generando documento DOCX..." });
-      generateDocxReport(establishment, sectors);
+      generateDocxReport(establishment, getMergedSectors());
   };
 
   const handlePrint = () => {
     toast({ title: "Generando PDF...", description: "Espere un momento mientras se procesa el documento." });
-    generatePDFReport(establishment, sectors, undefined, 'download');
+    generatePDFReport(establishment, getMergedSectors(), undefined, 'download');
   };
 
   const handlePreview = () => {
     toast({ title: "Generando Vista Previa...", description: "Se abrirá en una nueva pestaña." });
-    generatePDFReport(establishment, sectors, undefined, 'preview');
+    generatePDFReport(establishment, getMergedSectors(), undefined, 'preview');
   };
 
   // Add print styles dynamically
@@ -292,6 +381,22 @@ export default function Report() {
       });
     });
   });
+
+  // Merge sessionStorage data from standalone sheets (noise, thermal, cold)
+  const mergeSessionData = (type: MeasurementType, storageKey: string, companyKey: string, obsKey: string, concKey: string, recKey: string, filterFn: (r: any) => boolean) => {
+    const items = getSessionSheetData(storageKey, companyKey, type, obsKey, concKey, recKey, filterFn);
+    items.forEach(({ sectorName, measurement }) => {
+      if (!measurementsByType[type]) measurementsByType[type] = [];
+      const alreadyExists = measurementsByType[type]!.some(m => m.measurement.id === measurement.id);
+      if (!alreadyExists) {
+        measurementsByType[type]!.push({ sectorName, measurement });
+      }
+    });
+  };
+
+  mergeSessionData('noise', 'noise-rows', 'noise-company', 'noise-obs', 'noise-conc', 'noise-rec', (r: any) => r.sector || r.puestoTrabajo || r.valorMedido);
+  mergeSessionData('thermal_load', 'thermal-rows', 'thermal-company', 'thermal-obs', 'thermal-conc', 'thermal-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh);
+  mergeSessionData('cold_stress', 'cold-rows', 'cold-company', 'cold-obs', 'cold-conc', 'cold-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs);
 
   // Helper Components for Report Structure matching the official forms
   const ProtocolHeader = ({ title }: { title: string }) => (
