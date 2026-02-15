@@ -2,7 +2,7 @@
 
 ## Overview
 
-A responsive web application for field data collection and reporting of occupational safety and hygiene measurements according to Argentine regulations (SRT protocols). The system enables technicians to record environmental measurements (lighting, noise, thermal load, etc.) by sector/work area, manage clients and instruments, generate professional technical reports in PDF/DOCX formats, and maintain inspection history. Includes AI-powered electrical panel analyzer using OpenAI Vision for photo-based inspection reports.
+A responsive web application for field data collection and reporting of occupational safety and hygiene measurements according to Argentine regulations (SRT protocols). The system enables technicians to record environmental measurements (lighting, noise, thermal load, thickness/pressure vessels, etc.) by sector/work area, manage clients and instruments, generate professional technical reports in PDF/DOCX formats, and maintain inspection history. Includes AI-powered electrical panel analyzer using OpenAI Vision for photo-based inspection reports, and pressure vessel thickness measurement with ASME Section VIII Div. 1 calculations (PMTA).
 
 ## User Preferences
 

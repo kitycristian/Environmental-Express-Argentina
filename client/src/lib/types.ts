@@ -31,7 +31,8 @@ export type MeasurementType =
   | 'particulate_matter'
   | 'chemical_agents'
   | 'ventilation'
-  | 'grounding';
+  | 'grounding'
+  | 'thickness';
 
 export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   lighting: 'Iluminación',
@@ -42,6 +43,7 @@ export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   chemical_agents: 'Agentes Químicos',
   ventilation: 'Ventilación',
   grounding: 'Puesta a Tierra',
+  thickness: 'Medición de Espesores',
 };
 
 export interface Instrument {

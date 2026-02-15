@@ -19,6 +19,7 @@ import ColdSheet from "@/pages/cold-sheet";
 import ChemicalSheet from "@/pages/chemical-sheet";
 import ParticulateSheet from "@/pages/particulate-sheet";
 import VentilationSheet from "@/pages/ventilation-sheet";
+import ThicknessSheet from "@/pages/thickness-sheet";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
@@ -96,6 +97,9 @@ function Router() {
   }
   if (location === "/ventilation-sheet") {
     return <ProtectedRoute component={VentilationSheet} />;
+  }
+  if (location === "/thickness-sheet") {
+    return <ProtectedRoute component={ThicknessSheet} />;
   }
 
   return (

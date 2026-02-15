@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, CheckCircle2, History } from "lucide-react";
+import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, CheckCircle2, History, Gauge } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -77,6 +77,7 @@ export default function Dashboard() {
       case 'particulate_matter': return <Factory className="h-6 w-6" />;
       case 'ventilation': return <Wind className="h-6 w-6" />;
       case 'grounding': return <Zap className="h-6 w-6" />;
+      case 'thickness': return <Gauge className="h-6 w-6" />;
       default: return <Building2 className="h-6 w-6" />;
     }
   };
@@ -293,7 +294,8 @@ export default function Dashboard() {
                    'cold_stress': '/cold-sheet',
                    'chemical_agents': '/chemical-sheet',
                    'particulate_matter': '/particulate-sheet',
-                   'ventilation': '/ventilation-sheet'
+                   'ventilation': '/ventilation-sheet',
+                   'thickness': '/thickness-sheet'
                  };
                  const route = sheetRoutes[type];
                  if (route) {
@@ -357,7 +359,8 @@ export default function Dashboard() {
                               'cold_stress': '/cold-sheet',
                               'chemical_agents': '/chemical-sheet',
                               'particulate_matter': '/particulate-sheet',
-                              'ventilation': '/ventilation-sheet'
+                              'ventilation': '/ventilation-sheet',
+                              'thickness': '/thickness-sheet'
                             };
                             const route = sheetRoutes[type];
                             if (route) {
@@ -377,7 +380,8 @@ export default function Dashboard() {
                         'cold_stress': '/cold-sheet',
                         'chemical_agents': '/chemical-sheet',
                         'particulate_matter': '/particulate-sheet',
-                        'ventilation': '/ventilation-sheet'
+                        'ventilation': '/ventilation-sheet',
+                        'thickness': '/thickness-sheet'
                       };
                       return routes[type] || `/campaign/${type}`;
                     })()}>

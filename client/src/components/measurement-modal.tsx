@@ -28,7 +28,8 @@ const LEGAL_FRAMEWORKS: Record<string, string> = {
   cold_stress: "Res. 295/2003 - Estrés por frío.",
   ventilation: "Decreto 351/79 Cap. 11 - Ventilación.",
   particulate_matter: "Res. 295/2003 - Contaminantes químicos (Polvo total y respirable).",
-  chemical_agents: "Res. 295/2003 - Contaminantes químicos."
+  chemical_agents: "Res. 295/2003 - Contaminantes químicos.",
+  thickness: "ASME Sección VIII Div. 1 - Control de recipientes sometidos a presión. Medición de espesores por ultrasonido."
 };
 
 export function MeasurementModal({ isOpen, onClose, type }: MeasurementModalProps) {
