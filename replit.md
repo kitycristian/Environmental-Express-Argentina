@@ -40,7 +40,12 @@ Preferred communication style: Simple, everyday language.
 
 ### Report Generation
 - **PDF**: jsPDF with autoTable plugin for professional technical documents
-- **DOCX**: docx library for editable Word documents
+- **DOCX**: docx library (`client/src/lib/docx-generator.ts`) for editable Word documents with modular per-protocol section generators
+  - Shared helpers: `cell()`, `headerCell()`, `titleParagraph()`, `textParagraph()`, `establishmentHeader()` for consistent formatting
+  - Per-protocol sections: Thermal Load (SRT 30/2023), Cold Stress (MTEySS 295/2003), Lighting (SRT 84/2012), Noise (SRT 85/2012)
+  - Each protocol includes: cover page, instrument data, measurement data tables, reference values, conclusions & recommendations
+  - Data sources: sessionStorage (`thermal-rows/company`, `cold-rows/company`, `noise-rows/company`) and Zustand store (lighting measurements)
+  - Static legal text blocks: metabolic rate categories, VAR clothing table, TEE reference values, noise duration/dBA limits
 - Both formats follow Argentine SRT protocol standards with proper headers, footers, and legal frameworks
 
 ### Authentication
