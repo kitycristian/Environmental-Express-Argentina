@@ -319,40 +319,72 @@ export async function registerRoutes(
         messages: [
           {
             role: "system",
-            content: `Sos un ingeniero electricista especializado en inspección de tableros eléctricos según normativa argentina (Reglamentación AEA 90364, Ley 19.587, Dec. 351/79). 
-Analizá la imagen del tablero eléctrico y proporcioná un informe técnico detallado en español.
+            content: `Sos un ingeniero electricista matriculado especializado en inspección de tableros eléctricos según normativa argentina. Tenés amplio conocimiento de:
+- Reglamentación AEA 90364 (Instalaciones Eléctricas en Inmuebles)
+- Ley Nacional 19.587 de Higiene y Seguridad en el Trabajo
+- Decreto Reglamentario 351/79 (Capítulo 14 - Instalaciones Eléctricas)
+- Resolución SRT 900/2015 (Protocolo para la medición del valor de puesta a tierra)
+- Norma IRAM 2281 (Tableros eléctricos)
+- Norma IEC 61439 (Conjuntos de aparamenta de baja tensión)
+
+Analizá la imagen del tablero eléctrico y proporcioná un informe técnico COMPLETO y DETALLADO en español argentino. ES OBLIGATORIO que tu respuesta incluya TODAS las secciones siguientes, sin excepción. Cada sección debe tener contenido sustancial.
 
 Tu respuesta DEBE seguir EXACTAMENTE este formato con las secciones marcadas con ##:
 
 ## Estado General
-Descripción general del estado del tablero, tipo de tablero, material del gabinete, estado de la puerta/tapa.
+Descripción detallada del estado del tablero: tipo (embutido/sobrepuesto), material del gabinete (metálico/plástico), estado de la puerta/tapa, grado de protección IP estimado, estado de pintura/oxidación, limpieza interna, señalización, identificación del tablero.
 
 ## Componentes Identificados
-Lista de todos los componentes visibles (termomagnéticas, diferenciales, bornes, cables, barras, etc.) con su estado individual.
+Lista detallada de TODOS los componentes visibles: termomagnéticas, interruptores diferenciales (ID/DR), fusibles, bornes, cables, barras de cobre, riel DIN, canaletas, borneras de tierra, interruptores generales, contactores, relés, etc. Para cada uno indicar: marca, modelo si es visible, estado operativo aparente.
 
-## No Conformidades Detectadas
-Lista numerada de cada problema o irregularidad encontrada, indicando:
-- Descripción del problema
-- Riesgo asociado
-- Normativa incumplida (si aplica)
+## Observaciones de Peligros y Riesgos
+SECCIÓN OBLIGATORIA - Lista detallada de TODOS los peligros observados:
+- Riesgo de electrocución: cables expuestos, partes activas accesibles, falta de protección diferencial
+- Riesgo de incendio: conexiones flojas, cables recalentados, sobrecarga, falta de protección termomagnética adecuada
+- Riesgo de cortocircuito: cables sin aislación, empalmes precarios, secciones inadecuadas
+- Falta de protección contra contactos directos e indirectos
+- Estado de la puesta a tierra (cable verde/amarillo visible o ausente)
+- Señalización de peligro eléctrico (presente o ausente)
+- Grado de protección IP inadecuado para el ambiente
+Para cada peligro indicar la CONSECUENCIA POTENCIAL y el ARTÍCULO NORMATIVO que se incumple.
 
-## Mejoras Recomendadas
-Lista numerada de mejoras a realizar, ordenadas por prioridad (crítica, alta, media, baja):
-- [CRÍTICA] Mejoras urgentes de seguridad
-- [ALTA] Mejoras importantes
-- [MEDIA] Mejoras recomendables
-- [BAJA] Mejoras opcionales
+## No Conformidades según Normativa
+SECCIÓN OBLIGATORIA - Lista numerada de CADA incumplimiento normativo encontrado:
+1. Descripción precisa del incumplimiento
+   - Norma/Ley incumplida (ej: Dec. 351/79 Art. XX, AEA 90364 Sección XXX, IRAM 2281)
+   - Riesgo asociado para las personas
+   - Gravedad: LEVE / MODERADA / GRAVE / MUY GRAVE
+
+Verificar especialmente: protección diferencial (obligatoria por AEA 90364), puesta a tierra, secciones de conductores, identificación de circuitos, IP del gabinete, accesibilidad, señalización, distancias de seguridad, canalización de cables.
+
+## Recomendaciones y Mejoras
+SECCIÓN OBLIGATORIA - Lista numerada de TODAS las acciones correctivas necesarias, ordenadas por PRIORIDAD:
+- [CRÍTICA/URGENTE] Acciones inmediatas para eliminar riesgo de vida (electrocución, incendio)
+- [ALTA] Adecuaciones normativas obligatorias
+- [MEDIA] Mejoras para cumplimiento total de la reglamentación
+- [BAJA] Mejoras opcionales de calidad y mantenimiento
+
+Para cada recomendación indicar: qué hacer, por qué (normativa), y plazo sugerido.
+
+## Marco Normativo Aplicable
+Enumerar los artículos específicos de la normativa argentina que aplican a las observaciones realizadas:
+- Ley 19.587: artículos relevantes sobre obligaciones del empleador
+- Dec. 351/79: artículos del Capítulo 14 sobre instalaciones eléctricas
+- AEA 90364: secciones sobre protección, puesta a tierra, tableros
+- Cualquier otra norma aplicable (IRAM, IEC, Res. SRT)
 
 ## Clasificación de Riesgo
-Clasificación general: BAJO / MEDIO / ALTO / CRÍTICO
-Justificación breve de la clasificación.`
+Clasificación general del tablero: BAJO / MEDIO / ALTO / CRÍTICO
+Justificación detallada de la clasificación basada en los hallazgos.
+Indicar si el tablero es APTO o NO APTO para continuar en servicio.
+Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Analizá este tablero eléctrico y dame un informe técnico completo con el estado actual, no conformidades y mejoras necesarias."
+                text: "Analizá este tablero eléctrico y generá un informe técnico COMPLETO. Es OBLIGATORIO incluir TODAS las secciones: Estado General, Componentes Identificados, Observaciones de Peligros y Riesgos (con artículos de la ley), No Conformidades según Normativa (con gravedad), Recomendaciones y Mejoras (por prioridad), Marco Normativo Aplicable, y Clasificación de Riesgo. NO omitas ninguna sección."
               },
               {
                 type: "image_url",
@@ -364,7 +396,7 @@ Justificación breve de la clasificación.`
             ]
           }
         ],
-        max_tokens: 4000,
+        max_tokens: 6000,
       });
 
       const analysis = response.choices[0]?.message?.content || "No se pudo generar el análisis.";

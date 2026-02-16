@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Upload, Camera, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, FileText, Download, FileImage, FileType } from "lucide-react";
+import { ArrowLeft, Upload, Camera, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, FileText, Download, FileImage, FileType, Shield, Zap, BookOpen, Wrench, Eye, ListChecks } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -29,11 +29,29 @@ function parseRiskLevel(text: string): { level: string; color: string; icon: typ
   return { level: 'BAJO', color: 'text-green-700 bg-green-100 border-green-300', icon: CheckCircle };
 }
 
+function getSectionStyle(title: string): { icon: React.ReactNode; bgClass: string; borderClass: string; titleClass: string } {
+  const lower = title.toLowerCase();
+  if (lower.includes('peligro') || lower.includes('riesgo') && !lower.includes('clasificación'))
+    return { icon: <Zap className="h-4 w-4 text-red-600" />, bgClass: "bg-red-50", borderClass: "border-red-300", titleClass: "text-red-800" };
+  if (lower.includes('no conformidad') || lower.includes('incumplimiento'))
+    return { icon: <XCircle className="h-4 w-4 text-orange-600" />, bgClass: "bg-orange-50", borderClass: "border-orange-300", titleClass: "text-orange-800" };
+  if (lower.includes('recomendacion') || lower.includes('mejora'))
+    return { icon: <Wrench className="h-4 w-4 text-blue-600" />, bgClass: "bg-blue-50", borderClass: "border-blue-300", titleClass: "text-blue-800" };
+  if (lower.includes('marco normativo') || lower.includes('legislación'))
+    return { icon: <BookOpen className="h-4 w-4 text-purple-600" />, bgClass: "bg-purple-50", borderClass: "border-purple-300", titleClass: "text-purple-800" };
+  if (lower.includes('clasificación'))
+    return { icon: <Shield className="h-4 w-4 text-gray-700" />, bgClass: "bg-gray-50", borderClass: "border-gray-300", titleClass: "text-gray-800" };
+  if (lower.includes('componente'))
+    return { icon: <ListChecks className="h-4 w-4 text-blue-700" />, bgClass: "bg-sky-50", borderClass: "border-sky-200", titleClass: "text-sky-800" };
+  return { icon: <Eye className="h-4 w-4 text-blue-900" />, bgClass: "bg-white", borderClass: "border-blue-200", titleClass: "text-blue-900" };
+}
+
 function AnalysisSection({ title, content, icon }: { title: string; content: string; icon?: React.ReactNode }) {
+  const style = getSectionStyle(title);
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 border-b border-blue-200 pb-1">
-        {icon}
+    <div className={cn("space-y-2 rounded-lg border p-4", style.bgClass, style.borderClass)}>
+      <h3 className={cn("text-sm font-bold flex items-center gap-2 border-b pb-1", style.titleClass, style.borderClass)}>
+        {icon || style.icon}
         {title}
       </h3>
       <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-1">
