@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Trash2, FileDown, Calculator, Save, Copy } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoUrl from "@assets/logo-eea.png";
+import logoUrl from "@assets/image_1773940561975.png";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "@/lib/types";
 import { useClients, useCreateClient } from "@/lib/hooks";

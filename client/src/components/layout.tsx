@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import logoUrl from "@assets/logo-eea.png";
+import logoUrl from "@assets/image_1773940561975.png";
 import { Badge } from "@/components/ui/badge";
 
 export function Layout({ children }: { children: React.ReactNode }) {

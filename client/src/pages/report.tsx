@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil, FileText, ImageIcon, Check, Trash2, Plus } from "lucide-react";
 import { Link } from "wouter";
 import { MEASUREMENT_LABELS, Measurement, MeasurementType, MeasurementPoint, Sector, Instrument } from "@/lib/types";
-import logoUrl from "@assets/image_1765761040646.png";
+import logoUrl from "@assets/image_1773940561975.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ReportConfigDialog } from "@/components/report-config-dialog";

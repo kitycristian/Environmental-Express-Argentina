@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldCheck, User } from "lucide-react";
-import logoUrl from "@assets/logo-eea.png";
+import logoUrl from "@assets/image_1773940561975.png";
 
 export default function Login() {
   const [username, setUsername] = useState("");

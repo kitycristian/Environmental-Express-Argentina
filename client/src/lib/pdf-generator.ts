@@ -4,7 +4,7 @@ import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Establishment, Sector, MEASUREMENT_LABELS, MeasurementType, Measurement } from "./types";
-import logoUrl from "@assets/image_1765761040646.png"; 
+import logoUrl from "@assets/image_1773940561975.png"; 
 
 // Constants for layout
 const MARGIN = 25; // 2.5cm
