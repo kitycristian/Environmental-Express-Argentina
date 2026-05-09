@@ -16,7 +16,20 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
+  // ============= DESCARGA DE CÓDIGO FUENTE (temporal) =============
+  app.get("/api/download-source", (req, res) => {
+    const fs = require("fs");
+    const path = require("path");
+    const file = "/tmp/eea-codigo.tar.gz";
+    if (!fs.existsSync(file)) {
+      return res.status(404).json({ error: "Archivo no disponible. Regenerá desde el agente." });
+    }
+    res.setHeader("Content-Disposition", "attachment; filename=eea-codigo.tar.gz");
+    res.setHeader("Content-Type", "application/gzip");
+    res.sendFile(path.resolve(file));
+  });
+
   // ============= RUBROS =============
   
   app.get("/api/rubros", async (req, res) => {
