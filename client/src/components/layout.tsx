@@ -1,19 +1,78 @@
 import { Link, useLocation } from "wouter";
-import { ClipboardList, Home, FileText, Menu, ChevronRight, Save, History, Trash2, RotateCcw, PlusCircle, Building2, Calendar, Users, FileStack, LogOut, User, Settings2, Wrench, Settings } from "lucide-react";
+import { Home, FileText, Menu, PlusCircle, LogOut, User, Settings, Wrench, Users, FileStack, History, Cloud, CloudOff, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { useCreateInspection } from "@/lib/hooks";
+import logoUrl from "@assets/image_1773940561975.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useToast } from "@/hooks/use-toast";
-import logoUrl from "@assets/image_1773940561975.png";
-import { Badge } from "@/components/ui/badge";
+
+function SaveIndicator() {
+  const isDirty = useStore((s) => s.isDirty);
+  const lastSavedAt = useStore((s) => s.lastSavedAt);
+  const saveInspection = useStore((s) => s.saveInspection);
+  const createInspection = useCreateInspection();
+  const { toast } = useToast();
+
+  // Auto-save every 45 seconds if dirty
+  useEffect(() => {
+    if (!isDirty) return;
+    const timer = setTimeout(() => {
+      saveInspection();
+    }, 45000);
+    return () => clearTimeout(timer);
+  }, [isDirty, saveInspection]);
+
+  const handleManualSave = useCallback(() => {
+    saveInspection();
+    toast({ title: "✓ Guardado", description: "Datos guardados en el historial." });
+  }, [saveInspection, toast]);
+
+  if (isDirty) {
+    return (
+      <button onClick={handleManualSave} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors font-medium">
+        <span className="save-dot w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+        Sin guardar — clic para guardar
+      </button>
+    );
+  }
+
+  if (lastSavedAt) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md text-green-700">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Guardado {format(new Date(lastSavedAt), "HH:mm", { locale: es })}</span>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+interface NavItemProps {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  location: string;
+  onClick?: () => void;
+}
+
+function NavItem({ href, icon, label, location, onClick }: NavItemProps) {
+  const isActive = location === href;
+  return (
+    <Link href={href}>
+      <div className={`eea-nav-item ${isActive ? 'active' : ''}`} onClick={onClick}>
+        {icon}
+        <span>{label}</span>
+      </div>
+    </Link>
+  );
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -21,113 +80,80 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const saveInspection = useStore((state) => state.saveInspection);
   const resetStore = useStore((state) => state.resetStore);
   const { user, logout } = useAuth();
-  
   const [open, setOpen] = useState(false);
   const [newInspectionOpen, setNewInspectionOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleLogout = () => {
-    logout();
-    setLocation("/login");
-  };
+  const handleLogout = () => { logout(); setLocation("/login"); };
 
   const handleNewInspection = (saveFirst: boolean) => {
     if (saveFirst) {
       saveInspection();
-      toast({
-        title: "Inspección Guardada",
-        description: "La inspección anterior se guardó en el historial.",
-      });
+      toast({ title: "Inspección guardada en el historial." });
     }
     resetStore();
     setNewInspectionOpen(false);
     setOpen(false);
     setLocation("/");
-    toast({
-      title: "Nueva Inspección",
-      description: "Se ha limpiado el tablero para comenzar.",
-    });
+    toast({ title: "Nueva inspección lista." });
   };
 
+  const closeMenu = () => setOpen(false);
+
   const NavContent = () => (
-    <nav className="flex flex-col gap-2 p-4 h-full bg-[#003366]">
-      <div className="mb-6 px-2 flex flex-col items-center text-center gap-3">
-        <img src={logoUrl} alt="Environmental Express Argentina" className="h-28 w-auto object-contain hover:scale-105 transition-transform duration-300" />
+    <nav className="eea-sidebar flex flex-col h-full">
+      {/* Logo */}
+      <div className="p-5 pb-4 border-b border-white/10">
+        <img src={logoUrl} alt="Environmental Express Argentina" className="h-20 w-auto object-contain mx-auto" />
       </div>
 
+      {/* User pill */}
       {user && (
-        <div className="mb-6 px-2 py-3 bg-white/10 rounded-lg border border-white/20 flex items-center gap-3">
-          <div className="bg-white/20 p-2 rounded-full">
+        <div className="mx-4 mt-4 px-3 py-2.5 rounded-xl bg-white/8 border border-white/12 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[hsl(144,60%,38%)] to-[hsl(144,60%,28%)] flex items-center justify-center flex-shrink-0">
             <User className="h-4 w-4 text-white" />
           </div>
-          <div className="flex flex-col overflow-hidden">
-            <span className="font-bold text-xs truncate text-white">{user.name}</span>
-            <span className="text-[10px] text-white/70 capitalize">{user.role}</span>
+          <div className="overflow-hidden">
+            <div className="text-white text-[13px] font-semibold truncate leading-tight">{user.name}</div>
+            <div className="text-white/50 text-[10px] capitalize">{user.role}</div>
           </div>
         </div>
       )}
-      
-      <div onClick={() => setNewInspectionOpen(true)} className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 cursor-pointer text-[#4CAF50]`}>
+
+      {/* Nav */}
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+        <div
+          className="eea-nav-item text-[hsl(144,75%,72%)] hover:text-[hsl(144,80%,80%)]"
+          onClick={() => { setNewInspectionOpen(true); }}
+        >
           <PlusCircle className="h-4 w-4" />
-          Nueva Inspección
-      </div>
-      
-      {user?.role === 'admin' && (
-        <>
-          <Link href="/reports">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/reports' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
-              <FileStack className="h-4 w-4" />
-              Informes
-            </div>
-          </Link>
-
-          <Link href="/budget-generator">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/budget-generator' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
-              <FileText className="h-4 w-4" />
-              Generador Presupuestos
-            </div>
-          </Link>
-
-          <Link href="/clients">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/clients' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
-              <Users className="h-4 w-4" />
-              Clientes (CRM)
-            </div>
-          </Link>
-        </>
-      )}
-
-      <div className="mt-8 px-2 text-xs font-medium text-white/50 uppercase tracking-wider">
-        Navegación
-      </div>
-      
-      <Link href="/">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
-          <Home className="h-4 w-4" />
-          Tablero Activo
+          <span>Nueva Inspección</span>
         </div>
-      </Link>
 
-      <Link href="/instruments">
-        <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/instruments' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
-          <Wrench className="h-4 w-4" />
-          Instrumentos
-        </div>
-      </Link>
+        {user?.role === 'admin' && (
+          <>
+            <NavItem href="/reports" icon={<FileStack className="h-4 w-4" />} label="Informes" location={location} onClick={closeMenu} />
+            <NavItem href="/budget-generator" icon={<FileText className="h-4 w-4" />} label="Presupuestos" location={location} onClick={closeMenu} />
+            <NavItem href="/clients" icon={<Users className="h-4 w-4" />} label="Clientes (CRM)" location={location} onClick={closeMenu} />
+          </>
+        )}
 
-      {user?.role === 'admin' && (
-        <Link href="/settings">
-            <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-white/10 ${location === '/settings' ? 'bg-white/20 text-white' : 'text-white/80'} cursor-pointer`} onClick={() => setOpen(false)}>
-            <Settings className="h-4 w-4" />
-            Configuración
-            </div>
-        </Link>
-      )}
+        <div className="eea-nav-section pt-3">Navegación</div>
 
-      <div className="mt-auto pt-4 border-t border-white/20">
-        <div onClick={handleLogout} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 cursor-pointer">
+        <NavItem href="/" icon={<Home className="h-4 w-4" />} label="Tablero Activo" location={location} onClick={closeMenu} />
+        <NavItem href="/instruments" icon={<Wrench className="h-4 w-4" />} label="Instrumentos" location={location} onClick={closeMenu} />
+        <NavItem href="/history" icon={<History className="h-4 w-4" />} label="Historial" location={location} onClick={closeMenu} />
+
+        {user?.role === 'admin' && (
+          <NavItem href="/settings" icon={<Settings className="h-4 w-4" />} label="Configuración" location={location} onClick={closeMenu} />
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-3 border-t border-white/10">
+        <div className="eea-nav-item text-red-400 hover:text-red-300 hover:bg-red-500/15" onClick={handleLogout}>
           <LogOut className="h-4 w-4" />
-          Cerrar Sesión
+          <span>Cerrar Sesión</span>
         </div>
       </div>
 
@@ -136,17 +162,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Comenzar Nueva Inspección?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se limpiarán los datos actuales del tablero. Puedes guardar la inspección actual en el historial antes de continuar.
+              Se limpiarán los datos actuales. Podés guardar en el historial antes de continuar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <Button variant="outline" onClick={() => handleNewInspection(false)} className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10">
-              No guardar y limpiar
+            <Button variant="outline" onClick={() => handleNewInspection(false)} className="text-destructive border-destructive/30 hover:bg-destructive/8">
+              No guardar
             </Button>
-            <Button onClick={() => handleNewInspection(true)}>
-              Guardar y Limpiar
-            </Button>
+            <Button onClick={() => handleNewInspection(true)}>Guardar y limpiar</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -156,35 +180,42 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row print:block">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b bg-card sticky top-0 z-50 print:hidden shadow-sm">
-        <div className="flex items-center gap-2">
-           <img src={logoUrl} alt="EE Logo" className="h-8 w-auto" />
-           <span className="font-semibold text-sm truncate max-w-[200px] text-primary">
-             {establishment.name || "Nueva Inspección"}
-           </span>
+      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b bg-card sticky top-0 z-50 print:hidden shadow-sm eea-mobile-header">
+        <div className="flex items-center gap-2.5">
+          <img src={logoUrl} alt="EEA" className="h-8 w-auto" />
+          <span className="font-semibold text-sm truncate max-w-[180px] text-primary">
+            {establishment.name || "Nueva Inspección"}
+          </span>
         </div>
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-[280px]">
-            <NavContent />
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-2">
+          <SaveIndicator />
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Menu className="h-4.5 w-4.5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[260px] border-0">
+              <NavContent />
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-card h-screen sticky top-0 print:hidden shadow-sm z-20">
+      <aside className="hidden md:flex w-[232px] flex-col h-screen sticky top-0 print:hidden z-20 shadow-xl">
         <NavContent />
       </aside>
 
+      {/* Save indicator desktop — top right */}
+      <div className="hidden md:block fixed top-4 right-5 z-40 print:hidden">
+        <SaveIndicator />
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full print:p-0 print:max-w-none">
+      <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full print:p-0 print:max-w-none animate-fade-in">
         {children}
       </main>
     </div>
   );
 }
-

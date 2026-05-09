@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,27 +16,61 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 // @ts-ignore
 import { saveAs } from "file-saver";
 import { useStore } from "@/lib/store";
-import { useMeasurementStore, ColdRow, ColdCompany } from "@/lib/measurement-store";
 
-type CompanyData = ColdCompany;
+interface ColdRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  rangoTemp: string;
+  ciclosExposicion: string;
+  duracionCiclo: string;
+  tiempoNetoExposicion: string;
+  tiempoIntegracion: string;
+  caracteristicasExposicion: string;
+  tbs: string;
+  velocidadViento: string;
+  tee: string;
+  tipoUniforme: string;
+  equipoUtilizado: string;
+  exposicionMas4h: string;
+}
+
+interface CompanyData {
+  razonSocial: string;
+  direccion: string;
+  localidad: string;
+  provincia: string;
+  cp: string;
+  cuit: string;
+  fechaMedicion: string;
+  horaInicio: string;
+  horaFin: string;
+  turnos: string;
+  instrumento1: string;
+  instrumento1Serie: string;
+  instrumento1Cert: string;
+  instrumento1FechaCal: string;
+  condicionesAtm: string;
+}
 
 export default function ColdSheet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  const {
-    coldRows, setColdRows,
-    coldCompany, setColdCompany,
-    coldObs, setColdObs,
-    coldConc, setColdConc,
-    coldRec, setColdRec,
-  } = useMeasurementStore();
-
-  const [rows, setRows] = useState<ColdRow[]>(coldRows);
-  const [company, setCompany] = useState<CompanyData>(coldCompany);
-  const [observacionesGenerales, setObservacionesGenerales] = useState(coldObs);
-  const [conclusiones, setConclusiones] = useState(coldConc);
-  const [recomendaciones, setRecomendaciones] = useState(coldRec);
+  // ── Store-backed state (persistent localStorage) ──
+  const coldProtocol = useStore((s) => s.coldProtocol);
+  const _setColdRows = useStore((s) => s.setColdRows);
+  const _updateColdCompany = useStore((s) => s.updateColdCompany);
+  const _updateColdText = useStore((s) => s.updateColdText);
+  const rows = coldProtocol.rows;
+  const setRows = _setColdRows;
+  const company = coldProtocol.company;
+  const setCompany = (data: any) => _updateColdCompany(typeof data === "function" ? data(coldProtocol.company) : data);
+  const observacionesGenerales = coldProtocol.observaciones;
+  const setObservacionesGenerales = (v: string) => _updateColdText("observaciones", v);
+  const conclusiones = coldProtocol.conclusiones;
+  const setConclusiones = (v: string) => _updateColdText("conclusiones", v);
+  const recomendaciones = coldProtocol.recomendaciones;
+  const setRecomendaciones = (v: string) => _updateColdText("recomendaciones", v);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
@@ -46,11 +80,7 @@ export default function ColdSheet() {
   const signatoryTitle = useStore((state) => state.signatoryTitle);
   const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
-  useEffect(() => { setColdRows(rows); }, [rows]);
-  useEffect(() => { setColdCompany(company); }, [company]);
-  useEffect(() => { setColdObs(observacionesGenerales); }, [observacionesGenerales]);
-  useEffect(() => { setColdConc(conclusiones); }, [conclusiones]);
-  useEffect(() => { setColdRec(recomendaciones); }, [recomendaciones]);
+  // Data persisted in Zustand store (localStorage)
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);

@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Trash2, Save, FileDown, FileUp, Database, CheckCircle2, AlertTriangle, Camera, X, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, FileDown, FileUp, Database, AlertTriangle, Camera, X } from "lucide-react";
 import { useClients } from "@/lib/hooks";
 import { useToast } from "@/hooks/use-toast";
 // @ts-ignore
@@ -16,51 +16,84 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 // @ts-ignore
 import { saveAs } from "file-saver";
 import { useStore } from "@/lib/store";
-import { useMeasurementStore, ThermalRow, ThermalCompany, SectorPhoto } from "@/lib/measurement-store";
 
-type CompanyData = ThermalCompany;
+interface ThermalRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  tipoActividad: string;
+  cargaMetabolica: string;
+  exposicionHs: string;
+  tbs: string;
+  tbh: string;
+  tg: string;
+  tgbh: string;
+  tgbhPonderado: string;
+  aclimatado: string;
+  vla: string;
+  vlp: string;
+  cumpleVla: string;
+  cumpleVlp: string;
+  observaciones: string;
+}
+
+interface CompanyData {
+  razonSocial: string;
+  direccion: string;
+  localidad: string;
+  provincia: string;
+  cp: string;
+  cuit: string;
+  fechaMedicion: string;
+  horaInicio: string;
+  horaFin: string;
+  turnos: string;
+  instrumento1: string;
+  instrumento1Serie: string;
+  instrumento1Cert: string;
+  instrumento1FechaCal: string;
+  instrumento2: string;
+  instrumento2Serie: string;
+  instrumento2Cert: string;
+  instrumento2FechaCal: string;
+  condicionesAtm: string;
+}
 
 export default function ThermalSheet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  const {
-    thermalRows, setThermalRows,
-    thermalCompany, setThermalCompany,
-    thermalObs, setThermalObs,
-    thermalConc, setThermalConc,
-    thermalRec, setThermalRec,
-    sectorPhotos, setSectorPhotos,
-  } = useMeasurementStore();
-
-  const [rows, setRows] = useState<ThermalRow[]>(thermalRows);
-  const [company, setCompany] = useState<CompanyData>(thermalCompany);
-  const [observacionesGenerales, setObservacionesGenerales] = useState(thermalObs);
-  const [conclusiones, setConclusiones] = useState(thermalConc);
-  const [recomendaciones, setRecomendaciones] = useState(thermalRec);
+  // ── Store-backed state (persistent localStorage) ──
+  const thermalProtocol = useStore((s) => s.thermalProtocol);
+  const _setThermalRows = useStore((s) => s.setThermalRows);
+  const _updateThermalCompany = useStore((s) => s.updateThermalCompany);
+  const _updateThermalText = useStore((s) => s.updateThermalText);
+  const rows = thermalProtocol.rows;
+  const setRows = _setThermalRows;
+  const company = thermalProtocol.company;
+  const setCompany = (data: any) => _updateThermalCompany(typeof data === "function" ? data(thermalProtocol.company) : data);
+  const observacionesGenerales = thermalProtocol.observaciones;
+  const setObservacionesGenerales = (v: string) => _updateThermalText("observaciones", v);
+  const conclusiones = thermalProtocol.conclusiones;
+  const setConclusiones = (v: string) => _updateThermalText("conclusiones", v);
+  const recomendaciones = thermalProtocol.recomendaciones;
+  const setRecomendaciones = (v: string) => _updateThermalText("recomendaciones", v);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos' | 'fotos'>('datos');
-  const [savedIndicator, setSavedIndicator] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sectorPhotos, setSectorPhotos] = useState<Record<string, string[]>>({});
   const { data: clients = [] } = useClients();
   const digitalSignature = useStore((state) => state.digitalSignature);
   const signatoryName = useStore((state) => state.signatoryName);
   const signatoryTitle = useStore((state) => state.signatoryTitle);
   const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
-  useEffect(() => { setThermalRows(rows); showSaved(); }, [rows]);
-  useEffect(() => { setThermalCompany(company); showSaved(); }, [company]);
-  useEffect(() => { setThermalObs(observacionesGenerales); }, [observacionesGenerales]);
-  useEffect(() => { setThermalConc(conclusiones); }, [conclusiones]);
-  useEffect(() => { setThermalRec(recomendaciones); }, [recomendaciones]);
-
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showSaved = () => {
-    setSavedIndicator(true);
-    if (savedTimer.current) clearTimeout(savedTimer.current);
-    savedTimer.current = setTimeout(() => setSavedIndicator(false), 2500);
-  };
+  // ── Derived validations ─────────────────────────────────────────────────────
+  const missingCalibration = !company.instrumento1Cert.trim() || !company.instrumento1FechaCal.trim();
+  const vlaAlerts = rows.filter(r => {
+    const tm = parseFloat(r.cargaMetabolica);
+    const tgbh = parseFloat(r.tgbhPonderado || r.tgbh);
+    return !isNaN(tm) && !isNaN(tgbh) && tm >= 252 && tgbh > 26;
+  });
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);
@@ -136,21 +169,14 @@ export default function ThermalSheet() {
         if (field === 'tbh' || field === 'tg') {
           updated.tgbh = calculateTGBH(updated.tbh, updated.tg);
         }
-        // VLA auto-check
-        if (['tgbh', 'tgbhPonderado', 'vla', 'tbh', 'tg', 'cargaMetabolica'].includes(field)) {
+        if (field === 'tgbh' || field === 'vla' || field === 'tbh' || field === 'tg') {
           const tgbhVal = parseFloat(updated.tgbhPonderado || updated.tgbh);
           const vlaVal = parseFloat(updated.vla);
-          const tm = parseFloat(updated.cargaMetabolica);
           if (!isNaN(tgbhVal) && !isNaN(vlaVal)) {
             updated.cumpleVla = tgbhVal <= vlaVal ? "SI" : "NO";
           }
-          // Alerta específica: TM ≥ 252W y TGBH > 26°C → NO CUMPLE VALOR LÍMITE DE ACCIÓN
-          if (!isNaN(tm) && tm >= 252 && !isNaN(tgbhVal) && tgbhVal > 26) {
-            updated.cumpleVla = "NO";
-          }
         }
-        // VLP auto-check
-        if (['tgbh', 'tgbhPonderado', 'vlp', 'tbh', 'tg'].includes(field)) {
+        if (field === 'tgbh' || field === 'vlp' || field === 'tbh' || field === 'tg') {
           const tgbhVal = parseFloat(updated.tgbhPonderado || updated.tgbh);
           const vlpVal = parseFloat(updated.vlp);
           if (!isNaN(tgbhVal) && !isNaN(vlpVal)) {
@@ -163,49 +189,6 @@ export default function ThermalSheet() {
     }));
   };
 
-  // ── Lógica de alerta VLA para una fila ────────────────────────────────────
-  const isVlaAlert = (row: ThermalRow): boolean => {
-    const tm = parseFloat(row.cargaMetabolica);
-    const tgbh = parseFloat(row.tgbhPonderado || row.tgbh);
-    return !isNaN(tm) && tm >= 252 && !isNaN(tgbh) && tgbh > 26;
-  };
-
-  // ── Carga de imágenes con FileReader ──────────────────────────────────────
-  const handlePhotoUpload = (sectorName: string, files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const promises = Array.from(files).map(file =>
-      new Promise<SectorPhoto>(resolve => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve({
-            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            sectorName,
-            base64: (e.target?.result as string) || "",
-            fileName: file.name,
-            caption: "",
-          });
-        };
-        reader.readAsDataURL(file);
-      })
-    );
-    Promise.all(promises).then(newPhotos => {
-      setSectorPhotos([...sectorPhotos, ...newPhotos]);
-      showSaved();
-      toast({ title: `${newPhotos.length} foto(s) guardada(s)`, description: `Sector: ${sectorName}` });
-    });
-  };
-
-  const updatePhotoCaption = (photoId: string, caption: string) => {
-    setSectorPhotos(sectorPhotos.map(p => p.id === photoId ? { ...p, caption } : p));
-  };
-
-  const deletePhoto = (photoId: string) => {
-    setSectorPhotos(sectorPhotos.filter(p => p.id !== photoId));
-  };
-
-  // ── Validación de calibración ─────────────────────────────────────────────
-  const missingCalibration = !company.instrumento1FechaCal.trim() || !company.instrumento1Cert.trim();
-
   const deleteRow = (id: string) => {
     if (rows.length > 1) setRows(rows.filter(row => row.id !== id));
   };
@@ -215,8 +198,9 @@ export default function ThermalSheet() {
       toast({ title: "Datos incompletos", description: "Complete los datos de la empresa primero", variant: "destructive" });
       return;
     }
-    if (!company.instrumento1FechaCal.trim() || !company.instrumento1Cert.trim()) {
-      toast({ title: "⚠️ Calibración incompleta", description: "Agregue la fecha y certificado de calibración del instrumento para trazabilidad legal", variant: "destructive" });
+    if (missingCalibration) {
+      toast({ title: "Certificado de calibración incompleto", description: "Complete el N° de certificado y fecha de calibración del instrumento 1 antes de exportar.", variant: "destructive" });
+      setActiveTab('instrumentos');
       return;
     }
     try {
@@ -598,19 +582,8 @@ export default function ThermalSheet() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Volver
           </Button>
           <h1 className="text-sm font-bold text-gray-800" data-testid="heading-thermal">PROTOCOLO DE MEDICIÓN DE CARGA TÉRMICA (Res. SRT 30/2023)</h1>
-          {/* ── Indicador de autoguardado ── */}
-          {savedIndicator && (
-            <span className="flex items-center gap-1 text-xs text-green-600 font-medium animate-pulse" data-testid="status-autosave">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Datos Guardados Localmente
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2">
-          {missingCalibration && (
-            <span className="flex items-center gap-1 text-xs text-amber-600 font-medium bg-amber-50 border border-amber-200 px-2 py-1 rounded" data-testid="badge-calibration-warning">
-              <AlertCircle className="h-3.5 w-3.5" /> Calibración incompleta
-            </span>
-          )}
           <Button size="sm" variant="outline" onClick={loadSampleData} className="text-orange-600 border-orange-300 hover:bg-orange-50" data-testid="button-load-sample">
             <Database className="h-4 w-4 mr-1" /> Cargar Datos Informe
           </Button>
@@ -625,6 +598,16 @@ export default function ThermalSheet() {
           </Button>
         </div>
       </div>
+
+      {vlaAlerts.length > 0 && (
+        <div className="bg-amber-50 border-b border-amber-300 px-4 py-2 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+          <div className="text-xs text-amber-800">
+            <span className="font-bold">ALERTA VLA:</span> {vlaAlerts.length} puesto(s) con TM ≥ 252 W y TGBH &gt; 26°C superan el Valor Límite de Acción.{" "}
+            {vlaAlerts.map(r => r.sector || r.puestoTrabajo).filter(Boolean).join(", ")}
+          </div>
+        </div>
+      )}
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="max-w-md">
@@ -653,15 +636,14 @@ export default function ThermalSheet() {
       </Dialog>
 
       <div className="flex-1 overflow-auto p-4">
-        <div className="flex gap-1 mb-3 flex-wrap">
-          {([
-            { key: 'empresa', label: 'Empresa', warn: false },
-            { key: 'instrumentos', label: 'Instrumentos', warn: missingCalibration },
-            { key: 'datos', label: 'Datos de Medición', warn: false },
-            { key: 'fotos', label: `Fotos${sectorPhotos.length > 0 ? ` (${sectorPhotos.length})` : ''}`, warn: false },
-          ] as const).map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-4 py-1.5 text-xs font-medium rounded-t border border-b-0 flex items-center gap-1 ${activeTab === tab.key ? 'bg-white text-blue-900 border-gray-300' : 'bg-gray-100 text-gray-500 border-transparent hover:bg-gray-200'}`} data-testid={`tab-${tab.key}`}>
-              {tab.warn && <AlertCircle className="h-3 w-3 text-amber-500" />}
+        <div className="flex gap-1 mb-3">
+          {[
+            { key: 'empresa' as const, label: 'Empresa' },
+            { key: 'instrumentos' as const, label: missingCalibration ? '⚠ Instrumentos' : 'Instrumentos' },
+            { key: 'datos' as const, label: 'Datos de Medición' },
+            { key: 'fotos' as const, label: 'Fotos' }
+          ].map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`px-4 py-1.5 text-xs font-medium rounded-t border border-b-0 ${activeTab === tab.key ? 'bg-white border-gray-300 ' + (tab.key === 'instrumentos' && missingCalibration ? 'text-red-700' : 'text-blue-900') : 'bg-gray-100 border-transparent hover:bg-gray-200 ' + (tab.key === 'instrumentos' && missingCalibration ? 'text-red-500' : 'text-gray-500')}`} data-testid={`tab-${tab.key}`}>
               {tab.label}
             </button>
           ))}
@@ -685,38 +667,19 @@ export default function ThermalSheet() {
 
         {activeTab === 'instrumentos' && (
           <div className="bg-white rounded border shadow-sm p-4 space-y-4">
-            {missingCalibration && (
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-800" data-testid="alert-calibration">
-                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" />
-                <div>
-                  <p className="font-semibold">Datos de calibración incompletos</p>
-                  <p>Complete el N° de certificado y la fecha de calibración del instrumento 1 para garantizar la trazabilidad legal del informe (ej. Cert: 24R00000820 — Fecha: 11/02/2025).</p>
-                </div>
-              </div>
-            )}
-            <h3 className="text-xs font-bold text-blue-900 border-b pb-1">Instrumento 1 <span className="text-red-500">*</span></h3>
+            <h3 className="text-xs font-bold text-blue-900 border-b pb-1">Instrumento 1</h3>
             <div className="grid grid-cols-2 gap-4">
               <div><label className="text-xs font-medium">Descripción</label><Input className="mt-1 h-8 text-xs" value={company.instrumento1} onChange={e => setCompany({...company, instrumento1: e.target.value})} data-testid="input-inst1" /></div>
               <div><label className="text-xs font-medium">N° Serie</label><Input className="mt-1 h-8 text-xs" value={company.instrumento1Serie} onChange={e => setCompany({...company, instrumento1Serie: e.target.value})} data-testid="input-inst1-serie" /></div>
-              <div>
-                <label className={`text-xs font-medium ${!company.instrumento1Cert.trim() ? 'text-red-600' : ''}`}>
-                  N° Certificado Cal. {!company.instrumento1Cert.trim() && <span className="text-red-500">*</span>}
-                </label>
-                <Input className={`mt-1 h-8 text-xs ${!company.instrumento1Cert.trim() ? 'border-red-300 bg-red-50' : ''}`} placeholder="Ej: 24R00000820" value={company.instrumento1Cert} onChange={e => setCompany({...company, instrumento1Cert: e.target.value})} data-testid="input-inst1-cert" />
-              </div>
-              <div>
-                <label className={`text-xs font-medium ${!company.instrumento1FechaCal.trim() ? 'text-red-600' : ''}`}>
-                  Fecha Calibración {!company.instrumento1FechaCal.trim() && <span className="text-red-500">*</span>}
-                </label>
-                <Input className={`mt-1 h-8 text-xs ${!company.instrumento1FechaCal.trim() ? 'border-red-300 bg-red-50' : ''}`} placeholder="Ej: 11/02/2025" value={company.instrumento1FechaCal} onChange={e => setCompany({...company, instrumento1FechaCal: e.target.value})} data-testid="input-inst1-fecha" />
-              </div>
+              <div><label className={`text-xs font-medium ${!company.instrumento1Cert.trim() ? 'text-red-600' : ''}`}>N° Certificado Cal. {!company.instrumento1Cert.trim() && <span className="text-red-500">*</span>}</label><Input className={`mt-1 h-8 text-xs ${!company.instrumento1Cert.trim() ? 'border-red-400 bg-red-50' : ''}`} value={company.instrumento1Cert} onChange={e => setCompany({...company, instrumento1Cert: e.target.value})} data-testid="input-inst1-cert" /></div>
+              <div><label className={`text-xs font-medium ${!company.instrumento1FechaCal.trim() ? 'text-red-600' : ''}`}>Fecha Calibración {!company.instrumento1FechaCal.trim() && <span className="text-red-500">*</span>}</label><Input className={`mt-1 h-8 text-xs ${!company.instrumento1FechaCal.trim() ? 'border-red-400 bg-red-50' : ''}`} value={company.instrumento1FechaCal} onChange={e => setCompany({...company, instrumento1FechaCal: e.target.value})} data-testid="input-inst1-fecha" /></div>
             </div>
             <h3 className="text-xs font-bold text-blue-900 border-b pb-1 pt-2">Instrumento 2</h3>
             <div className="grid grid-cols-2 gap-4">
               <div><label className="text-xs font-medium">Descripción</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2} onChange={e => setCompany({...company, instrumento2: e.target.value})} data-testid="input-inst2" /></div>
               <div><label className="text-xs font-medium">N° Serie</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2Serie} onChange={e => setCompany({...company, instrumento2Serie: e.target.value})} data-testid="input-inst2-serie" /></div>
               <div><label className="text-xs font-medium">N° Certificado Cal.</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2Cert} onChange={e => setCompany({...company, instrumento2Cert: e.target.value})} data-testid="input-inst2-cert" /></div>
-              <div><label className="text-xs font-medium">Fecha Calibración</label><Input className="mt-1 h-8 text-xs" placeholder="Ej: 11/02/2025" value={company.instrumento2FechaCal} onChange={e => setCompany({...company, instrumento2FechaCal: e.target.value})} data-testid="input-inst2-fecha" /></div>
+              <div><label className="text-xs font-medium">Fecha Calibración</label><Input className="mt-1 h-8 text-xs" value={company.instrumento2FechaCal} onChange={e => setCompany({...company, instrumento2FechaCal: e.target.value})} data-testid="input-inst2-fecha" /></div>
             </div>
           </div>
         )}
@@ -748,18 +711,7 @@ export default function ThermalSheet() {
                 </thead>
                 <tbody>
                   {rows.map((row, index) => (
-                    <React.Fragment key={row.id}>
-                    {isVlaAlert(row) && (
-                      <tr>
-                        <td colSpan={17} className="bg-orange-50 border border-orange-200 px-2 py-1" data-testid={`alert-vla-${index}`}>
-                          <span className="flex items-center gap-1 text-xs text-orange-700 font-semibold">
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            Fila {index + 1} — NO CUMPLE VALOR LÍMITE DE ACCIÓN: TM ≥ 252 W y TGBH &gt; 26°C. Implementar controles según Resol. SRT 30/2023.
-                          </span>
-                        </td>
-                      </tr>
-                    )}
-                    <tr key={row.id} className={`hover:bg-gray-50 ${isVlaAlert(row) ? 'bg-orange-50/30' : ''}`}>
+                    <tr key={row.id} className="hover:bg-gray-50">
                       <td className="border px-1 py-0.5 text-center bg-gray-50 font-medium" data-testid={`cell-row-${index}`}>{String(index + 1).padStart(2, "0")}</td>
                       <td className="border p-0"><Input className="h-6 text-xs border-0 rounded-none" value={row.sector} onChange={e => updateRow(row.id, 'sector', e.target.value)} data-testid={`input-sector-${index}`} /></td>
                       <td className="border p-0"><Input className="h-6 text-xs border-0 rounded-none" value={row.puestoTrabajo} onChange={e => updateRow(row.id, 'puestoTrabajo', e.target.value)} data-testid={`input-puesto-${index}`} /></td>
@@ -783,7 +735,6 @@ export default function ThermalSheet() {
                       <td className="border p-0"><Input className="h-6 text-xs border-0 rounded-none" value={row.observaciones} onChange={e => updateRow(row.id, 'observaciones', e.target.value)} data-testid={`input-obs-${index}`} /></td>
                       <td className="border px-1 py-0.5"><Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500" onClick={() => deleteRow(row.id)} data-testid={`button-delete-${index}`}><Trash2 className="h-3 w-3" /></Button></td>
                     </tr>
-                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -799,63 +750,55 @@ export default function ThermalSheet() {
             </div>
           </div>
         )}
+
         {activeTab === 'fotos' && (
           <div className="bg-white rounded border shadow-sm p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-blue-900">Registro Fotográfico por Sector</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Las fotos se guardan localmente y pueden incluirse en el informe DOCX.</p>
-              </div>
-              <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded font-medium">
-                {sectorPhotos.length} foto(s) guardada(s)
-              </span>
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-xs font-bold text-blue-900">Galería de Fotos por Sector</h3>
+              <span className="text-xs text-gray-400">{Object.values(sectorPhotos).flat().length} foto(s) cargada(s)</span>
             </div>
-
-            {/* ── Upload por sector ── */}
-            <div className="space-y-3">
-              {rows.filter((r, i, arr) => arr.findIndex(x => x.sector === r.sector) === i && r.sector.trim()).map(row => {
-                const photosForSector = sectorPhotos.filter(p => p.sectorName === row.sector);
-                return (
-                  <div key={row.id} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-semibold text-gray-700 flex items-center gap-1">
-                        <Camera className="h-3.5 w-3.5 text-blue-600" />
-                        {row.sector}
-                        {photosForSector.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 rounded-full px-1.5 text-[10px] font-medium">{photosForSector.length}</span>}
-                      </h4>
-                      <label className="cursor-pointer flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded" data-testid={`button-upload-${row.id}`}>
-                        <Camera className="h-3 w-3" /> Agregar fotos
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={e => handlePhotoUpload(row.sector, e.target.files)} />
-                      </label>
-                    </div>
-                    {photosForSector.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                        {photosForSector.map(photo => (
-                          <div key={photo.id} className="relative group border rounded overflow-hidden" data-testid={`photo-card-${photo.id}`}>
-                            <img src={photo.base64} alt={photo.fileName} className="w-full h-24 object-cover" />
-                            <button className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deletePhoto(photo.id)} data-testid={`button-delete-photo-${photo.id}`}>
-                              <X className="h-3 w-3" />
-                            </button>
-                            <div className="p-1 bg-white">
-                              <input className="w-full text-[10px] border-0 border-b border-gray-200 focus:outline-none focus:border-blue-400 placeholder:text-gray-400" placeholder="Descripción..." value={photo.caption} onChange={e => updatePhotoCaption(photo.id, e.target.value)} data-testid={`input-caption-${photo.id}`} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {photosForSector.length === 0 && (
-                      <p className="text-[11px] text-gray-400 italic">Sin fotos para este sector</p>
-                    )}
-                  </div>
-                );
-              })}
-              {rows.filter(r => r.sector.trim()).length === 0 && (
-                <div className="text-center py-8 text-gray-400 text-xs">
-                  <Camera className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p>Complete los sectores en la pestaña "Datos de Medición" para poder agregar fotos.</p>
+            {rows.filter((r, i, arr) => arr.findIndex(x => x.sector === r.sector) === i && r.sector).map(r => (
+              <div key={r.sector} className="border rounded p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-blue-700" />
+                  <span className="text-xs font-semibold text-blue-900">{r.sector}</span>
+                  <label className="ml-auto cursor-pointer">
+                    <span className="text-xs text-blue-600 hover:underline">+ Agregar foto</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={e => {
+                      const files = Array.from(e.target.files || []);
+                      files.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = ev => {
+                          setSectorPhotos(prev => ({
+                            ...prev,
+                            [r.sector]: [...(prev[r.sector] || []), ev.target!.result as string]
+                          }));
+                        };
+                        reader.readAsDataURL(file);
+                      });
+                      e.target.value = '';
+                    }} data-testid={`input-photo-${r.sector}`} />
+                  </label>
                 </div>
-              )}
-            </div>
+                {(sectorPhotos[r.sector] || []).length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">Sin fotos. Agregue imágenes del sector.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(sectorPhotos[r.sector] || []).map((src, idx) => (
+                      <div key={idx} className="relative group">
+                        <img src={src} alt={`${r.sector} ${idx + 1}`} className="h-20 w-20 object-cover rounded border" />
+                        <button onClick={() => setSectorPhotos(prev => ({ ...prev, [r.sector]: prev[r.sector].filter((_, i) => i !== idx) }))} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity" data-testid={`button-delete-photo-${r.sector}-${idx}`}>
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {rows.filter(r => r.sector).length === 0 && (
+              <p className="text-xs text-gray-400 italic text-center py-4">Complete los sectores en la pestaña "Datos de Medición" para habilitar la galería.</p>
+            )}
           </div>
         )}
       </div>

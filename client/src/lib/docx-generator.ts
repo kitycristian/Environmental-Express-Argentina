@@ -8,7 +8,7 @@ import {
 import { Establishment, Sector, Measurement, MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useMeasurementStore } from "@/lib/measurement-store";
+import { useStore } from "@/lib/store";
 
 // ── Constants ───────────────────────────────────────────────────────────────
 const NAVY        = "003366";
@@ -123,7 +123,7 @@ const safeDate = (d: string | undefined): string => {
   } catch { return d || "-"; }
 };
 
-const getStoreData = () => useMeasurementStore.getState();
+const getStoreData = () => useStore.getState();
 
 // ── Main generator ───────────────────────────────────────────────────────────
 export const generateDocxReport = async (establishment: Establishment, sectors: Sector[]) => {
@@ -179,11 +179,11 @@ export const generateDocxReport = async (establishment: Establishment, sectors: 
   // ══════════════════════════════════════════════════════════════════════════
   // CARGA TÉRMICA - Resol. SRT 30/2023
   // ══════════════════════════════════════════════════════════════════════════
-  const thermalRows    = store.thermalRows?.length ? store.thermalRows : null;
-  const thermalCompany = store.thermalCompany || ({} as any);
-  const thermalObs     = store.thermalObs;
-  const thermalConc    = store.thermalConc;
-  const thermalRec     = store.thermalRec;
+  const thermalRows    = store.thermalProtocol?.rows?.length ? store.thermalProtocol.rows : null;
+  const thermalCompany = store.thermalProtocol?.company || ({} as any);
+  const thermalObs     = store.thermalProtocol?.observaciones;
+  const thermalConc    = store.thermalProtocol?.conclusiones;
+  const thermalRec     = store.thermalProtocol?.recomendaciones;
   const tc             = thermalCompany;
 
   const filledThermal = thermalRows?.filter((r: any) => r.sector || r.puestoTrabajo || r.tbs) ?? [];
@@ -363,11 +363,11 @@ export const generateDocxReport = async (establishment: Establishment, sectors: 
   // ══════════════════════════════════════════════════════════════════════════
   // ESTRÉS POR FRÍO - Resol. MTEySS 295/2003
   // ══════════════════════════════════════════════════════════════════════════
-  const coldRows    = store.coldRows?.length ? store.coldRows : null;
-  const coldCompany = store.coldCompany || ({} as any);
-  const coldObs     = store.coldObs;
-  const coldConc    = store.coldConc;
-  const coldRec     = store.coldRec;
+  const coldRows    = store.coldProtocol?.rows?.length ? store.coldProtocol.rows : null;
+  const coldCompany = store.coldProtocol?.company || ({} as any);
+  const coldObs     = store.coldProtocol?.observaciones;
+  const coldConc    = store.coldProtocol?.conclusiones;
+  const coldRec     = store.coldProtocol?.recomendaciones;
   const cc          = coldCompany;
 
   const filledCold = coldRows?.filter((r: any) => r.sector || r.puestoTrabajo || r.tbs) ?? [];

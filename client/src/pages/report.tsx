@@ -1,5 +1,4 @@
 import { useStore } from "@/lib/store";
-import { useMeasurementStore } from "@/lib/measurement-store";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil, FileText, ImageIcon, Check, Trash2, Plus } from "lucide-react";
 import { Link } from "wouter";
@@ -50,7 +49,9 @@ export default function Report() {
   const [selectedType, setSelectedType] = useState<MeasurementType | 'all'>('all');
   const [isInstrumentDialogOpen, setIsInstrumentDialogOpen] = useState(false);
 
-  const mStore = useMeasurementStore();
+  const noiseProtocol   = useStore((s) => s.noiseProtocol);
+  const thermalProtocol = useStore((s) => s.thermalProtocol);
+  const coldProtocol    = useStore((s) => s.coldProtocol);
 
   const buildSessionMeasurement = (type: MeasurementType, sName: string, sRows: any[], comp: any, obs: string, conc: string, rec: string): Measurement => {
     const mapNoise = (r: any, idx: number): MeasurementPoint => ({ id: `np-${idx}`, label: `Punto ${idx + 1}`, values: { puesto: r.puestoTrabajo || '', tiempo_exposicion: r.tiempoExposicion || '', tiempo_integracion: r.tiempoIntegracion || '', caracteristicas: r.tipoRuido || '', nivel_pico_c: '', nivel_continuo_eq: r.valorMedido || '', suma_fracciones: r.fraccion || '', dosis: r.dosisRuido || '', cumple: r.cumple || '' }, notes: r.observaciones || '' });
@@ -130,9 +131,9 @@ export default function Report() {
       });
     };
 
-    addToMerged(getStoreSheetData(mStore.noiseRows, mStore.noiseCompany, 'noise', mStore.noiseObs, mStore.noiseConc, mStore.noiseRec, (r: any) => r.sector || r.puestoTrabajo || r.valorMedido), 'noise');
-    addToMerged(getStoreSheetData(mStore.thermalRows, mStore.thermalCompany, 'thermal_load', mStore.thermalObs, mStore.thermalConc, mStore.thermalRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh), 'thermal_load');
-    addToMerged(getStoreSheetData(mStore.coldRows, mStore.coldCompany, 'cold_stress', mStore.coldObs, mStore.coldConc, mStore.coldRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs), 'cold_stress');
+    addToMerged(getStoreSheetData(noiseProtocol.rows, noiseProtocol.company, 'noise', noiseProtocol.observaciones, noiseProtocol.conclusiones, noiseProtocol.recomendaciones, (r: any) => r.sector || r.puestoTrabajo || r.valorMedido), 'noise');
+    addToMerged(getStoreSheetData(thermalProtocol.rows, thermalProtocol.company, 'thermal_load', thermalProtocol.observaciones, thermalProtocol.conclusiones, thermalProtocol.recomendaciones, (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh), 'thermal_load');
+    addToMerged(getStoreSheetData(coldProtocol.rows, coldProtocol.company, 'cold_stress', coldProtocol.observaciones, coldProtocol.conclusiones, coldProtocol.recomendaciones, (r: any) => r.sector || r.puestoTrabajo || r.tbs), 'cold_stress');
 
     return merged;
   };
@@ -408,9 +409,9 @@ export default function Report() {
     });
   };
 
-  mergeStoreData('noise', mStore.noiseRows, mStore.noiseCompany, mStore.noiseObs, mStore.noiseConc, mStore.noiseRec, (r: any) => r.sector || r.puestoTrabajo || r.valorMedido);
-  mergeStoreData('thermal_load', mStore.thermalRows, mStore.thermalCompany, mStore.thermalObs, mStore.thermalConc, mStore.thermalRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh);
-  mergeStoreData('cold_stress', mStore.coldRows, mStore.coldCompany, mStore.coldObs, mStore.coldConc, mStore.coldRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs);
+  mergeStoreData('noise', noiseProtocol.rows, noiseProtocol.company, noiseProtocol.observaciones, noiseProtocol.conclusiones, noiseProtocol.recomendaciones, (r: any) => r.sector || r.puestoTrabajo || r.valorMedido);
+  mergeStoreData('thermal_load', thermalProtocol.rows, thermalProtocol.company, thermalProtocol.observaciones, thermalProtocol.conclusiones, thermalProtocol.recomendaciones, (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh);
+  mergeStoreData('cold_stress', coldProtocol.rows, coldProtocol.company, coldProtocol.observaciones, coldProtocol.conclusiones, coldProtocol.recomendaciones, (r: any) => r.sector || r.puestoTrabajo || r.tbs);
 
   // Helper Components for Report Structure matching the official forms
   const ProtocolHeader = ({ title }: { title: string }) => (

@@ -3,422 +3,337 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Establishment, Sector, Measurement, MeasurementPoint, MeasurementType } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
+// ─── Noise Protocol Types ─────────────────────────────────────────────────────
+export interface NoiseRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  tiempoExposicion: string;
+  tiempoIntegracion: string;
+  tipoRuido: string;
+  valorMedido: string;
+  unidad: string;
+  dosisRuido: string;
+  limitePermisible: string;
+  fraccion: string;
+  cumple: string;
+  observaciones: string;
+}
+
+export interface NoiseProtocol {
+  rows: NoiseRow[];
+  company: {
+    razonSocial: string; direccion: string; localidad: string; provincia: string;
+    cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
+    jornadaLaboral: string; turnos: string; instrumento1: string; instrumento1Serie: string;
+    instrumento1Cert: string; instrumento1FechaCal: string; instrumento2: string;
+    instrumento2Serie: string; instrumento2Cert: string; instrumento2FechaCal: string;
+    condicionesNormales: string; condicionesMedicion: string;
+  };
+  observaciones: string;
+  conclusiones: string;
+  recomendaciones: string;
+}
+
+// ─── Thermal Load Protocol Types ─────────────────────────────────────────────
+export interface ThermalRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  exposicionHs: string;
+  tbs: string;
+  tbh: string;
+  tg: string;
+  tgbh: string;
+  tgbhPonderado: string;
+  aclimatado: string;
+  cargaMetabolica: string;
+  vla: string;
+  vlp: string;
+  cumpleVla: string;
+  cumpleVlp: string;
+  observaciones: string;
+  tmSentado: string;
+  tmSuplemento: string;
+  factoresExposicion: string[];
+}
+
+export interface ThermalProtocol {
+  rows: ThermalRow[];
+  company: {
+    razonSocial: string; direccion: string; localidad: string; provincia: string;
+    cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
+    turnos: string; instrumento1: string; instrumento1Serie: string; instrumento1Cert: string;
+    instrumento1FechaCal: string; instrumento2: string; instrumento2Serie: string;
+    instrumento2Cert: string; instrumento2FechaCal: string; condicionesAtm: string;
+    tempExterior: string;
+  };
+  observaciones: string;
+  conclusiones: string;
+  recomendaciones: string;
+}
+
+// ─── Cold Stress Protocol Types ──────────────────────────────────────────────
+export interface ColdRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  rangoTemp: string;
+  ciclosExposicion: string;
+  duracionCiclo: string;
+  tiempoNetoExposicion: string;
+  tiempoIntegracion: string;
+  caracteristicasExposicion: string;
+  tbs: string;
+  velocidadViento: string;
+  tee: string;
+  tipoUniforme: string;
+  equipo: string;
+  exposicionMas4h: string;
+  riesgo: string;
+}
+
+export interface ColdProtocol {
+  rows: ColdRow[];
+  company: {
+    razonSocial: string; direccion: string; localidad: string; provincia: string;
+    cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
+    turnos: string; instrumento1: string; instrumento1Serie: string; instrumento1Cert: string;
+    instrumento1FechaCal: string; condicionesAtm: string;
+  };
+  observaciones: string;
+  conclusiones: string;
+  recomendaciones: string;
+}
+
 interface AppState {
   establishment: Establishment;
   sectors: Sector[];
-  
-  // Digital Signature
+  noiseProtocol: NoiseProtocol;
+  thermalProtocol: ThermalProtocol;
+  coldProtocol: ColdProtocol;
   digitalSignature: string | null;
   signatoryName: string | null;
   signatoryTitle: string | null;
   signatoryRegistration: string | null;
-  
-  // Actions
+  lastSavedAt: string | null;
+  isDirty: boolean;
+
   updateEstablishment: (data: Partial<Establishment>) => void;
-  
   addSector: (sector: Omit<Sector, 'id' | 'measurements'>) => void;
   updateSector: (id: string, data: Partial<Sector>) => void;
   deleteSector: (id: string) => void;
-  
   addMeasurement: (sectorId: string, type: MeasurementType) => void;
   deleteMeasurement: (sectorId: string, measurementId: string) => void;
   updateMeasurement: (sectorId: string, measurementId: string, data: Partial<Measurement>) => void;
-  
   addPoint: (sectorId: string, measurementId: string, pointData?: Partial<MeasurementPoint>) => void;
   updatePoint: (sectorId: string, measurementId: string, pointId: string, data: Partial<MeasurementPoint>) => void;
   deletePoint: (sectorId: string, measurementId: string, pointId: string) => void;
-  
   addSectorWithMeasurement: (sectorData: Omit<Sector, 'id' | 'measurements'>, type: MeasurementType) => void;
-  
+
+  updateNoiseRow: (id: string, data: Partial<NoiseRow>) => void;
+  addNoiseRow: () => void;
+  deleteNoiseRow: (id: string) => void;
+  updateNoiseCompany: (data: Partial<NoiseProtocol['company']>) => void;
+  updateNoiseText: (field: 'observaciones' | 'conclusiones' | 'recomendaciones', value: string) => void;
+  setNoiseRows: (rows: NoiseRow[]) => void;
+
+  updateThermalRow: (id: string, data: Partial<ThermalRow>) => void;
+  addThermalRow: () => void;
+  deleteThermalRow: (id: string) => void;
+  updateThermalCompany: (data: Partial<ThermalProtocol['company']>) => void;
+  updateThermalText: (field: 'observaciones' | 'conclusiones' | 'recomendaciones', value: string) => void;
+  setThermalRows: (rows: ThermalRow[]) => void;
+
+  updateColdRow: (id: string, data: Partial<ColdRow>) => void;
+  addColdRow: () => void;
+  deleteColdRow: (id: string) => void;
+  updateColdCompany: (data: Partial<ColdProtocol['company']>) => void;
+  updateColdText: (field: 'observaciones' | 'conclusiones' | 'recomendaciones', value: string) => void;
+  setColdRows: (rows: ColdRow[]) => void;
+
   loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
   resetStore: () => void;
   saveInspection: () => void;
-  
-  // Signature Actions
+  markClean: () => void;
   setDigitalSignature: (signature: string | null) => void;
   setSignatoryName: (name: string | null) => void;
   setSignatoryTitle: (title: string | null) => void;
   setSignatoryRegistration: (registration: string | null) => void;
 }
 
-const initialEstablishment: Establishment = {
-  id: 'default',
-  name: '',
-  razonSocial: '',
-  cuit: '',
-  address: '',
-  date: new Date().toISOString().split('T')[0],
-  responsible: '',
-};
-
-// Helper to create measurement points
 const pt = (id: string, lux: string) => ({ id, label: '', values: { lux } });
 
-// Sample data for demonstration
 export const sampleSectors: Sector[] = [
-  {
-    id: 'sample-1',
-    name: 'Salón de Ventas',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm1',
-      type: 'lighting',
-      sectorId: 'sample-1',
-      status: 'pending',
-      points: [pt('p1','332'), pt('p2','316'), pt('p3','354'), pt('p4','360'), pt('p5','374'), pt('p6','341'), pt('p7','354'), pt('p8','404'), pt('p9','380')],
-      observations: '',
-      config: { width: 76, length: 54, height: 5.6, limit: 500 }
-    }]
-  },
-  {
-    id: 'sample-2',
-    name: 'Salón de Ventas',
-    description: 'Línea de Cajas',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm2',
-      type: 'lighting',
-      sectorId: 'sample-2',
-      status: 'pending',
-      points: [pt('p1','366'), pt('p2','396'), pt('p3','411'), pt('p4','352'), pt('p5','397'), pt('p6','420'), pt('p7','418'), pt('p8','410'), pt('p9','310')],
-      observations: '',
-      config: { width: 5.2, length: 31, height: 4.2, limit: 500 }
-    }]
-  },
-  {
-    id: 'sample-3',
-    name: 'Salón de Ventas',
-    description: 'Atención al Cliente',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm3',
-      type: 'lighting',
-      sectorId: 'sample-3',
-      status: 'pending',
-      points: [pt('p1','425'), pt('p2','483'), pt('p3','410'), pt('p4','421'), pt('p5','400'), pt('p6','326'), pt('p7','212'), pt('p8','313'), pt('p9','212')],
-      observations: '',
-      config: { width: 2.8, length: 5.6, height: 4.2, limit: 500 }
-    }]
-  },
-  {
-    id: 'sample-4',
-    name: 'Depósito de Línea de Cajas',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm4',
-      type: 'lighting',
-      sectorId: 'sample-4',
-      status: 'pending',
-      points: [pt('p1','76'), pt('p2','78'), pt('p3','71')],
-      observations: '',
-      config: { limit: 100 }
-    }]
-  },
-  {
-    id: 'sample-5',
-    name: 'Depósito de Tesorería',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm5',
-      type: 'lighting',
-      sectorId: 'sample-5',
-      status: 'pending',
-      points: [pt('p1','183'), pt('p2','186'), pt('p3','197'), pt('p4','168'), pt('p5','162'), pt('p6','241'), pt('p7','210'), pt('p8','168'), pt('p9','308')],
-      observations: '',
-      config: { width: 3.6, length: 3.9, height: 2.9, limit: 100 }
-    }]
-  },
-  {
-    id: 'sample-6',
-    name: 'Tesorería',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm6',
-      type: 'lighting',
-      sectorId: 'sample-6',
-      status: 'pending',
-      points: [pt('p1','307'), pt('p2','333'), pt('p3','375'), pt('p4','233'), pt('p5','169'), pt('p6','266'), pt('p7','140'), pt('p8','177')],
-      observations: '',
-      config: { width: 3.85, length: 6.3, height: 2.9, limit: 500 }
-    }]
-  },
-  {
-    id: 'sample-7',
-    name: 'TOMRA',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm7',
-      type: 'lighting',
-      sectorId: 'sample-7',
-      status: 'pending',
-      points: [pt('p1','96'), pt('p2','95'), pt('p3','97')],
-      observations: '',
-      config: { limit: 200 }
-    }]
-  },
-  {
-    id: 'sample-8',
-    name: 'Recepción de Mercadería',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm8',
-      type: 'lighting',
-      sectorId: 'sample-8',
-      status: 'pending',
-      points: [pt('p1','305'), pt('p2','294'), pt('p3','315'), pt('p4','262'), pt('p5','311'), pt('p6','290'), pt('p7','279'), pt('p8','232'), pt('p9','221')],
-      observations: '',
-      config: { width: 11.6, length: 8.6, height: 3.8, limit: 200 }
-    }]
-  },
-  {
-    id: 'sample-9',
-    name: 'Panadería',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm9',
-      type: 'lighting',
-      sectorId: 'sample-9',
-      status: 'pending',
-      points: [pt('p1','85'), pt('p2','90'), pt('p3','66'), pt('p4','64'), pt('p5','106'), pt('p6','117'), pt('p7','129'), pt('p8','133'), pt('p9','165')],
-      observations: '',
-      config: { width: 9.7, length: 8, height: 3, limit: 300 }
-    }]
-  },
-  {
-    id: 'sample-10',
-    name: 'Rotisería',
-    description: '',
-    dimensions: '',
-    activity: '',
-    workersCount: 0,
-    measurements: [{
-      id: 'm10',
-      type: 'lighting',
-      sectorId: 'sample-10',
-      status: 'pending',
-      points: [pt('p1','210'), pt('p2','190'), pt('p3','227'), pt('p4','201'), pt('p5','225'), pt('p6','236'), pt('p7','232'), pt('p8','201'), pt('p9','190')],
-      observations: '',
-      config: { width: 5.8, length: 4.2, height: 0.8, limit: 220 }
-    }]
-  },
+  { id: 'sample-1', name: 'Salón de Ventas', description: '', dimensions: '', activity: '', workersCount: 0,
+    measurements: [{ id: 'm1', type: 'lighting', sectorId: 'sample-1', status: 'pending',
+      points: [pt('p1','332'),pt('p2','316'),pt('p3','354'),pt('p4','360'),pt('p5','374'),pt('p6','341'),pt('p7','354'),pt('p8','404'),pt('p9','380')],
+      observations: '', config: { width: 76, length: 54, height: 5.6, limit: 500 } }] },
+  { id: 'sample-2', name: 'Salón de Ventas', description: 'Línea de Cajas', dimensions: '', activity: '', workersCount: 0,
+    measurements: [{ id: 'm2', type: 'lighting', sectorId: 'sample-2', status: 'pending',
+      points: [pt('p1','366'),pt('p2','396'),pt('p3','411'),pt('p4','352'),pt('p5','397'),pt('p6','420'),pt('p7','418'),pt('p8','410'),pt('p9','310')],
+      observations: '', config: { width: 5.2, length: 31, height: 4.2, limit: 500 } }] },
 ];
+
+const defaultNoiseRow = (): NoiseRow => ({
+  id: uuidv4(), sector: '', puestoTrabajo: '', tiempoExposicion: '', tiempoIntegracion: '',
+  tipoRuido: '', valorMedido: '', unidad: 'dBA', dosisRuido: '', limitePermisible: '85',
+  fraccion: '', cumple: '', observaciones: ''
+});
+
+const defaultThermalRow = (): ThermalRow => ({
+  id: uuidv4(), sector: '', puestoTrabajo: '', exposicionHs: '', tbs: '', tbh: '', tg: '',
+  tgbh: '', tgbhPonderado: '', aclimatado: 'SI', cargaMetabolica: '', vla: '', vlp: '',
+  cumpleVla: '', cumpleVlp: '', observaciones: '', tmSentado: '126', tmSuplemento: '27',
+  factoresExposicion: []
+});
+
+const defaultColdRow = (): ColdRow => ({
+  id: uuidv4(), sector: '', puestoTrabajo: '', rangoTemp: '', ciclosExposicion: '',
+  duracionCiclo: '', tiempoNetoExposicion: '', tiempoIntegracion: '', caracteristicasExposicion: '',
+  tbs: '', velocidadViento: '', tee: '', tipoUniforme: '', equipo: '', exposicionMas4h: 'NO', riesgo: ''
+});
+
+const defaultNoiseCompany = () => ({
+  razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
+  fechaMedicion: '', horaInicio: '', horaFin: '', jornadaLaboral: '', turnos: '',
+  instrumento1: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
+  instrumento2: '', instrumento2Serie: '', instrumento2Cert: '', instrumento2FechaCal: '',
+  condicionesNormales: '', condicionesMedicion: ''
+});
+
+const defaultThermalCompany = () => ({
+  razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
+  fechaMedicion: '', horaInicio: '', horaFin: '', turnos: '',
+  instrumento1: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
+  instrumento2: '', instrumento2Serie: '', instrumento2Cert: '', instrumento2FechaCal: '',
+  condicionesAtm: '', tempExterior: ''
+});
+
+const defaultColdCompany = () => ({
+  razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
+  fechaMedicion: '', horaInicio: '', horaFin: '', turnos: '',
+  instrumento1: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
+  condicionesAtm: ''
+});
+
+const initialEstablishment: Establishment = {
+  id: 'default', name: '', razonSocial: '', cuit: '', address: '',
+  date: new Date().toISOString().split('T')[0], responsible: '',
+};
 
 export const useStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       establishment: initialEstablishment,
       sectors: sampleSectors,
-      
-      // Digital Signature initial state
-      digitalSignature: null,
-      signatoryName: null,
-      signatoryTitle: null,
-      signatoryRegistration: null,
+      noiseProtocol: { rows: [defaultNoiseRow()], company: defaultNoiseCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+      thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+      coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+      digitalSignature: null, signatoryName: null, signatoryTitle: null, signatoryRegistration: null,
+      lastSavedAt: null, isDirty: false,
 
-      updateEstablishment: (data) => 
-        set((state) => ({ establishment: { ...state.establishment, ...data } })),
-
-      addSector: (sectorData) => 
-        set((state) => ({
-          sectors: [
-            ...state.sectors,
-            { ...sectorData, id: uuidv4(), measurements: [] }
-          ]
-        })),
-
-      updateSector: (id, data) =>
-        set((state) => ({
-          sectors: state.sectors.map((s) => 
-            s.id === id ? { ...s, ...data } : s
-          )
-        })),
-
-      deleteSector: (id) =>
-        set((state) => ({
-          sectors: state.sectors.filter((s) => s.id !== id)
-        })),
-
-      addMeasurement: (sectorId, type) =>
-        set((state) => ({
-          sectors: state.sectors.map((s) => {
-            if (s.id !== sectorId) return s;
-            return {
-              ...s,
-              measurements: [
-                ...s.measurements,
-                {
-                  id: uuidv4(),
-                  type,
-                  sectorId,
-                  status: 'pending',
-                  points: [],
-                  observations: ''
-                }
-              ]
-            };
-          })
-        })),
-
-      deleteMeasurement: (sectorId, measurementId) =>
-        set((state) => ({
-          sectors: state.sectors.map((s) => {
-            if (s.id !== sectorId) return s;
-            return {
-              ...s,
-              measurements: s.measurements.filter((m) => m.id !== measurementId)
-            };
-          })
-        })),
-
-      updateMeasurement: (sectorId, measurementId, data) =>
-        set((state) => ({
-          sectors: state.sectors.map((s) => {
-            if (s.id !== sectorId) return s;
-            return {
-              ...s,
-              measurements: s.measurements.map((m) => 
-                m.id === measurementId ? { ...m, ...data } : m
-              )
-            };
-          })
-        })),
-
-      addPoint: (sectorId, measurementId, pointData) =>
-        set((state) => ({
-          sectors: state.sectors.map((s) => {
-            if (s.id !== sectorId) return s;
-            return {
-              ...s,
-              measurements: s.measurements.map((m) => {
-                if (m.id !== measurementId) return m;
-                return {
-                  ...m,
-                  points: [
-                    ...m.points,
-                    {
-                      id: uuidv4(),
-                      label: `Punto ${m.points.length + 1}`,
-                      values: {},
-                      ...pointData
-                    }
-                  ]
-                };
-              })
-            };
-          })
-        })),
-
-      updatePoint: (sectorId, measurementId, pointId, data) =>
-        set((state) => ({
-          sectors: state.sectors.map((s) => {
-            if (s.id !== sectorId) return s;
-            return {
-              ...s,
-              measurements: s.measurements.map((m) => {
-                if (m.id !== measurementId) return m;
-                return {
-                  ...m,
-                  points: m.points.map((p) => 
-                    p.id === pointId ? { ...p, ...data } : p
-                  )
-                };
-              })
-            };
-          })
-        })),
-
-      deletePoint: (sectorId, measurementId, pointId) =>
-        set((state) => ({
-          sectors: state.sectors.map((s) => {
-            if (s.id !== sectorId) return s;
-            return {
-              ...s,
-              measurements: s.measurements.map((m) => {
-                if (m.id !== measurementId) return m;
-                return {
-                  ...m,
-                  points: m.points.filter((p) => p.id !== pointId)
-                };
-              })
-            };
-          })
-        })),
-
-      addSectorWithMeasurement: (sectorData, type) => 
-        set((state) => {
-          const newSectorId = uuidv4();
-          const newSector: Sector = {
-            ...sectorData,
-            id: newSectorId,
-            measurements: [
-              {
-                id: uuidv4(),
-                type,
-                sectorId: newSectorId,
-                status: 'pending',
-                points: [],
-                observations: ''
-              }
-            ]
-          };
-          return {
-            sectors: [...state.sectors, newSector]
-          };
+      updateEstablishment: (data) => set((s) => ({ establishment: { ...s.establishment, ...data }, isDirty: true })),
+      addSector: (sectorData) => set((s) => ({ sectors: [...s.sectors, { ...sectorData, id: uuidv4(), measurements: [] }], isDirty: true })),
+      updateSector: (id, data) => set((s) => ({ sectors: s.sectors.map((sec) => sec.id === id ? { ...sec, ...data } : sec), isDirty: true })),
+      deleteSector: (id) => set((s) => ({ sectors: s.sectors.filter((sec) => sec.id !== id), isDirty: true })),
+      addMeasurement: (sectorId, type) => set((s) => ({
+        sectors: s.sectors.map((sec) => sec.id !== sectorId ? sec : { ...sec, measurements: [...sec.measurements, { id: uuidv4(), type, sectorId, status: 'pending', points: [], observations: '' }] }),
+        isDirty: true
+      })),
+      deleteMeasurement: (sectorId, measurementId) => set((s) => ({
+        sectors: s.sectors.map((sec) => sec.id !== sectorId ? sec : { ...sec, measurements: sec.measurements.filter((m) => m.id !== measurementId) }),
+        isDirty: true
+      })),
+      updateMeasurement: (sectorId, measurementId, data) => set((s) => ({
+        sectors: s.sectors.map((sec) => sec.id !== sectorId ? sec : { ...sec, measurements: sec.measurements.map((m) => m.id === measurementId ? { ...m, ...data } : m) }),
+        isDirty: true
+      })),
+      addPoint: (sectorId, measurementId, pointData) => set((s) => ({
+        sectors: s.sectors.map((sec) => sec.id !== sectorId ? sec : {
+          ...sec,
+          measurements: sec.measurements.map((m) => m.id !== measurementId ? m : { ...m, points: [...m.points, { id: uuidv4(), label: `Punto ${m.points.length + 1}`, values: {}, ...pointData }] })
         }),
+        isDirty: true
+      })),
+      updatePoint: (sectorId, measurementId, pointId, data) => set((s) => ({
+        sectors: s.sectors.map((sec) => sec.id !== sectorId ? sec : {
+          ...sec,
+          measurements: sec.measurements.map((m) => m.id !== measurementId ? m : { ...m, points: m.points.map((p) => p.id === pointId ? { ...p, ...data } : p) })
+        }),
+        isDirty: true
+      })),
+      deletePoint: (sectorId, measurementId, pointId) => set((s) => ({
+        sectors: s.sectors.map((sec) => sec.id !== sectorId ? sec : {
+          ...sec,
+          measurements: sec.measurements.map((m) => m.id !== measurementId ? m : { ...m, points: m.points.filter((p) => p.id !== pointId) })
+        }),
+        isDirty: true
+      })),
+      addSectorWithMeasurement: (sectorData, type) => set((s) => {
+        const newSectorId = uuidv4();
+        return { sectors: [...s.sectors, { ...sectorData, id: newSectorId, measurements: [{ id: uuidv4(), type, sectorId: newSectorId, status: 'pending', points: [], observations: '' }] }], isDirty: true };
+      }),
 
-      loadInspectionData: (establishment, sectors) =>
-        set(() => ({
-          establishment: JSON.parse(JSON.stringify(establishment)),
-          sectors: JSON.parse(JSON.stringify(sectors))
-        })),
+      // Noise
+      updateNoiseRow: (id, data) => set((s) => ({ noiseProtocol: { ...s.noiseProtocol, rows: s.noiseProtocol.rows.map(r => r.id === id ? { ...r, ...data } : r) }, isDirty: true })),
+      addNoiseRow: () => set((s) => ({ noiseProtocol: { ...s.noiseProtocol, rows: [...s.noiseProtocol.rows, defaultNoiseRow()] }, isDirty: true })),
+      deleteNoiseRow: (id) => set((s) => ({ noiseProtocol: { ...s.noiseProtocol, rows: s.noiseProtocol.rows.filter(r => r.id !== id) }, isDirty: true })),
+      updateNoiseCompany: (data) => set((s) => ({ noiseProtocol: { ...s.noiseProtocol, company: { ...s.noiseProtocol.company, ...data } }, isDirty: true })),
+      updateNoiseText: (field, value) => set((s) => ({ noiseProtocol: { ...s.noiseProtocol, [field]: value }, isDirty: true })),
+      setNoiseRows: (rows) => set((s) => ({ noiseProtocol: { ...s.noiseProtocol, rows }, isDirty: true })),
 
-      resetStore: () => set({ establishment: initialEstablishment, sectors: [] }),
-      
+      // Thermal
+      updateThermalRow: (id, data) => set((s) => ({ thermalProtocol: { ...s.thermalProtocol, rows: s.thermalProtocol.rows.map(r => r.id === id ? { ...r, ...data } : r) }, isDirty: true })),
+      addThermalRow: () => set((s) => ({ thermalProtocol: { ...s.thermalProtocol, rows: [...s.thermalProtocol.rows, defaultThermalRow()] }, isDirty: true })),
+      deleteThermalRow: (id) => set((s) => ({ thermalProtocol: { ...s.thermalProtocol, rows: s.thermalProtocol.rows.filter(r => r.id !== id) }, isDirty: true })),
+      updateThermalCompany: (data) => set((s) => ({ thermalProtocol: { ...s.thermalProtocol, company: { ...s.thermalProtocol.company, ...data } }, isDirty: true })),
+      updateThermalText: (field, value) => set((s) => ({ thermalProtocol: { ...s.thermalProtocol, [field]: value }, isDirty: true })),
+      setThermalRows: (rows) => set((s) => ({ thermalProtocol: { ...s.thermalProtocol, rows }, isDirty: true })),
+
+      // Cold
+      updateColdRow: (id, data) => set((s) => ({ coldProtocol: { ...s.coldProtocol, rows: s.coldProtocol.rows.map(r => r.id === id ? { ...r, ...data } : r) }, isDirty: true })),
+      addColdRow: () => set((s) => ({ coldProtocol: { ...s.coldProtocol, rows: [...s.coldProtocol.rows, defaultColdRow()] }, isDirty: true })),
+      deleteColdRow: (id) => set((s) => ({ coldProtocol: { ...s.coldProtocol, rows: s.coldProtocol.rows.filter(r => r.id !== id) }, isDirty: true })),
+      updateColdCompany: (data) => set((s) => ({ coldProtocol: { ...s.coldProtocol, company: { ...s.coldProtocol.company, ...data } }, isDirty: true })),
+      updateColdText: (field, value) => set((s) => ({ coldProtocol: { ...s.coldProtocol, [field]: value }, isDirty: true })),
+      setColdRows: (rows) => set((s) => ({ coldProtocol: { ...s.coldProtocol, rows }, isDirty: true })),
+
+      // Lifecycle
+      loadInspectionData: (establishment, sectors) => set(() => ({
+        establishment: JSON.parse(JSON.stringify(establishment)),
+        sectors: JSON.parse(JSON.stringify(sectors)),
+        isDirty: false
+      })),
+      resetStore: () => set({
+        establishment: initialEstablishment, sectors: [],
+        noiseProtocol: { rows: [defaultNoiseRow()], company: defaultNoiseCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+        thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+        coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+        isDirty: false, lastSavedAt: null,
+      }),
       saveInspection: () => {
-        const state = useStore.getState();
+        const state = get();
         const inspectionData = {
-          establishment: state.establishment,
-          sectors: state.sectors,
+          establishment: state.establishment, sectors: state.sectors,
+          noiseProtocol: state.noiseProtocol, thermalProtocol: state.thermalProtocol, coldProtocol: state.coldProtocol,
           savedAt: new Date().toISOString()
         };
-        const savedInspections = JSON.parse(localStorage.getItem('syh-saved-inspections') || '[]');
-        savedInspections.push(inspectionData);
-        localStorage.setItem('syh-saved-inspections', JSON.stringify(savedInspections));
+        const saved = JSON.parse(localStorage.getItem('syh-saved-inspections') || '[]');
+        saved.push(inspectionData);
+        localStorage.setItem('syh-saved-inspections', JSON.stringify(saved));
+        set({ lastSavedAt: new Date().toISOString(), isDirty: false });
       },
+      markClean: () => set({ isDirty: false, lastSavedAt: new Date().toISOString() }),
 
-      // Signature Actions
+      // Signatures
       setDigitalSignature: (signature) => set({ digitalSignature: signature }),
       setSignatoryName: (name) => set({ signatoryName: name }),
       setSignatoryTitle: (title) => set({ signatoryTitle: title }),
       setSignatoryRegistration: (registration) => set({ signatoryRegistration: registration }),
     }),
     {
-      name: 'syh-relevamiento-working-state-v3',
+      name: 'eea-app-state-v4',
       storage: createJSONStorage(() => localStorage),
     }
   )

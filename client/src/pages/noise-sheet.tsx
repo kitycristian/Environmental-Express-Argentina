@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,27 +16,68 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 // @ts-ignore
 import { saveAs } from "file-saver";
 import { useStore } from "@/lib/store";
-import { useMeasurementStore, NoiseRow, NoiseCompany } from "@/lib/measurement-store";
 
-type CompanyData = NoiseCompany;
+interface NoiseRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  tiempoExposicion: string;
+  tiempoIntegracion: string;
+  tipoRuido: string;
+  valorMedido: string;
+  unidad: string;
+  dosisRuido: string;
+  limitePermisible: string;
+  fraccion: string;
+  cumple: string;
+  observaciones: string;
+}
+
+interface CompanyData {
+  razonSocial: string;
+  direccion: string;
+  localidad: string;
+  provincia: string;
+  cp: string;
+  cuit: string;
+  fechaMedicion: string;
+  horaInicio: string;
+  horaFin: string;
+  jornadaLaboral: string;
+  turnos: string;
+  instrumento1: string;
+  instrumento1Serie: string;
+  instrumento1Cert: string;
+  instrumento1FechaCal: string;
+  instrumento2: string;
+  instrumento2Serie: string;
+  instrumento2Cert: string;
+  instrumento2FechaCal: string;
+  condicionesNormales: string;
+  condicionesMedicion: string;
+}
 
 export default function NoiseSheet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  const {
-    noiseRows, setNoiseRows,
-    noiseCompany, setNoiseCompany,
-    noiseObs, setNoiseObs,
-    noiseConc, setNoiseConc,
-    noiseRec, setNoiseRec,
-  } = useMeasurementStore();
-
-  const [rows, setRows] = useState<NoiseRow[]>(noiseRows);
-  const [company, setCompany] = useState<CompanyData>(noiseCompany);
-  const [observacionesGenerales, setObservacionesGenerales] = useState(noiseObs);
-  const [conclusiones, setConclusiones] = useState(noiseConc);
-  const [recomendaciones, setRecomendaciones] = useState(noiseRec);
+  // ── Store-backed (persistent localStorage, not sessionStorage) ──
+  const noiseProtocol = useStore((s) => s.noiseProtocol);
+  const _updateNoiseRow = useStore((s) => s.updateNoiseRow);
+  const _addNoiseRow = useStore((s) => s.addNoiseRow);
+  const _deleteNoiseRow = useStore((s) => s.deleteNoiseRow);
+  const _updateNoiseCompany = useStore((s) => s.updateNoiseCompany);
+  const _updateNoiseText = useStore((s) => s.updateNoiseText);
+  const _setNoiseRows = useStore((s) => s.setNoiseRows);
+  const rows = noiseProtocol.rows;
+  const setRows = _setNoiseRows;
+  const company = noiseProtocol.company;
+  const setCompany = (data: any) => _updateNoiseCompany(typeof data === "function" ? data(noiseProtocol.company) : data);
+  const observacionesGenerales = noiseProtocol.observaciones;
+  const setObservacionesGenerales = (v: string) => _updateNoiseText("observaciones", v);
+  const conclusiones = noiseProtocol.conclusiones;
+  const setConclusiones = (v: string) => _updateNoiseText("conclusiones", v);
+  const recomendaciones = noiseProtocol.recomendaciones;
+  const setRecomendaciones = (v: string) => _updateNoiseText("recomendaciones", v);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
@@ -46,11 +87,7 @@ export default function NoiseSheet() {
   const signatoryTitle = useStore((state) => state.signatoryTitle);
   const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
-  useEffect(() => { setNoiseRows(rows); }, [rows]);
-  useEffect(() => { setNoiseCompany(company); }, [company]);
-  useEffect(() => { setNoiseObs(observacionesGenerales); }, [observacionesGenerales]);
-  useEffect(() => { setNoiseConc(conclusiones); }, [conclusiones]);
-  useEffect(() => { setNoiseRec(recomendaciones); }, [recomendaciones]);
+  // Data now persisted in Zustand store (localStorage) — no sessionStorage needed
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);

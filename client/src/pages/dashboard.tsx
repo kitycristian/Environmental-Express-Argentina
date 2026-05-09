@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer, Wind, Beaker, Factory, Check, ChevronsUpDown, Plus, Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, CheckCircle2, History, Gauge } from "lucide-react";
+import {
+  Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer,
+  Wind, Beaker, Factory, CheckCircle2, ChevronsUpDown, Plus, Check,
+  Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, Gauge, BarChart3
+} from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -16,146 +19,168 @@ import { MeasurementModal } from "@/components/measurement-modal";
 import { SketchEditor } from "@/components/sketch-editor";
 import { useClients, useCreateInspection } from "@/lib/hooks";
 
+const SHEET_ROUTES: Record<string, string> = {
+  lighting: '/lighting-sheet',
+  grounding: '/grounding',
+  noise: '/noise-sheet',
+  thermal_load: '/thermal-sheet',
+  cold_stress: '/cold-sheet',
+  chemical_agents: '/chemical-sheet',
+  particulate_matter: '/particulate-sheet',
+  ventilation: '/ventilation-sheet',
+  thickness: '/thickness-sheet',
+};
+
+const TYPE_COLORS: Record<string, { bg: string; icon: string; border: string }> = {
+  lighting:          { bg: '#FFF8E7', icon: '#F59E0B', border: '#FCD34D' },
+  noise:             { bg: '#EFF6FF', icon: '#3B82F6', border: '#93C5FD' },
+  thermal_load:      { bg: '#FFF1F2', icon: '#EF4444', border: '#FCA5A5' },
+  cold_stress:       { bg: '#EFF6FF', icon: '#0EA5E9', border: '#7DD3FC' },
+  particulate_matter:{ bg: '#F5F3FF', icon: '#8B5CF6', border: '#C4B5FD' },
+  chemical_agents:   { bg: '#ECFDF5', icon: '#10B981', border: '#6EE7B7' },
+  ventilation:       { bg: '#F0F9FF', icon: '#06B6D4', border: '#67E8F9' },
+  grounding:         { bg: '#FFFBEB', icon: '#D97706', border: '#FCD34D' },
+  thickness:         { bg: '#F8FAFC', icon: '#64748B', border: '#CBD5E1' },
+};
+
+function getIcon(type: MeasurementType, size = 20) {
+  const props = { size };
+  switch (type) {
+    case 'lighting': return <Lightbulb {...props} />;
+    case 'noise': return <Volume2 {...props} />;
+    case 'thermal_load': return <Thermometer {...props} />;
+    case 'cold_stress': return <Wind {...props} />;
+    case 'chemical_agents': return <Beaker {...props} />;
+    case 'particulate_matter': return <Factory {...props} />;
+    case 'ventilation': return <Wind {...props} />;
+    case 'grounding': return <Zap {...props} />;
+    case 'thickness': return <Gauge {...props} />;
+    default: return <Building2 {...props} />;
+  }
+}
+
 export default function Dashboard() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
   const sectors = useStore((state) => state.sectors);
-  
+  const saveInspection = useStore((state) => state.saveInspection);
+  const noiseProtocol = useStore((s) => s.noiseProtocol);
+  const thermalProtocol = useStore((s) => s.thermalProtocol);
+  const coldProtocol = useStore((s) => s.coldProtocol);
+
   const { data: clients = [] } = useClients();
-  const createInspection = useCreateInspection();
-  
   const [, setLocation] = useLocation();
   const [openClientSelect, setOpenClientSelect] = useState(false);
   const [activeMeasurementType, setActiveMeasurementType] = useState<MeasurementType | null>(null);
   const [sketchEditorOpen, setSketchEditorOpen] = useState(false);
   const { toast } = useToast();
-  const user = useAuth((state) => state.user);
+  const { user } = useAuth();
 
   const getMeasurementStats = (type: MeasurementType) => {
+    // For protocols stored in their own slice, check those rows
+    if (type === 'noise') {
+      const filled = noiseProtocol.rows.filter(r => r.sector || r.valorMedido).length;
+      return { count: filled, completed: noiseProtocol.rows.filter(r => r.cumple).length, isFullyComplete: filled > 0 && noiseProtocol.rows.every(r => r.cumple) };
+    }
+    if (type === 'thermal_load') {
+      const filled = thermalProtocol.rows.filter(r => r.sector || r.tbs).length;
+      return { count: filled, completed: thermalProtocol.rows.filter(r => r.cumpleVla).length, isFullyComplete: filled > 0 };
+    }
+    if (type === 'cold_stress') {
+      const filled = coldProtocol.rows.filter(r => r.sector || r.tbs).length;
+      return { count: filled, completed: coldProtocol.rows.filter(r => r.tee).length, isFullyComplete: filled > 0 };
+    }
     const measurements = sectors.flatMap(s => s.measurements.filter(m => m.type === type));
     const count = measurements.length;
     const completed = measurements.filter(m => m.status === 'compliant' || m.status === 'non_compliant').length;
-    const isFullyComplete = count > 0 && count === completed;
-    return { count, completed, isFullyComplete };
+    return { count, completed, isFullyComplete: count > 0 && count === completed };
   };
 
   const handleSave = () => {
-      createInspection.mutate({
-        establishment,
-        sectors
-      });
+    saveInspection();
+    toast({ title: "✓ Inspección guardada", description: "Los datos se guardaron en el historial." });
   };
 
   const loadClientToEstablishment = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
-    
-    updateEstablishment({
-      name: client.name,
-      razonSocial: client.razonSocial,
-      cuit: client.cuit,
-      address: client.address,
-    });
+    updateEstablishment({ name: client.name, razonSocial: client.razonSocial, cuit: client.cuit, address: client.address });
   };
 
   const handleSketchUpload = (file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       updateEstablishment({ sketchImage: reader.result as string });
-      toast({ title: "Croquis cargado correctamente" });
+      toast({ title: "Croquis cargado" });
     };
     reader.readAsDataURL(file);
   };
 
-  const getIcon = (type: MeasurementType) => {
-    switch(type) {
-      case 'lighting': return <Lightbulb className="h-6 w-6" />;
-      case 'noise': return <Volume2 className="h-6 w-6" />;
-      case 'thermal_load': return <Thermometer className="h-6 w-6" />;
-      case 'cold_stress': return <Wind className="h-6 w-6" />;
-      case 'chemical_agents': return <Beaker className="h-6 w-6" />;
-      case 'particulate_matter': return <Factory className="h-6 w-6" />;
-      case 'ventilation': return <Wind className="h-6 w-6" />;
-      case 'grounding': return <Zap className="h-6 w-6" />;
-      case 'thickness': return <Gauge className="h-6 w-6" />;
-      default: return <Building2 className="h-6 w-6" />;
-    }
-  };
+  const totalProtocols = Object.keys(MEASUREMENT_LABELS).filter(k => {
+    const stats = getMeasurementStats(k as MeasurementType);
+    return stats.count > 0;
+  }).length;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-      <MeasurementModal 
-        isOpen={!!activeMeasurementType} 
-        onClose={() => setActiveMeasurementType(null)} 
-        type={activeMeasurementType}
-      />
+    <div className="pb-20 stagger">
+      <MeasurementModal isOpen={!!activeMeasurementType} onClose={() => setActiveMeasurementType(null)} type={activeMeasurementType} />
 
-      <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Tablero de Inspección</h1>
-          <p className="text-muted-foreground">
-            Gestión de relevamientos de higiene y seguridad en tiempo real.
+      {/* ── Header ── */}
+      <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+            <BarChart3 size={14} />
+            <span>{totalProtocols} protocolos activos</span>
+          </div>
+          <h1 className="text-[28px] font-bold tracking-tight text-foreground leading-none">
+            Tablero de Inspección
+          </h1>
+          <p className="text-muted-foreground mt-1.5 text-[14px]">
+            Relevamientos de higiene y seguridad en tiempo real
           </p>
         </div>
-        
-        {/* Actions & Client Selector */}
-        <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
-           <div className="flex gap-2">
-             <Link href="/history">
-                <Button variant="outline" className="gap-2 text-muted-foreground hover:text-primary">
-                    <History className="h-4 w-4" /> Historial
-                </Button>
-             </Link>
-             <Button variant="outline" onClick={handleSave} className="gap-2 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100">
-               <Save className="h-4 w-4" /> Guardar Todo
-             </Button>
-             {user?.role === 'admin' && (
-               <Link href="/report">
-                  <Button variant="default" className="gap-2">
-                      <FileText className="h-4 w-4" /> Generar Informe
-                  </Button>
-               </Link>
-             )}
-           </div>
-           
-           <Popover open={openClientSelect} onOpenChange={setOpenClientSelect}>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={handleSave} className="gap-2 text-[13px] h-9">
+            <Save className="h-3.5 w-3.5" /> Guardar
+          </Button>
+          {user?.role === 'admin' && (
+            <Link href="/report">
+              <Button className="gap-2 text-[13px] h-9 bg-primary hover:bg-primary/90">
+                <FileText className="h-3.5 w-3.5" /> Generar Informe
+              </Button>
+            </Link>
+          )}
+
+          <Popover open={openClientSelect} onOpenChange={setOpenClientSelect}>
             <PopoverTrigger asChild>
-              <Button variant="outline" role="combobox" aria-expanded={openClientSelect} className="justify-between w-[250px] shadow-sm">
-                {establishment.name ? (
-                  <span className="truncate">{establishment.name}</span>
-                ) : (
-                  <span className="text-muted-foreground">Seleccionar Cliente...</span>
-                )}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              <Button variant="outline" role="combobox" className="justify-between w-[220px] h-9 text-[13px] shadow-sm">
+                {establishment.name
+                  ? <span className="truncate">{establishment.name}</span>
+                  : <span className="text-muted-foreground">Seleccionar Cliente...</span>}
+                <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0">
+            <PopoverContent className="w-[220px] p-0">
               <Command>
                 <CommandInput placeholder="Buscar cliente..." />
                 <CommandList>
-                  <CommandEmpty>No se encontraron clientes.</CommandEmpty>
-                  <CommandGroup heading="Mis Clientes">
+                  <CommandEmpty>No encontrado.</CommandEmpty>
+                  <CommandGroup heading="Clientes">
                     {clients.map((client) => (
-                      <CommandItem
-                        key={client.id}
-                        value={client.name}
-                        onSelect={() => {
-                          loadClientToEstablishment(client.id);
-                          setOpenClientSelect(false);
-                        }}
-                      >
+                      <CommandItem key={client.id} value={client.name} onSelect={() => { loadClientToEstablishment(client.id); setOpenClientSelect(false); }}>
                         <Check className={cn("mr-2 h-4 w-4", establishment.name === client.name ? "opacity-100" : "opacity-0")} />
                         {client.name}
                       </CommandItem>
                     ))}
                   </CommandGroup>
                   {user?.role === 'admin' && (
-                    <CommandGroup heading="Acciones">
-                        <Link href="/clients">
-                          <CommandItem className="cursor-pointer text-primary font-medium">
-                            <Plus className="mr-2 h-4 w-4" /> Crear Nuevo Cliente
-                          </CommandItem>
-                        </Link>
+                    <CommandGroup>
+                      <Link href="/clients">
+                        <CommandItem className="text-primary font-medium cursor-pointer">
+                          <Plus className="mr-2 h-4 w-4" /> Nuevo cliente
+                        </CommandItem>
+                      </Link>
                     </CommandGroup>
                   )}
                 </CommandList>
@@ -165,240 +190,132 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── Establishment Card ── */}
+      <div className="eea-card p-5 mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 size={16} className="text-primary" />
+          <span className="font-semibold text-[13px] text-foreground">Datos del Establecimiento</span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <label className="field-label">Establecimiento</label>
+            <Input value={establishment.name} onChange={(e) => updateEstablishment({ name: e.target.value })} placeholder="Nombre Fantasía" className="h-9 text-[13px]" />
+          </div>
+          <div>
+            <label className="field-label">Dirección</label>
+            <Input value={establishment.address} onChange={(e) => updateEstablishment({ address: e.target.value })} placeholder="Dirección completa" className="h-9 text-[13px]" />
+          </div>
+          <div>
+            <label className="field-label">CUIT</label>
+            <Input value={establishment.cuit} onChange={(e) => updateEstablishment({ cuit: e.target.value })} placeholder="XX-XXXXXXXX-X" className="h-9 text-[13px]" />
+          </div>
+          <div>
+            <label className="field-label">Fecha de Relevamiento</label>
+            <Input type="date" value={establishment.date} onChange={(e) => updateEstablishment({ date: e.target.value })} className="h-9 text-[13px]" />
+          </div>
+        </div>
 
-      {/* Establishment Info Card - Compact */}
-      <Card className="bg-muted/10 border-none shadow-none">
-        <CardContent className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1">
-            <Label htmlFor="name" className="text-xs text-muted-foreground">Establecimiento</Label>
-            <Input 
-              id="name" 
-              value={establishment.name} 
-              onChange={(e) => updateEstablishment({ name: e.target.value })} 
-              placeholder="Nombre Fantasía"
-              className="bg-background h-8"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="address" className="text-xs text-muted-foreground">Dirección</Label>
-            <Input 
-              id="address" 
-              value={establishment.address} 
-              onChange={(e) => updateEstablishment({ address: e.target.value })}
-              placeholder="Dirección"
-              className="bg-background h-8"
-            />
-          </div>
-          <div className="space-y-1">
-             <Label htmlFor="cuit" className="text-xs text-muted-foreground">CUIT</Label>
-             <Input 
-               id="cuit" 
-               value={establishment.cuit} 
-               onChange={(e) => updateEstablishment({ cuit: e.target.value })}
-               placeholder="XX-XXXXXXXX-X"
-               className="bg-background h-8"
-             />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="date" className="text-xs text-muted-foreground">Fecha de Relevamiento</Label>
-            <Input 
-              id="date" 
-              type="date"
-              value={establishment.date} 
-              onChange={(e) => updateEstablishment({ date: e.target.value })}
-              className="bg-background h-8"
-            />
-          </div>
-          
-          <div className="col-span-full border-t pt-4 mt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <Label className="text-xs text-muted-foreground whitespace-nowrap">Croquis del Establecimiento (Anexo 1)</Label>
-                {establishment.sketchImage ? (
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                            <Check className="h-3 w-3" /> Cargado
-                        </span>
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
-                            onClick={() => updateEstablishment({ sketchImage: undefined })}
-                        >
-                            <Trash2 className="h-3 w-3 mr-1" /> Eliminar
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="flex gap-2">
-                         <div className="relative">
-                            <Button variant="outline" size="sm" className="h-7 text-xs gap-2">
-                                <ImageIcon className="h-3 w-3" /> Subir Croquis
-                            </Button>
-                            <Input 
-                                type="file" 
-                                accept="image/*" 
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                onChange={(e) => e.target.files?.[0] && handleSketchUpload(e.target.files[0])}
-                            />
-                        </div>
-                        <Button variant="outline" size="sm" className="h-7 text-xs gap-2" onClick={() => setSketchEditorOpen(true)}>
-                            <PenTool className="h-3 w-3" /> Dibujar
-                        </Button>
-                        <SketchEditor
-                          open={sketchEditorOpen}
-                          onOpenChange={setSketchEditorOpen}
-                          onSave={(imageData) => {
-                            updateEstablishment({ sketchImage: imageData });
-                            toast({ title: "Croquis guardado correctamente" });
-                          }}
-                          initialImage={establishment.sketchImage}
-                        />
-                    </div>
-                )}
+        {/* Croquis */}
+        <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-3">
+          <span className="field-label mb-0">Croquis del Establecimiento (Anexo 1)</span>
+          {establishment.sketchImage ? (
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-[12px] text-green-700 font-semibold">
+                <CheckCircle2 size={13} /> Cargado
+              </span>
+              <div className="border rounded-lg p-1.5 bg-white">
+                <img src={establishment.sketchImage} alt="Croquis" className="max-h-24 max-w-[180px] object-contain" />
+              </div>
+              <Button variant="ghost" size="sm" className="text-destructive h-7 px-2 text-[12px]" onClick={() => updateEstablishment({ sketchImage: undefined })}>
+                <Trash2 size={12} className="mr-1" /> Eliminar
+              </Button>
             </div>
-            {establishment.sketchImage && (
-                <div className="mt-2 border rounded-md p-2 bg-white w-fit max-w-xs relative group">
-                    <img src={establishment.sketchImage} alt="Croquis" className="max-h-32 object-contain" />
-                    <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => toast({ title: "Editar dibujo", description: "Función de anotación próximamente" })}
-                    >
-                        <PenTool className="h-3 w-3" />
-                    </Button>
-                </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          ) : (
+            <div className="flex gap-2">
+              <div className="relative">
+                <Button variant="outline" size="sm" className="h-8 text-[12px] gap-1.5">
+                  <ImageIcon size={12} /> Subir imagen
+                </Button>
+                <Input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files?.[0] && handleSketchUpload(e.target.files[0])} />
+              </div>
+              <Button variant="outline" size="sm" className="h-8 text-[12px] gap-1.5" onClick={() => setSketchEditorOpen(true)}>
+                <PenTool size={12} /> Dibujar
+              </Button>
+              <SketchEditor open={sketchEditorOpen} onOpenChange={setSketchEditorOpen}
+                onSave={(imageData) => { updateEstablishment({ sketchImage: imageData }); toast({ title: "Croquis guardado" }); }}
+                initialImage={establishment.sketchImage} />
+            </div>
+          )}
+        </div>
+      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* ── Protocol Cards ── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Object.entries(MEASUREMENT_LABELS).map(([key, label]) => {
-           const type = key as MeasurementType;
-           const stats = getMeasurementStats(type);
-           const isActive = stats.count > 0;
-           
-           return (
-             <Card 
-               key={key} 
-               className={cn(
-                 "group cursor-pointer transition-all relative overflow-hidden",
-                 isActive ? "border-green-500 shadow-md bg-green-50/10" : "hover:border-primary/50 hover:shadow-lg"
-               )}
-               onClick={() => {
-                 const sheetRoutes: Record<string, string> = {
-                   'lighting': '/lighting-sheet',
-                   'grounding': '/grounding',
-                   'noise': '/noise-sheet',
-                   'thermal_load': '/thermal-sheet',
-                   'cold_stress': '/cold-sheet',
-                   'chemical_agents': '/chemical-sheet',
-                   'particulate_matter': '/particulate-sheet',
-                   'ventilation': '/ventilation-sheet',
-                   'thickness': '/thickness-sheet'
-                 };
-                 const route = sheetRoutes[type];
-                 if (route) {
-                   setLocation(route);
-                 } else {
-                   setActiveMeasurementType(type);
-                 }
-               }}
-             >
-               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                 {getIcon(type)}
-               </div>
-               
-               {isActive && (
-                 <div className="absolute top-2 right-2 text-green-600 animate-in zoom-in duration-300">
-                    <CheckCircle2 className="h-5 w-5 fill-green-100" />
-                 </div>
-               )}
+          const type = key as MeasurementType;
+          const stats = getMeasurementStats(type);
+          const hasData = stats.count > 0;
+          const colors = TYPE_COLORS[type] || TYPE_COLORS.thickness;
+          const route = SHEET_ROUTES[type];
 
-               <CardHeader className="pb-2">
-                 <div className="flex items-center gap-3">
-                   <div className={cn(
-                       "p-2 rounded-lg transition-colors", 
-                       isActive ? "bg-green-100 text-green-700" : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
-                   )}>
-                     {getIcon(type)}
-                   </div>
-                   <CardTitle className="text-lg leading-tight">{label}</CardTitle>
-                 </div>
-               </CardHeader>
-               <CardContent>
-                 <div className="text-2xl font-bold flex items-baseline gap-2">
-                   {stats.count}
-                   <span className="text-sm font-normal text-muted-foreground">sectores</span>
-                 </div>
-                 <div className="flex items-center gap-2 mt-1">
-                    <div className="h-2 flex-1 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                            className={cn("h-full transition-all duration-500", isActive ? "bg-green-500" : "bg-primary")} 
-                            style={{ width: stats.count > 0 ? `${(stats.completed / stats.count) * 100}%` : '0%' }}
-                        />
-                    </div>
-                    <span className="text-xs text-muted-foreground">{stats.completed}/{stats.count} completos</span>
-                 </div>
-               </CardContent>
-               <CardFooter className="pt-0">
-                  <div className="flex gap-2 w-full">
-                    <Button 
-                        variant={isActive ? "secondary" : "ghost"} 
-                        className={cn(
-                            "flex-1 justify-between p-0 h-auto hover:bg-transparent",
-                            isActive ? "text-green-700 hover:text-green-800 font-medium" : "group-hover:text-primary"
-                        )}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const sheetRoutes: Record<string, string> = {
-                              'lighting': '/lighting-sheet',
-                              'grounding': '/grounding',
-                              'noise': '/noise-sheet',
-                              'thermal_load': '/thermal-sheet',
-                              'cold_stress': '/cold-sheet',
-                              'chemical_agents': '/chemical-sheet',
-                              'particulate_matter': '/particulate-sheet',
-                              'ventilation': '/ventilation-sheet',
-                              'thickness': '/thickness-sheet'
-                            };
-                            const route = sheetRoutes[type];
-                            if (route) {
-                              setLocation(route);
-                            }
-                        }}
-                    >
-                        {isActive ? "Carga Rápida" : "Comenzar"} 
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                    <Link href={(() => {
-                      const routes: Record<string, string> = {
-                        'lighting': '/lighting-sheet',
-                        'grounding': '/grounding',
-                        'noise': '/noise-sheet',
-                        'thermal_load': '/thermal-sheet',
-                        'cold_stress': '/cold-sheet',
-                        'chemical_agents': '/chemical-sheet',
-                        'particulate_matter': '/particulate-sheet',
-                        'ventilation': '/ventilation-sheet',
-                        'thickness': '/thickness-sheet'
-                      };
-                      return routes[type] || `/campaign/${type}`;
-                    })()}>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-9 w-9 text-muted-foreground hover:text-primary"
-                            onClick={(e) => e.stopPropagation()} 
-                            title="Ver Tablero Completo"
-                        >
-                            <Factory className="h-4 w-4" />
-                        </Button>
-                    </Link>
+          return (
+            <div
+              key={key}
+              className={`protocol-card group ${hasData ? 'has-data' : ''}`}
+              onClick={() => route ? setLocation(route) : setActiveMeasurementType(type)}
+            >
+              <div className="p-5">
+                {/* Icon + check */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: colors.bg, color: colors.icon }}>
+                    {getIcon(type, 18)}
                   </div>
-               </CardFooter>
-             </Card>
-           );
+                  {hasData && (
+                    <div className="flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+                      <CheckCircle2 size={11} />
+                      Activo
+                    </div>
+                  )}
+                </div>
+
+                {/* Title + count */}
+                <div className="mb-3">
+                  <div className="font-semibold text-[14px] text-foreground leading-tight">{label}</div>
+                  {hasData && (
+                    <div className="text-[22px] font-bold text-foreground mt-1 leading-none">
+                      {stats.count}
+                      <span className="text-[13px] font-normal text-muted-foreground ml-1">sectores</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Progress */}
+                {hasData && stats.count > 0 && (
+                  <div className="mb-4">
+                    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.round((stats.completed / stats.count) * 100)}%`,
+                          background: colors.icon
+                        }}
+                      />
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-1">{stats.completed}/{stats.count} completos</div>
+                  </div>
+                )}
+
+                {/* CTA */}
+                <div
+                  className={`flex items-center justify-between text-[13px] font-medium pt-3 border-t transition-colors
+                    ${hasData ? 'border-green-100 text-green-700 group-hover:text-green-800' : 'border-border text-muted-foreground group-hover:text-primary'}`}
+                >
+                  <span>{hasData ? 'Continuar carga' : 'Comenzar'}</span>
+                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                </div>
+              </div>
+            </div>
+          );
         })}
       </div>
     </div>
