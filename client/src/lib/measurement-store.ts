@@ -121,6 +121,14 @@ export interface ColdCompany {
   condicionesAtm: string;
 }
 
+export interface SectorPhoto {
+  id: string;
+  sectorName: string;
+  base64: string;
+  fileName: string;
+  caption: string;
+}
+
 // ── Defaults ───────────────────────────────────────────────────────────────
 
 const DEFAULT_THERMAL_ROW: ThermalRow = { id: "1", sector: "", puestoTrabajo: "", tipoActividad: "", cargaMetabolica: "", exposicionHs: "", tbs: "", tbh: "", tg: "", tgbh: "", tgbhPonderado: "", aclimatado: "SI", vla: "", vlp: "", cumpleVla: "", cumpleVlp: "", observaciones: "" };
@@ -174,6 +182,10 @@ interface MeasurementState {
   setColdConc: (v: string) => void;
   setColdRec: (v: string) => void;
 
+  // Photos
+  sectorPhotos: SectorPhoto[];
+  setSectorPhotos: (photos: SectorPhoto[]) => void;
+
   resetAll: () => void;
 }
 
@@ -216,10 +228,15 @@ export const useMeasurementStore = create<MeasurementState>()(
       setColdConc: (coldConc) => set({ coldConc }),
       setColdRec: (coldRec) => set({ coldRec }),
 
+      // Photos
+      sectorPhotos: [],
+      setSectorPhotos: (sectorPhotos) => set({ sectorPhotos }),
+
       resetAll: () => set({
         thermalRows: [DEFAULT_THERMAL_ROW], thermalCompany: DEFAULT_THERMAL_COMPANY, thermalObs: "", thermalConc: "", thermalRec: "",
         noiseRows: [DEFAULT_NOISE_ROW], noiseCompany: DEFAULT_NOISE_COMPANY, noiseObs: "", noiseConc: "", noiseRec: "",
         coldRows: [DEFAULT_COLD_ROW], coldCompany: DEFAULT_COLD_COMPANY, coldObs: "", coldConc: "", coldRec: "",
+        sectorPhotos: [],
       }),
     }),
     {
