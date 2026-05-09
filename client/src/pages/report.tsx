@@ -49,9 +49,13 @@ export default function Report() {
   const [selectedType, setSelectedType] = useState<MeasurementType | 'all'>('all');
   const [isInstrumentDialogOpen, setIsInstrumentDialogOpen] = useState(false);
 
-  const noiseProtocol   = useStore((s) => s.noiseProtocol);
-  const thermalProtocol = useStore((s) => s.thermalProtocol);
-  const coldProtocol    = useStore((s) => s.coldProtocol);
+  const noiseProtocol       = useStore((s) => s.noiseProtocol);
+  const thermalProtocol     = useStore((s) => s.thermalProtocol);
+  const coldProtocol        = useStore((s) => s.coldProtocol);
+  const digitalSignature    = useStore((s) => s.digitalSignature);
+  const signatoryName       = useStore((s) => s.signatoryName);
+  const signatoryTitle      = useStore((s) => s.signatoryTitle);
+  const signatoryRegistration = useStore((s) => s.signatoryRegistration);
 
   const buildSessionMeasurement = (type: MeasurementType, sName: string, sRows: any[], comp: any, obs: string, conc: string, rec: string): Measurement => {
     const mapNoise = (r: any, idx: number): MeasurementPoint => ({ id: `np-${idx}`, label: `Punto ${idx + 1}`, values: { puesto: r.puestoTrabajo || '', tiempo_exposicion: r.tiempoExposicion || '', tiempo_integracion: r.tiempoIntegracion || '', caracteristicas: r.tipoRuido || '', nivel_pico_c: '', nivel_continuo_eq: r.valorMedido || '', suma_fracciones: r.fraccion || '', dosis: r.dosisRuido || '', cumple: r.cumple || '' }, notes: r.observaciones || '' });
@@ -139,8 +143,18 @@ export default function Report() {
   };
 
   const handleDocxExport = () => {
-      toast({ title: "Generando documento DOCX..." });
-      generateDocxReport(establishment, getMergedSectors());
+    toast({ title: "Generando documento DOCX...", description: "Esto puede tomar unos segundos." });
+    generateDocxReport(
+      establishment,
+      sectors,
+      noiseProtocol,
+      thermalProtocol,
+      coldProtocol,
+      digitalSignature,
+      signatoryName,
+      signatoryTitle,
+      signatoryRegistration,
+    );
   };
 
   const handlePrint = () => {
