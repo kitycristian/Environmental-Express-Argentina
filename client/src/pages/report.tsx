@@ -1,4 +1,5 @@
 import { useStore } from "@/lib/store";
+import { useMeasurementStore } from "@/lib/measurement-store";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft, Download, FileJson, Sparkles, Pencil, FileText, ImageIcon, Check, Trash2, Plus } from "lucide-react";
 import { Link } from "wouter";
@@ -49,7 +50,9 @@ export default function Report() {
   const [selectedType, setSelectedType] = useState<MeasurementType | 'all'>('all');
   const [isInstrumentDialogOpen, setIsInstrumentDialogOpen] = useState(false);
 
-  const buildSessionMeasurement = (type: MeasurementType, sName: string, sRows: any[], comp: any, obsKey: string, concKey: string, recKey: string): Measurement => {
+  const mStore = useMeasurementStore();
+
+  const buildSessionMeasurement = (type: MeasurementType, sName: string, sRows: any[], comp: any, obs: string, conc: string, rec: string): Measurement => {
     const mapNoise = (r: any, idx: number): MeasurementPoint => ({ id: `np-${idx}`, label: `Punto ${idx + 1}`, values: { puesto: r.puestoTrabajo || '', tiempo_exposicion: r.tiempoExposicion || '', tiempo_integracion: r.tiempoIntegracion || '', caracteristicas: r.tipoRuido || '', nivel_pico_c: '', nivel_continuo_eq: r.valorMedido || '', suma_fracciones: r.fraccion || '', dosis: r.dosisRuido || '', cumple: r.cumple || '' }, notes: r.observaciones || '' });
     const mapThermal = (r: any, idx: number): MeasurementPoint => ({ id: `tp-${idx}`, label: `Punto ${idx + 1}`, values: { tbs: r.tbs || '', tbh: r.tbh || '', tg: r.tg || '', tgbh: r.tgbh || '', tgbhPonderado: r.tgbhPonderado || '', mi: '42', mii: '105' }, notes: r.puestoTrabajo || '' });
     const mapCold = (r: any, idx: number): MeasurementPoint => ({ id: `cp-${idx}`, label: `Punto ${idx + 1}`, values: { temp: r.tbs || '', wind: r.velocidadViento || '', tee: r.tee || '' }, notes: r.puestoTrabajo || '' });
@@ -71,9 +74,9 @@ export default function Report() {
       sectorId: `${type}-session-${sName}`,
       status,
       points: sRows.map(mapFn),
-      observations: sessionStorage.getItem(obsKey) || undefined,
-      specificConclusions: sessionStorage.getItem(concKey) || undefined,
-      analysisAndImprovements: sessionStorage.getItem(recKey) || undefined,
+      observations: obs || undefined,
+      specificConclusions: conc || undefined,
+      analysisAndImprovements: rec || undefined,
       config: type === 'thermal_load' ? { limit: Number(sRows[0]?.vla) || 29.5 } : undefined,
       details: {
         brand: comp.instrumento1 || '',
@@ -90,13 +93,8 @@ export default function Report() {
     };
   };
 
-  const getSessionSheetData = (storageKey: string, companyKey: string, type: MeasurementType, obsKey: string, concKey: string, recKey: string, filterFn: (r: any) => boolean): { sectorName: string; measurement: Measurement }[] => {
+  const getStoreSheetData = (rows: any[], comp: any, type: MeasurementType, obs: string, conc: string, rec: string, filterFn: (r: any) => boolean): { sectorName: string; measurement: Measurement }[] => {
     try {
-      const rowsStr = sessionStorage.getItem(storageKey);
-      const compStr = sessionStorage.getItem(companyKey);
-      if (!rowsStr) return [];
-      const rows = JSON.parse(rowsStr);
-      const comp = compStr ? JSON.parse(compStr) : {};
       const filled = rows.filter(filterFn);
       if (filled.length === 0) return [];
       const groups: Record<string, any[]> = {};
@@ -107,7 +105,7 @@ export default function Report() {
       });
       return Object.entries(groups).map(([sName, sRows]) => ({
         sectorName: sName,
-        measurement: buildSessionMeasurement(type, sName, sRows, comp, obsKey, concKey, recKey),
+        measurement: buildSessionMeasurement(type, sName, sRows, comp, obs, conc, rec),
       }));
     } catch { return []; }
   };
@@ -132,9 +130,9 @@ export default function Report() {
       });
     };
 
-    addToMerged(getSessionSheetData('noise-rows', 'noise-company', 'noise', 'noise-obs', 'noise-conc', 'noise-rec', (r: any) => r.sector || r.puestoTrabajo || r.valorMedido), 'noise');
-    addToMerged(getSessionSheetData('thermal-rows', 'thermal-company', 'thermal_load', 'thermal-obs', 'thermal-conc', 'thermal-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh), 'thermal_load');
-    addToMerged(getSessionSheetData('cold-rows', 'cold-company', 'cold_stress', 'cold-obs', 'cold-conc', 'cold-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs), 'cold_stress');
+    addToMerged(getStoreSheetData(mStore.noiseRows, mStore.noiseCompany, 'noise', mStore.noiseObs, mStore.noiseConc, mStore.noiseRec, (r: any) => r.sector || r.puestoTrabajo || r.valorMedido), 'noise');
+    addToMerged(getStoreSheetData(mStore.thermalRows, mStore.thermalCompany, 'thermal_load', mStore.thermalObs, mStore.thermalConc, mStore.thermalRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh), 'thermal_load');
+    addToMerged(getStoreSheetData(mStore.coldRows, mStore.coldCompany, 'cold_stress', mStore.coldObs, mStore.coldConc, mStore.coldRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs), 'cold_stress');
 
     return merged;
   };
@@ -398,9 +396,9 @@ export default function Report() {
     });
   });
 
-  // Merge sessionStorage data from standalone sheets (noise, thermal, cold)
-  const mergeSessionData = (type: MeasurementType, storageKey: string, companyKey: string, obsKey: string, concKey: string, recKey: string, filterFn: (r: any) => boolean) => {
-    const items = getSessionSheetData(storageKey, companyKey, type, obsKey, concKey, recKey, filterFn);
+  // Merge store data from standalone sheets (noise, thermal, cold)
+  const mergeStoreData = (type: MeasurementType, rows: any[], comp: any, obs: string, conc: string, rec: string, filterFn: (r: any) => boolean) => {
+    const items = getStoreSheetData(rows, comp, type, obs, conc, rec, filterFn);
     items.forEach(({ sectorName, measurement }) => {
       if (!measurementsByType[type]) measurementsByType[type] = [];
       const alreadyExists = measurementsByType[type]!.some(m => m.measurement.id === measurement.id);
@@ -410,9 +408,9 @@ export default function Report() {
     });
   };
 
-  mergeSessionData('noise', 'noise-rows', 'noise-company', 'noise-obs', 'noise-conc', 'noise-rec', (r: any) => r.sector || r.puestoTrabajo || r.valorMedido);
-  mergeSessionData('thermal_load', 'thermal-rows', 'thermal-company', 'thermal-obs', 'thermal-conc', 'thermal-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh);
-  mergeSessionData('cold_stress', 'cold-rows', 'cold-company', 'cold-obs', 'cold-conc', 'cold-rec', (r: any) => r.sector || r.puestoTrabajo || r.tbs);
+  mergeStoreData('noise', mStore.noiseRows, mStore.noiseCompany, mStore.noiseObs, mStore.noiseConc, mStore.noiseRec, (r: any) => r.sector || r.puestoTrabajo || r.valorMedido);
+  mergeStoreData('thermal_load', mStore.thermalRows, mStore.thermalCompany, mStore.thermalObs, mStore.thermalConc, mStore.thermalRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs || r.tgbh);
+  mergeStoreData('cold_stress', mStore.coldRows, mStore.coldCompany, mStore.coldObs, mStore.coldConc, mStore.coldRec, (r: any) => r.sector || r.puestoTrabajo || r.tbs);
 
   // Helper Components for Report Structure matching the official forms
   const ProtocolHeader = ({ title }: { title: string }) => (

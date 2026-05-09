@@ -1,0 +1,89 @@
+import { Document, Packer, Paragraph, Table, TableRow, TableCell, AlignmentType, HeadingLevel, ImageRun } from "docx";
+
+export const generateProtocolDOCX = async (data: any) => {
+  const doc = new Document({
+    sections: [{
+      children: [
+        // ENCABEZADO TIPO SRT [cite: 6, 8, 87]
+        new Paragraph({
+          text: "PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR (RESOL. SRT 30/2023)",
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.CENTER,
+        }),
+        
+        // TABLA DE DATOS DEL ESTABLECIMIENTO 
+        new Table({
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph("Razón Social:")] }),
+                new TableCell({ children: [new Paragraph(data.clientInfo.razonSocial)] }),
+              ],
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph("CUIT:")] }),
+                new TableCell({ children: [new Paragraph(data.clientInfo.cuit)] }),
+              ],
+            }),
+          ],
+        }),
+
+        new Paragraph({ text: "\nAnálisis de Tasa Metabólica (TM)", heading: HeadingLevel.HEADING_2 }),
+
+        // GENERACIÓN DINÁMICA DE TABLA TM (Ej: Panadería) [cite: 10, 13]
+        new Table({
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph("Componente")] }),
+                new TableCell({ children: [new Paragraph("Valor (Watts)")] }),
+              ],
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph("Metabolismo Basal (Sentado/Ligero)")] }),
+                new TableCell({ children: [new Paragraph("126 W")] }), // 
+              ],
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph("Suplemento Postura (De Pie)")] }),
+                new TableCell({ children: [new Paragraph("27 W")] }), // 
+              ],
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph("TOTAL TASA METABÓLICA")] }),
+                new TableCell({ children: [new Paragraph("153 W")] }), // 
+              ],
+            }),
+          ],
+        }),
+
+        // VALIDACIÓN DE CUMPLIMIENTO DE RUIDO [cite: 89, 99]
+        new Paragraph({ text: "\nResultados de Ruido Laboral", heading: HeadingLevel.HEADING_2 }),
+        new Table({
+          rows: data.noiseData.map((m: any) => (
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph(m.puesto)] }),
+                new TableCell({ children: [new Paragraph(`${m.valor} dBA`)] }),
+                new TableCell({ 
+                  children: [new Paragraph(m.valor > 85 ? "NO CUMPLE" : "CUMPLE")],
+                  // [cite: 100] Recomendar protección si > 85 dBA
+                }),
+              ],
+            })
+          )),
+        }),
+
+        // CONSTANCIA FOTOGRÁFICA (Solo si existen fotos) [cite: 49, 103]
+        new Paragraph({ text: "\nConstancia Fotográfica", heading: HeadingLevel.HEADING_2 }),
+        // Aquí iterarías tus fotos en Base64
+      ],
+    }],
+  });
+
+  return Packer.toBlob(doc);
+};

@@ -16,67 +16,27 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 // @ts-ignore
 import { saveAs } from "file-saver";
 import { useStore } from "@/lib/store";
+import { useMeasurementStore, ThermalRow, ThermalCompany } from "@/lib/measurement-store";
 
-interface ThermalRow {
-  id: string;
-  sector: string;
-  puestoTrabajo: string;
-  tipoActividad: string;
-  cargaMetabolica: string;
-  exposicionHs: string;
-  tbs: string;
-  tbh: string;
-  tg: string;
-  tgbh: string;
-  tgbhPonderado: string;
-  aclimatado: string;
-  vla: string;
-  vlp: string;
-  cumpleVla: string;
-  cumpleVlp: string;
-  observaciones: string;
-}
-
-interface CompanyData {
-  razonSocial: string;
-  direccion: string;
-  localidad: string;
-  provincia: string;
-  cp: string;
-  cuit: string;
-  fechaMedicion: string;
-  horaInicio: string;
-  horaFin: string;
-  turnos: string;
-  instrumento1: string;
-  instrumento1Serie: string;
-  instrumento1Cert: string;
-  instrumento1FechaCal: string;
-  instrumento2: string;
-  instrumento2Serie: string;
-  instrumento2Cert: string;
-  instrumento2FechaCal: string;
-  condicionesAtm: string;
-}
+type CompanyData = ThermalCompany;
 
 export default function ThermalSheet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [rows, setRows] = useState<ThermalRow[]>(() => {
-    try { const s = sessionStorage.getItem('thermal-rows'); return s ? JSON.parse(s) : [{ id: "1", sector: "", puestoTrabajo: "", tipoActividad: "", cargaMetabolica: "", exposicionHs: "", tbs: "", tbh: "", tg: "", tgbh: "", tgbhPonderado: "", aclimatado: "SI", vla: "", vlp: "", cumpleVla: "", cumpleVlp: "", observaciones: "" }]; } catch { return [{ id: "1", sector: "", puestoTrabajo: "", tipoActividad: "", cargaMetabolica: "", exposicionHs: "", tbs: "", tbh: "", tg: "", tgbh: "", tgbhPonderado: "", aclimatado: "SI", vla: "", vlp: "", cumpleVla: "", cumpleVlp: "", observaciones: "" }]; }
-  });
-  const [company, setCompany] = useState<CompanyData>(() => {
-    try { const s = sessionStorage.getItem('thermal-company'); return s ? JSON.parse(s) : { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", instrumento2: "", instrumento2Serie: "", instrumento2Cert: "", instrumento2FechaCal: "", condicionesAtm: "" }; } catch { return { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", instrumento2: "", instrumento2Serie: "", instrumento2Cert: "", instrumento2FechaCal: "", condicionesAtm: "" }; }
-  });
-  const [observacionesGenerales, setObservacionesGenerales] = useState(() => {
-    try { return sessionStorage.getItem('thermal-obs') || ""; } catch { return ""; }
-  });
-  const [conclusiones, setConclusiones] = useState(() => {
-    try { return sessionStorage.getItem('thermal-conc') || ""; } catch { return ""; }
-  });
-  const [recomendaciones, setRecomendaciones] = useState(() => {
-    try { return sessionStorage.getItem('thermal-rec') || ""; } catch { return ""; }
-  });
+
+  const {
+    thermalRows, setThermalRows,
+    thermalCompany, setThermalCompany,
+    thermalObs, setThermalObs,
+    thermalConc, setThermalConc,
+    thermalRec, setThermalRec,
+  } = useMeasurementStore();
+
+  const [rows, setRows] = useState<ThermalRow[]>(thermalRows);
+  const [company, setCompany] = useState<CompanyData>(thermalCompany);
+  const [observacionesGenerales, setObservacionesGenerales] = useState(thermalObs);
+  const [conclusiones, setConclusiones] = useState(thermalConc);
+  const [recomendaciones, setRecomendaciones] = useState(thermalRec);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
@@ -86,11 +46,11 @@ export default function ThermalSheet() {
   const signatoryTitle = useStore((state) => state.signatoryTitle);
   const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
-  useEffect(() => { try { sessionStorage.setItem('thermal-rows', JSON.stringify(rows)); } catch {} }, [rows]);
-  useEffect(() => { try { sessionStorage.setItem('thermal-company', JSON.stringify(company)); } catch {} }, [company]);
-  useEffect(() => { try { sessionStorage.setItem('thermal-obs', observacionesGenerales); } catch {} }, [observacionesGenerales]);
-  useEffect(() => { try { sessionStorage.setItem('thermal-conc', conclusiones); } catch {} }, [conclusiones]);
-  useEffect(() => { try { sessionStorage.setItem('thermal-rec', recomendaciones); } catch {} }, [recomendaciones]);
+  useEffect(() => { setThermalRows(rows); }, [rows]);
+  useEffect(() => { setThermalCompany(company); }, [company]);
+  useEffect(() => { setThermalObs(observacionesGenerales); }, [observacionesGenerales]);
+  useEffect(() => { setThermalConc(conclusiones); }, [conclusiones]);
+  useEffect(() => { setThermalRec(recomendaciones); }, [recomendaciones]);
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);

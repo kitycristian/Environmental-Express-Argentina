@@ -84,13 +84,9 @@ const safeDate = (d: string | undefined): string => {
   } catch { return d || "-"; }
 };
 
-const getSessionData = (key: string) => {
-  try { const s = sessionStorage.getItem(key); return s ? JSON.parse(s) : null; } catch { return null; }
-};
+import { useMeasurementStore } from "@/lib/measurement-store";
 
-const getSessionText = (key: string) => {
-  try { return sessionStorage.getItem(key) || ""; } catch { return ""; }
-};
+const getStoreData = () => useMeasurementStore.getState();
 
 export const generateDocxReport = async (establishment: Establishment, sectors: Sector[]) => {
   const children: (Paragraph | Table)[] = [];
@@ -154,11 +150,12 @@ export const generateDocxReport = async (establishment: Establishment, sectors: 
   // =====================================================
   // THERMAL LOAD PROTOCOL - Resol. SRT 30/2023
   // =====================================================
-  const thermalRows = getSessionData('thermal-rows');
-  const thermalCompany = getSessionData('thermal-company');
-  const thermalObs = getSessionText('thermal-obs');
-  const thermalConc = getSessionText('thermal-conc');
-  const thermalRec = getSessionText('thermal-rec');
+  const store = getStoreData();
+  const thermalRows = store.thermalRows?.length ? store.thermalRows : null;
+  const thermalCompany = store.thermalCompany;
+  const thermalObs = store.thermalObs;
+  const thermalConc = store.thermalConc;
+  const thermalRec = store.thermalRec;
 
   if (thermalRows && thermalRows.filter((r: any) => r.sector || r.puestoTrabajo || r.tbs).length > 0) {
     const filledRows = thermalRows.filter((r: any) => r.sector || r.puestoTrabajo || r.tbs);
@@ -340,11 +337,11 @@ export const generateDocxReport = async (establishment: Establishment, sectors: 
   // =====================================================
   // COLD STRESS PROTOCOL - Resol. MTEySS 295/2003
   // =====================================================
-  const coldRows = getSessionData('cold-rows');
-  const coldCompany = getSessionData('cold-company');
-  const coldObs = getSessionText('cold-obs');
-  const coldConc = getSessionText('cold-conc');
-  const coldRec = getSessionText('cold-rec');
+  const coldRows = store.coldRows?.length ? store.coldRows : null;
+  const coldCompany = store.coldCompany;
+  const coldObs = store.coldObs;
+  const coldConc = store.coldConc;
+  const coldRec = store.coldRec;
 
   if (coldRows && coldRows.filter((r: any) => r.sector || r.puestoTrabajo || r.tbs).length > 0) {
     const filledRows = coldRows.filter((r: any) => r.sector || r.puestoTrabajo || r.tbs);
@@ -591,11 +588,11 @@ export const generateDocxReport = async (establishment: Establishment, sectors: 
   // =====================================================
   // NOISE PROTOCOL - Resol. SRT 85/2012
   // =====================================================
-  const noiseRows = getSessionData('noise-rows');
-  const noiseCompany = getSessionData('noise-company');
-  const noiseObs = getSessionText('noise-obs');
-  const noiseConc = getSessionText('noise-conc');
-  const noiseRec = getSessionText('noise-rec');
+  const noiseRows = store.noiseRows?.length ? store.noiseRows : null;
+  const noiseCompany = store.noiseCompany;
+  const noiseObs = store.noiseObs;
+  const noiseConc = store.noiseConc;
+  const noiseRec = store.noiseRec;
 
   if (noiseRows && noiseRows.filter((r: any) => r.sector || r.puestoTrabajo || r.valorMedido).length > 0) {
     const filledRows = noiseRows.filter((r: any) => r.sector || r.puestoTrabajo || r.valorMedido);

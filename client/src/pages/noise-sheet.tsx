@@ -16,65 +16,27 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 // @ts-ignore
 import { saveAs } from "file-saver";
 import { useStore } from "@/lib/store";
+import { useMeasurementStore, NoiseRow, NoiseCompany } from "@/lib/measurement-store";
 
-interface NoiseRow {
-  id: string;
-  sector: string;
-  puestoTrabajo: string;
-  tiempoExposicion: string;
-  tiempoIntegracion: string;
-  tipoRuido: string;
-  valorMedido: string;
-  unidad: string;
-  dosisRuido: string;
-  limitePermisible: string;
-  fraccion: string;
-  cumple: string;
-  observaciones: string;
-}
-
-interface CompanyData {
-  razonSocial: string;
-  direccion: string;
-  localidad: string;
-  provincia: string;
-  cp: string;
-  cuit: string;
-  fechaMedicion: string;
-  horaInicio: string;
-  horaFin: string;
-  jornadaLaboral: string;
-  turnos: string;
-  instrumento1: string;
-  instrumento1Serie: string;
-  instrumento1Cert: string;
-  instrumento1FechaCal: string;
-  instrumento2: string;
-  instrumento2Serie: string;
-  instrumento2Cert: string;
-  instrumento2FechaCal: string;
-  condicionesNormales: string;
-  condicionesMedicion: string;
-}
+type CompanyData = NoiseCompany;
 
 export default function NoiseSheet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [rows, setRows] = useState<NoiseRow[]>(() => {
-    try { const s = sessionStorage.getItem('noise-rows'); return s ? JSON.parse(s) : [{ id: "1", sector: "", puestoTrabajo: "", tiempoExposicion: "", tiempoIntegracion: "", tipoRuido: "", valorMedido: "", unidad: "dBA", dosisRuido: "", limitePermisible: "85", fraccion: "", cumple: "", observaciones: "" }]; } catch { return [{ id: "1", sector: "", puestoTrabajo: "", tiempoExposicion: "", tiempoIntegracion: "", tipoRuido: "", valorMedido: "", unidad: "dBA", dosisRuido: "", limitePermisible: "85", fraccion: "", cumple: "", observaciones: "" }]; }
-  });
-  const [company, setCompany] = useState<CompanyData>(() => {
-    try { const s = sessionStorage.getItem('noise-company'); return s ? JSON.parse(s) : { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", jornadaLaboral: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", instrumento2: "", instrumento2Serie: "", instrumento2Cert: "", instrumento2FechaCal: "", condicionesNormales: "", condicionesMedicion: "" }; } catch { return { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", jornadaLaboral: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", instrumento2: "", instrumento2Serie: "", instrumento2Cert: "", instrumento2FechaCal: "", condicionesNormales: "", condicionesMedicion: "" }; }
-  });
-  const [observacionesGenerales, setObservacionesGenerales] = useState(() => {
-    try { return sessionStorage.getItem('noise-obs') || ""; } catch { return ""; }
-  });
-  const [conclusiones, setConclusiones] = useState(() => {
-    try { return sessionStorage.getItem('noise-conc') || ""; } catch { return ""; }
-  });
-  const [recomendaciones, setRecomendaciones] = useState(() => {
-    try { return sessionStorage.getItem('noise-rec') || ""; } catch { return ""; }
-  });
+
+  const {
+    noiseRows, setNoiseRows,
+    noiseCompany, setNoiseCompany,
+    noiseObs, setNoiseObs,
+    noiseConc, setNoiseConc,
+    noiseRec, setNoiseRec,
+  } = useMeasurementStore();
+
+  const [rows, setRows] = useState<NoiseRow[]>(noiseRows);
+  const [company, setCompany] = useState<CompanyData>(noiseCompany);
+  const [observacionesGenerales, setObservacionesGenerales] = useState(noiseObs);
+  const [conclusiones, setConclusiones] = useState(noiseConc);
+  const [recomendaciones, setRecomendaciones] = useState(noiseRec);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
@@ -84,11 +46,11 @@ export default function NoiseSheet() {
   const signatoryTitle = useStore((state) => state.signatoryTitle);
   const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
-  useEffect(() => { try { sessionStorage.setItem('noise-rows', JSON.stringify(rows)); } catch {} }, [rows]);
-  useEffect(() => { try { sessionStorage.setItem('noise-company', JSON.stringify(company)); } catch {} }, [company]);
-  useEffect(() => { try { sessionStorage.setItem('noise-obs', observacionesGenerales); } catch {} }, [observacionesGenerales]);
-  useEffect(() => { try { sessionStorage.setItem('noise-conc', conclusiones); } catch {} }, [conclusiones]);
-  useEffect(() => { try { sessionStorage.setItem('noise-rec', recomendaciones); } catch {} }, [recomendaciones]);
+  useEffect(() => { setNoiseRows(rows); }, [rows]);
+  useEffect(() => { setNoiseCompany(company); }, [company]);
+  useEffect(() => { setNoiseObs(observacionesGenerales); }, [observacionesGenerales]);
+  useEffect(() => { setNoiseConc(conclusiones); }, [conclusiones]);
+  useEffect(() => { setNoiseRec(recomendaciones); }, [recomendaciones]);
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);

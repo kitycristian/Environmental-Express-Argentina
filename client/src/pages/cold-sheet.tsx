@@ -16,61 +16,27 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 // @ts-ignore
 import { saveAs } from "file-saver";
 import { useStore } from "@/lib/store";
+import { useMeasurementStore, ColdRow, ColdCompany } from "@/lib/measurement-store";
 
-interface ColdRow {
-  id: string;
-  sector: string;
-  puestoTrabajo: string;
-  rangoTemp: string;
-  ciclosExposicion: string;
-  duracionCiclo: string;
-  tiempoNetoExposicion: string;
-  tiempoIntegracion: string;
-  caracteristicasExposicion: string;
-  tbs: string;
-  velocidadViento: string;
-  tee: string;
-  tipoUniforme: string;
-  equipoUtilizado: string;
-  exposicionMas4h: string;
-}
-
-interface CompanyData {
-  razonSocial: string;
-  direccion: string;
-  localidad: string;
-  provincia: string;
-  cp: string;
-  cuit: string;
-  fechaMedicion: string;
-  horaInicio: string;
-  horaFin: string;
-  turnos: string;
-  instrumento1: string;
-  instrumento1Serie: string;
-  instrumento1Cert: string;
-  instrumento1FechaCal: string;
-  condicionesAtm: string;
-}
+type CompanyData = ColdCompany;
 
 export default function ColdSheet() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [rows, setRows] = useState<ColdRow[]>(() => {
-    try { const s = sessionStorage.getItem('cold-rows'); return s ? JSON.parse(s) : [{ id: "1", sector: "", puestoTrabajo: "", rangoTemp: "", ciclosExposicion: "", duracionCiclo: "", tiempoNetoExposicion: "", tiempoIntegracion: "", caracteristicasExposicion: "", tbs: "", velocidadViento: "", tee: "", tipoUniforme: "", equipoUtilizado: "", exposicionMas4h: "" }]; } catch { return [{ id: "1", sector: "", puestoTrabajo: "", rangoTemp: "", ciclosExposicion: "", duracionCiclo: "", tiempoNetoExposicion: "", tiempoIntegracion: "", caracteristicasExposicion: "", tbs: "", velocidadViento: "", tee: "", tipoUniforme: "", equipoUtilizado: "", exposicionMas4h: "" }]; }
-  });
-  const [company, setCompany] = useState<CompanyData>(() => {
-    try { const s = sessionStorage.getItem('cold-company'); return s ? JSON.parse(s) : { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", condicionesAtm: "" }; } catch { return { razonSocial: "", direccion: "", localidad: "", provincia: "", cp: "", cuit: "", fechaMedicion: "", horaInicio: "", horaFin: "", turnos: "", instrumento1: "", instrumento1Serie: "", instrumento1Cert: "", instrumento1FechaCal: "", condicionesAtm: "" }; }
-  });
-  const [observacionesGenerales, setObservacionesGenerales] = useState(() => {
-    try { return sessionStorage.getItem('cold-obs') || ""; } catch { return ""; }
-  });
-  const [conclusiones, setConclusiones] = useState(() => {
-    try { return sessionStorage.getItem('cold-conc') || ""; } catch { return ""; }
-  });
-  const [recomendaciones, setRecomendaciones] = useState(() => {
-    try { return sessionStorage.getItem('cold-rec') || ""; } catch { return ""; }
-  });
+
+  const {
+    coldRows, setColdRows,
+    coldCompany, setColdCompany,
+    coldObs, setColdObs,
+    coldConc, setColdConc,
+    coldRec, setColdRec,
+  } = useMeasurementStore();
+
+  const [rows, setRows] = useState<ColdRow[]>(coldRows);
+  const [company, setCompany] = useState<CompanyData>(coldCompany);
+  const [observacionesGenerales, setObservacionesGenerales] = useState(coldObs);
+  const [conclusiones, setConclusiones] = useState(coldConc);
+  const [recomendaciones, setRecomendaciones] = useState(coldRec);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'datos' | 'empresa' | 'instrumentos'>('datos');
@@ -80,11 +46,11 @@ export default function ColdSheet() {
   const signatoryTitle = useStore((state) => state.signatoryTitle);
   const signatoryRegistration = useStore((state) => state.signatoryRegistration);
 
-  useEffect(() => { try { sessionStorage.setItem('cold-rows', JSON.stringify(rows)); } catch {} }, [rows]);
-  useEffect(() => { try { sessionStorage.setItem('cold-company', JSON.stringify(company)); } catch {} }, [company]);
-  useEffect(() => { try { sessionStorage.setItem('cold-obs', observacionesGenerales); } catch {} }, [observacionesGenerales]);
-  useEffect(() => { try { sessionStorage.setItem('cold-conc', conclusiones); } catch {} }, [conclusiones]);
-  useEffect(() => { try { sessionStorage.setItem('cold-rec', recomendaciones); } catch {} }, [recomendaciones]);
+  useEffect(() => { setColdRows(rows); }, [rows]);
+  useEffect(() => { setColdCompany(company); }, [company]);
+  useEffect(() => { setColdObs(observacionesGenerales); }, [observacionesGenerales]);
+  useEffect(() => { setColdConc(conclusiones); }, [conclusiones]);
+  useEffect(() => { setColdRec(recomendaciones); }, [recomendaciones]);
 
   const handleImportSectors = () => {
     const client = clients.find(c => c.id === selectedClientId);
