@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "nbynqor72yRPl_BW-5GBm"
+uri = "file://eea-codigo.tar.gz"
+type = "unspecified"
+title = "Código fuente - Environmental Express Argentina"
