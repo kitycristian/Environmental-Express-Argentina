@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import fs from "fs";
+import path from "path";
+import { execSync } from "child_process";
 import { 
   insertRubroSchema, 
   insertClientSchema, 
@@ -19,15 +22,18 @@ export async function registerRoutes(
 
   // ============= DESCARGA DE CÓDIGO FUENTE (temporal) =============
   app.get("/api/download-source", (req, res) => {
-    const fs = require("fs");
-    const path = require("path");
-    const file = "/tmp/eea-codigo.tar.gz";
-    if (!fs.existsSync(file)) {
-      return res.status(404).json({ error: "Archivo no disponible. Regenerá desde el agente." });
+    try {
+      const file = "/tmp/eea-codigo.tar.gz";
+      execSync(
+        `tar -czf ${file} --exclude='.git' --exclude='node_modules' --exclude='.local' --exclude='attached_assets' --exclude='dist' --exclude='.cache' -C /home/runner/workspace .`,
+        { stdio: "pipe" }
+      );
+      res.setHeader("Content-Disposition", "attachment; filename=eea-codigo.tar.gz");
+      res.setHeader("Content-Type", "application/gzip");
+      res.sendFile(path.resolve(file));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
-    res.setHeader("Content-Disposition", "attachment; filename=eea-codigo.tar.gz");
-    res.setHeader("Content-Type", "application/gzip");
-    res.sendFile(path.resolve(file));
   });
 
   // ============= RUBROS =============
