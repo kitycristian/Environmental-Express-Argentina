@@ -439,5 +439,474 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     }
   });
 
+  // ============= GENERADOR DE INFORME DOCX =============
+
+  app.post("/api/generate-report", async (req, res) => {
+    try {
+      const { establishment, noiseProtocol, thermalProtocol, coldProtocol, signatory } = req.body;
+
+      const {
+        Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+        WidthType, BorderStyle, AlignmentType, Footer, PageNumber,
+        VerticalAlign, ShadingType,
+      } = await import("docx");
+
+      const NAVY = "0D2F5E";
+      const HDR_BLUE = "D6E4F0";
+      const GREEN_OK = "27AE60";
+      const RED_FAIL = "C0392B";
+
+      const BD = (c = "000000", sz = 4) => ({ style: BorderStyle.SINGLE, size: sz, color: c });
+      const BORDERS = (c = "999999") => ({ top: BD(c), bottom: BD(c), left: BD(c), right: BD(c) });
+      const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+
+      const A4_W = 11906;
+      const MARG = 720;
+      const CONT_W = A4_W - MARG * 2;
+
+      const run = (text: string, opts: any = {}) => new TextRun({
+        text, font: "Arial", size: (opts.size || 9) * 2,
+        bold: !!opts.bold, color: opts.color || "000000"
+      });
+
+      const cell = (text: string, opts: any = {}) => new TableCell({
+        children: [new Paragraph({
+          children: [run(text, { size: opts.size || 9, bold: opts.bold, color: opts.color })],
+          alignment: opts.align || AlignmentType.LEFT,
+          spacing: { before: 30, after: 30 },
+        })],
+        borders: opts.borders || BORDERS(),
+        shading: opts.fill ? { type: ShadingType.CLEAR, color: opts.fill, fill: opts.fill } : undefined,
+        columnSpan: opts.span,
+        rowSpan: opts.rowSpan,
+        width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 50, bottom: 50, left: 100, right: 100 },
+      });
+
+      const hdr = (text: string, opts: any = {}) => cell(text, { bold: true, fill: HDR_BLUE, color: NAVY, ...opts });
+
+      const makeFooter = () => new Footer({
+        children: [
+          new Table({
+            width: { size: CONT_W, type: WidthType.DXA },
+            columnWidths: [Math.floor(CONT_W * 0.7), Math.ceil(CONT_W * 0.3)],
+            rows: [new TableRow({ children: [
+              cell(`Lic. H&SL ${signatory?.name || ""} Mat. Prof. ${signatory?.registration || ""}`,
+                { borders: { top: BD(NAVY, 8), bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER } }),
+              cell("Firma, aclaración y registro del Profesional interviniente.",
+                { bold: true, align: AlignmentType.RIGHT,
+                  borders: { top: BD(NAVY, 8), bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER } }),
+            ]})],
+          }),
+          new Paragraph({
+            children: [run("Página ", { size: 8 }), new PageNumber()],
+            alignment: AlignmentType.RIGHT,
+          }),
+        ],
+      });
+
+      const buildThermalSection = () => {
+        if (!thermalProtocol?.rows?.length) return [];
+        const est = establishment;
+        const rows = thermalProtocol.rows;
+        const comp = thermalProtocol.company || {};
+        const items: any[] = [];
+
+        items.push(new Paragraph({
+          children: [run("ESTUDIO DE ESTRÉS POR CALOR SEGÚN RESOL. SRT Nº 30/2023", { size: 14, bold: true, color: NAVY })],
+          alignment: AlignmentType.CENTER,
+          pageBreakBefore: true,
+          spacing: { before: 400, after: 200 },
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR EN EL AMBIENTE LABORAL", { span: 1, align: AlignmentType.CENTER, size: 11 })] }),
+            new TableRow({ children: [hdr("Datos del establecimiento")] }),
+            new TableRow({ children: [cell(`Razón Social: ${est.razonSocial || est.name || ""}`)] }),
+            new TableRow({ children: [cell(`Dirección: ${est.address || ""}`)] }),
+            new TableRow({ children: [cell(`Localidad: ${est.city || ""}`)] }),
+            new TableRow({ children: [cell(`Provincia: ${est.province || ""}`)] }),
+          ],
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("Datos para la medición")] }),
+            new TableRow({ children: [cell(`Instrumentos: ${comp.instrumento1 || ""} Serie: ${comp.instrumento1Serie || ""} Cert: ${comp.instrumento1Cert || ""} | ${comp.instrumento2 || ""} Serie: ${comp.instrumento2Serie || ""} Cert: ${comp.instrumento2Cert || ""}`)] }),
+            new TableRow({ children: [cell(`Fecha de calibración: ${comp.instrumento1FechaCal || ""}`)] }),
+            new TableRow({ children: [cell(`Fecha de la medición: ${comp.fechaMedicion || ""} | Hora inicio: ${comp.horaInicio || ""} | Hora fin: ${comp.horaFin || ""}`)] }),
+            new TableRow({ children: [cell(`Turnos: ${comp.turnos || ""}`)] }),
+            new TableRow({ children: [cell(`Condiciones atmosféricas: ${comp.condicionesAtm || ""} | Temp. exterior: ${comp.tempExterior || ""}°C`)] }),
+          ],
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [400, 1200, 1400, 700, 700, 700, 700, 700, 800, 800, 800, 800, 800, 800],
+          rows: [
+            new TableRow({ children: [
+              hdr("Punto"), hdr("Sector"), hdr("Puesto de Trabajo"),
+              hdr("Exp. (h)"), hdr("TBS (ºC)"), hdr("TBH (ºC)"), hdr("TG (ºC)"), hdr("TGBH (ºC)"),
+              hdr("TGBH Pond."), hdr("Aclim."), hdr("TM (W)"),
+              hdr("VLA"), hdr("VLP"), hdr("Cumple VLA"),
+            ]}),
+            ...rows.map((r: any, i: number) => new TableRow({ children: [
+              cell(String(i + 1).padStart(2, "0"), { align: AlignmentType.CENTER }),
+              cell(r.sector || ""),
+              cell(r.puestoTrabajo || ""),
+              cell(r.exposicionHs || "", { align: AlignmentType.CENTER }),
+              cell(r.tbs || "", { align: AlignmentType.CENTER }),
+              cell(r.tbh || "", { align: AlignmentType.CENTER }),
+              cell(r.tg || "", { align: AlignmentType.CENTER }),
+              cell(r.tgbh || "", { align: AlignmentType.CENTER }),
+              cell(r.tgbhPonderado || "", { align: AlignmentType.CENTER, bold: true }),
+              cell(r.aclimatado || "", { align: AlignmentType.CENTER }),
+              cell(r.cargaMetabolica || "", { align: AlignmentType.CENTER }),
+              cell(r.vla || "", { align: AlignmentType.CENTER }),
+              cell(r.vlp || "", { align: AlignmentType.CENTER }),
+              new TableCell({
+                children: [new Paragraph({
+                  children: [run(r.cumpleVla || "-", { bold: true, color: r.cumpleVla === "SI" ? GREEN_OK : RED_FAIL })],
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 30, after: 30 },
+                })],
+                borders: BORDERS(),
+                shading: { type: ShadingType.CLEAR,
+                  fill: r.cumpleVla === "SI" ? "D4EDDA" : "FADBD8",
+                  color: r.cumpleVla === "SI" ? "D4EDDA" : "FADBD8" },
+                verticalAlign: VerticalAlign.CENTER,
+                margins: { top: 50, bottom: 50, left: 100, right: 100 },
+              }),
+            ]})),
+          ],
+        }));
+
+        items.push(new Paragraph({ children: [], pageBreakBefore: true }));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [hdr("Valores de Referencia")] }),
+            new TableRow({ children: [cell(
+              "Categorías de las tareas según la Tasa Metabólica ponderada:\n" +
+              "0 - Descanso: 115 W (100 a 125)\n" +
+              "1 - Tasa Metabólica Baja — LIGERO: 180 W (126 a 235)\n" +
+              "2 - Tasa Metabólica Moderada — MODERADO: 300 W (236 a 360)\n" +
+              "3 - Tasa Metabólica Alta — PESADO: 415 W (361 a 465)\n" +
+              "4 - Tasa Metabólica Muy Alta — MUY PESADO: 520 W (mayor a 466)\n\n" +
+              "El criterio de evaluación es el indicado en la Resolución SRT N° 30/2023. " +
+              "Los Valores Límites representan las condiciones bajo las cuales se cree que casi todos los trabajadores sanos, " +
+              "y sin factores de riesgo, pueden estar expuestos repetidamente al calor sin sufrir efectos adversos para la salud.\n\n" +
+              "TABLA 1 — VAR (Valor de Ajuste por Ropa):\n" +
+              "Ropa algodón manga larga y pantalón: 0 | Overol tejido: 0 | Overol SMS: +0.5 | " +
+              "Overol poliolefina: +1 | Ropa doble capa: +3 | Overol barrera vapor: +11"
+            )] }),
+          ],
+        }));
+
+        items.push(new Paragraph({ children: [], pageBreakBefore: true }));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [hdr("Análisis de los Datos")] }),
+            new TableRow({ children: [hdr("Conclusiones")] }),
+            new TableRow({ children: [cell(thermalProtocol.conclusiones || "Completar con las conclusiones del análisis.")] }),
+          ],
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("Recomendaciones")] }),
+            new TableRow({ children: [cell(thermalProtocol.recomendaciones || "Completar con las recomendaciones.")] }),
+          ],
+        }));
+
+        items.push(new Paragraph({ children: [], pageBreakBefore: true }));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [hdr("Constancia Fotográfica de las Tareas")] }),
+            new TableRow({ children: [cell("(Adjuntar fotografías de los puestos evaluados)", { size: 8, color: "888888" })] }),
+          ],
+        }));
+
+        return items;
+      };
+
+      const buildNoiseSection = () => {
+        if (!noiseProtocol?.rows?.length) return [];
+        const est = establishment;
+        const rows = noiseProtocol.rows;
+        const comp = noiseProtocol.company || {};
+        const items: any[] = [];
+
+        items.push(new Paragraph({
+          children: [run("ESTUDIO DE RUIDO LABORAL SEGÚN RESOL. SRT Nº 85/2012", { size: 14, bold: true, color: NAVY })],
+          alignment: AlignmentType.CENTER,
+          pageBreakBefore: true,
+          spacing: { before: 400, after: 200 },
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER, size: 11 })] }),
+            new TableRow({ children: [hdr("Datos del establecimiento")] }),
+            new TableRow({ children: [cell(`(1) Razón Social: ${est.razonSocial || est.name || ""}`)] }),
+            new TableRow({ children: [cell(`(2) Dirección: ${est.address || ""}`)] }),
+            new TableRow({ children: [cell(`(3) Localidad: ${est.city || ""} | (4) Provincia: ${est.province || ""} | (5) C.P.: ${est.postalCode || ""} | (6) C.U.I.T.: ${est.cuit || ""}`)] }),
+            new TableRow({ children: [hdr("Datos para la medición")] }),
+            new TableRow({ children: [cell(`(7) Instrumento: ${comp.instrumento1 || ""} Serie: ${comp.instrumento1Serie || ""} Cert. N°: ${comp.instrumento1Cert || ""}`)] }),
+            new TableRow({ children: [cell(`(8) Fecha calibración: ${comp.instrumento1FechaCal || ""}`)] }),
+            new TableRow({ children: [cell(`(9) Fecha medición: ${comp.fechaMedicion || ""} | (10) Hora inicio: ${comp.horaInicio || ""} | (11) Hora fin: ${comp.horaFin || ""}`)] }),
+            new TableRow({ children: [cell(`(12) Jornada/Turnos: ${comp.jornadaLaboral || ""} | ${comp.turnos || ""}`)] }),
+            new TableRow({ children: [cell(`(13) Condiciones normales: ${comp.condicionesNormales || ""}`)] }),
+            new TableRow({ children: [cell(`(14) Condiciones al momento de medición: ${comp.condicionesMedicion || ""}`)] }),
+          ],
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [500, 1200, 1400, 900, 900, 1200, 900, 900, 900, 900],
+          rows: [
+            new TableRow({ children: [
+              hdr("(23) Punto"), hdr("(24) Sector"), hdr("(25) Puesto"),
+              hdr("(26) T. Exp. (h)"), hdr("(27) T. Integ."),
+              hdr("(28) Tipo Ruido"), hdr("(29) LC pico dBC"),
+              hdr("(30) LAeq dBA"), hdr("(31) Fracción"), hdr("(33) Cumple"),
+            ]}),
+            ...rows.map((r: any, i: number) => new TableRow({ children: [
+              cell(String(i + 1).padStart(2, "0"), { align: AlignmentType.CENTER }),
+              cell(r.sector || ""),
+              cell(r.puestoTrabajo || ""),
+              cell(r.tiempoExposicion || "", { align: AlignmentType.CENTER }),
+              cell(r.tiempoIntegracion || "", { align: AlignmentType.CENTER }),
+              cell(r.tipoRuido || "", { align: AlignmentType.CENTER }),
+              cell(r.tipoRuido === "Impulso" ? r.valorMedido || "" : "No Aplica", { align: AlignmentType.CENTER }),
+              cell(r.tipoRuido !== "Impulso" ? r.valorMedido || "" : "No Aplica", { align: AlignmentType.CENTER }),
+              cell(r.fraccion || "", { align: AlignmentType.CENTER }),
+              new TableCell({
+                children: [new Paragraph({
+                  children: [run(r.cumple || "-", { bold: true, color: r.cumple === "SI" ? GREEN_OK : RED_FAIL })],
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 30, after: 30 },
+                })],
+                borders: BORDERS(),
+                shading: { type: ShadingType.CLEAR,
+                  fill: r.cumple === "SI" ? "D4EDDA" : "FADBD8",
+                  color: r.cumple === "SI" ? "D4EDDA" : "FADBD8" },
+                verticalAlign: VerticalAlign.CENTER,
+                margins: { top: 50, bottom: 50, left: 100, right: 100 },
+              }),
+            ]})),
+          ],
+        }));
+
+        items.push(new Paragraph({ children: [], pageBreakBefore: true }));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [hdr("Valores de Referencia (Resol. MTEySS 295/2003 — Anexo V)")] }),
+            new TableRow({ children: [cell(
+              "Valores Límites para el Ruido:\n" +
+              "24 hs → 80 dBA | 16 hs → 82 dBA | 8 hs → 85 dBA | 4 hs → 88 dBA\n" +
+              "2 hs → 91 dBA | 1 h → 94 dBA | 30 min → 97 dBA | 15 min → 100 dBA\n" +
+              "7,5 min → 103 dBA | 3,75 min → 106 dBA\n\n" +
+              "No ha de haber exposiciones al ruido continuo o intermitente o de impulso " +
+              "por encima de un nivel pico C ponderado de 140 dBC.\n\n" +
+              "El nivel de presión acústica en decibeles se mide con un sonómetro, " +
+              "usando el filtro de ponderación frecuencial A y respuesta lenta."
+            )] }),
+          ],
+        }));
+
+        items.push(new Paragraph({ children: [], pageBreakBefore: true }));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [hdr("Análisis de los Datos y Mejoras a Realizar")] }),
+            new TableRow({ children: [hdr("(41) Conclusiones")] }),
+            new TableRow({ children: [cell(noiseProtocol.conclusiones || "Completar con las conclusiones del análisis.")] }),
+            new TableRow({ children: [hdr("(42) Recomendaciones para adecuar el nivel de ruido a la legislación vigente")] }),
+            new TableRow({ children: [cell(noiseProtocol.recomendaciones || "Completar con las recomendaciones.")] }),
+          ],
+        }));
+
+        return items;
+      };
+
+      const buildColdSection = () => {
+        if (!coldProtocol?.rows?.length) return [];
+        const est = establishment;
+        const rows = coldProtocol.rows;
+        const comp = coldProtocol.company || {};
+        const items: any[] = [];
+
+        items.push(new Paragraph({
+          children: [run("ESTUDIO DE ESTRÉS POR FRÍO SEGÚN RESOL. MTEySS Nº 295/2003", { size: 14, bold: true, color: NAVY })],
+          alignment: AlignmentType.CENTER,
+          pageBreakBefore: true,
+          spacing: { before: 400, after: 200 },
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER, size: 11 })] }),
+            new TableRow({ children: [hdr("Datos del establecimiento")] }),
+            new TableRow({ children: [cell(`Razón Social: ${est.razonSocial || est.name || ""}`)] }),
+            new TableRow({ children: [cell(`Dirección: ${est.address || ""} | Localidad: ${est.city || ""} | Provincia: ${est.province || ""} | C.P.: ${est.postalCode || ""} | C.U.I.T.: ${est.cuit || ""}`)] }),
+            new TableRow({ children: [hdr("Datos para la medición")] }),
+            new TableRow({ children: [cell(`Instrumento: ${comp.instrumento1 || ""} Serie: ${comp.instrumento1Serie || ""} Cert: ${comp.instrumento1Cert || ""}`)] }),
+            new TableRow({ children: [cell(`Fecha calibración: ${comp.instrumento1FechaCal || ""}`)] }),
+            new TableRow({ children: [cell(`Fecha medición: ${comp.fechaMedicion || ""} | Hora inicio: ${comp.horaInicio || ""} | Hora fin: ${comp.horaFin || ""}`)] }),
+            new TableRow({ children: [cell(`Turnos: ${comp.turnos || ""}`)] }),
+            new TableRow({ children: [cell(`Condiciones atmosféricas: ${comp.condicionesAtm || ""}`)] }),
+          ],
+        }));
+
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [400, 1100, 1100, 700, 700, 700, 700, 700, 800, 700, 700, 800, 800],
+          rows: [
+            new TableRow({ children: [
+              hdr("Punto"), hdr("Sector"), hdr("Puesto"),
+              hdr("Rango T° (°C)"), hdr("Ciclos/turno"), hdr("Dur. ciclo (min)"),
+              hdr("T. neto exp. (min)"), hdr("T. integ. (min)"),
+              hdr("Carac. exposición"), hdr("TBS (°C)"), hdr("Veloc. (m/s)"),
+              hdr("TEE (°C)"), hdr("Exp. > 4h"),
+            ]}),
+            ...rows.map((r: any, i: number) => new TableRow({ children: [
+              cell(String(i + 1).padStart(2, "0"), { align: AlignmentType.CENTER }),
+              cell(r.sector || ""),
+              cell(r.puestoTrabajo || ""),
+              cell(r.rangoTemp || "", { align: AlignmentType.CENTER }),
+              cell(r.ciclosExposicion || "", { align: AlignmentType.CENTER }),
+              cell(r.duracionCiclo || "", { align: AlignmentType.CENTER }),
+              cell(r.tiempoNetoExposicion || "", { align: AlignmentType.CENTER }),
+              cell(r.tiempoIntegracion || "", { align: AlignmentType.CENTER }),
+              cell(r.caracteristicasExposicion || "", { align: AlignmentType.CENTER }),
+              cell(r.tbs || "", { align: AlignmentType.CENTER }),
+              cell(r.velocidadViento || "", { align: AlignmentType.CENTER }),
+              cell(r.tee || "", { align: AlignmentType.CENTER, bold: true }),
+              cell(r.exposicionMas4h || "", { align: AlignmentType.CENTER }),
+            ]})),
+          ],
+        }));
+
+        items.push(new Paragraph({ children: [], pageBreakBefore: true }));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA },
+          columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [hdr("Observaciones")] }),
+            new TableRow({ children: [cell(coldProtocol.observaciones || "")] }),
+            new TableRow({ children: [hdr("Conclusiones")] }),
+            new TableRow({ children: [cell(coldProtocol.conclusiones || "Completar con las conclusiones del análisis.")] }),
+            new TableRow({ children: [hdr("Recomendaciones para Prevenir el Estrés por Frío")] }),
+            new TableRow({ children: [cell(coldProtocol.recomendaciones || "Completar con las recomendaciones.")] }),
+          ],
+        }));
+
+        return items;
+      };
+
+      const coverChildren: any[] = [
+        new Paragraph({
+          children: [run(establishment.razonSocial || establishment.name || "", { size: 18, bold: true, color: NAVY })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 2000, after: 200 },
+        }),
+        new Paragraph({
+          children: [run(`${establishment.address || ""}, ${establishment.city || ""}. PROVINCIA DE ${(establishment.province || "").toUpperCase()}`, { size: 12, bold: true, color: NAVY })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100, after: 400 },
+        }),
+        new Paragraph({
+          children: [run(establishment.date ?
+            new Date(establishment.date).toLocaleDateString("es-AR", { month: "long", year: "numeric" }).toUpperCase() : "",
+            { size: 12, bold: true, color: NAVY })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100, after: 400 },
+        }),
+      ];
+
+      if (thermalProtocol?.rows?.length) coverChildren.push(
+        new Paragraph({
+          children: [run("ESTUDIO DE ESTRÉS POR CALOR SEGÚN RESOL. SRT Nº 30/2023", { size: 12, bold: true })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200, after: 100 },
+        })
+      );
+      if (coldProtocol?.rows?.length) coverChildren.push(
+        new Paragraph({
+          children: [run("ESTUDIO DE ESTRÉS POR FRÍO SEGÚN RESOL. MTEySS Nº 295/2003", { size: 12, bold: true })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100, after: 100 },
+        })
+      );
+      if (noiseProtocol?.rows?.length) coverChildren.push(
+        new Paragraph({
+          children: [run("ESTUDIO DE RUIDO LABORAL SEGÚN RESOL. SRT Nº 85/2012", { size: 12, bold: true })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100, after: 100 },
+        })
+      );
+
+      const allChildren = [
+        ...coverChildren,
+        ...buildThermalSection(),
+        ...buildColdSection(),
+        ...buildNoiseSection(),
+      ];
+
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              size: { width: 11906, height: 16838 },
+              margin: { top: MARG, right: MARG, bottom: 1440, left: MARG },
+            },
+          },
+          footers: { default: makeFooter() },
+          children: allChildren,
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      const empresa = (establishment.razonSocial || establishment.name || "Informe")
+        .replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/\s+/g, "_");
+      const fecha = establishment.date?.replace(/-/g, "") || "SinFecha";
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      res.setHeader("Content-Disposition", `attachment; filename=Informe_SYSO_${empresa}_${fecha}.docx`);
+      res.send(buffer);
+
+    } catch (error: any) {
+      console.error("Error generando informe:", error);
+      res.status(500).json({ message: error.message || "Error al generar el informe" });
+    }
+  });
+
   return httpServer;
 }

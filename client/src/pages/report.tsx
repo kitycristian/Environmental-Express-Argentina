@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useInstruments } from "@/lib/hooks";
 
-import { generateDocxReport } from "@/lib/docx-generator";
 
 const safeFormatDate = (dateStr: string | undefined, fmt: string, options?: { locale?: any }): string => {
   if (!dateStr) return '-';
@@ -142,19 +141,49 @@ export default function Report() {
     return merged;
   };
 
-  const handleDocxExport = () => {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleDocxExport = async () => {
+    setIsExporting(true);
     toast({ title: "Generando documento DOCX...", description: "Esto puede tomar unos segundos." });
-    generateDocxReport(
-      establishment,
-      sectors,
-      noiseProtocol,
-      thermalProtocol,
-      coldProtocol,
-      digitalSignature,
-      signatoryName,
-      signatoryTitle,
-      signatoryRegistration,
-    );
+    try {
+      const state = useStore.getState();
+      const res = await fetch("/api/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          establishment: state.establishment,
+          noiseProtocol: state.noiseProtocol,
+          thermalProtocol: state.thermalProtocol,
+          coldProtocol: state.coldProtocol,
+          signatory: {
+            name: state.signatoryName,
+            title: state.signatoryTitle,
+            registration: state.signatoryRegistration,
+          },
+        }),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Error desconocido" }));
+        throw new Error(err.message || "Error al generar el informe");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Informe_SYSO_${state.establishment.razonSocial || state.establishment.name || "Informe"}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Informe generado", description: "El DOCX fue descargado correctamente." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "No se pudo generar el informe.", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handlePrint = () => {
@@ -1710,11 +1739,24 @@ export default function Report() {
           </Button>
           <Button 
              variant="outline" 
-             onClick={handleDocxExport} 
+             onClick={handleDocxExport}
+             disabled={isExporting}
              className="gap-2 border-blue-800 text-blue-800 hover:bg-blue-50 no-print"
           >
-             <Download className="h-4 w-4" />
-             Exportar DOCX
+             {isExporting ? (
+               <>
+                 <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                 </svg>
+                 Generando...
+               </>
+             ) : (
+               <>
+                 <Download className="h-4 w-4" />
+                 Exportar DOCX
+               </>
+             )}
           </Button>
           <Button onClick={handlePrint} className="bg-primary text-primary-foreground hover:bg-primary/90 no-print">
             <Printer className="mr-2 h-4 w-4" />
