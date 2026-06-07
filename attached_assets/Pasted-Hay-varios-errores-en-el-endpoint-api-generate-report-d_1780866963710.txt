@@ -1,0 +1,284 @@
+Hay varios errores en el endpoint /api/generate-report de server/routes.ts.
+Necesito corregirlos todos. El endpoint ya existe, solo hay que modificarlo.
+
+---
+
+CORRECCIÓN 1 — Campos vacíos (localidad, provincia, temp exterior)
+
+El problema es que establishment.city, establishment.province y 
+thermalProtocol.company.tempExterior llegan vacíos al endpoint.
+
+En la función protocolHeader, reemplazar las líneas de Localidad y Provincia:
+
+ANTES:
+new TableRow({ children: [cell(`Dirección: ${est.address || "-"}    Localidad: ${est.city || "-"}    C.P.: ${est.postalCode || "-"}    Provincia: ${est.province || "-"}`)] }),
+new TableRow({ children: [cell(`C.U.I.T.: ${est.cuit || "-"}`)] }),
+
+DESPUÉS:
+new TableRow({ children: [cell(`Dirección: ${est.address || "-"}`)] }),
+new TableRow({ children: [cell(`Localidad: ${est.city || est.localidad || "-"}    C.P.: ${est.postalCode || est.cp || "-"}    Provincia: ${est.province || est.provincia || "-"}`)] }),
+new TableRow({ children: [cell(`C.U.I.T.: ${est.cuit || "-"}`)] }),
+
+También en la sección calor, en la fila de condiciones atmosféricas, cambiar:
+ANTES:
+new TableRow({ children: [cell(`Condiciones atmosféricas: ${comp.condicionesAtm || "-"}    Temperatura exterior: ${comp.tempExterior || "-"} °C`)] }),
+
+DESPUÉS:
+new TableRow({ children: [cell(`Condiciones atmosféricas: ${comp.condicionesAtm || "-"}    Temperatura exterior: ${comp.tempExterior || comp.tempExteriorEnvio || "-"} °C`)] }),
+
+Además, en el frontend, en client/src/lib/store.ts, asegurarse de que cuando 
+se llama a saveInspection, el objeto establishment incluya los campos:
+city, province, postalCode, cuit. Si hay campos con nombres distintos 
+(localidad, provincia, cp) mapearlos al momento de enviar al servidor.
+
+---
+
+CORRECCIÓN 2 — Tabla de valores de referencia de frío (TEE)
+
+En buildColdSection(), después de la tabla de mediciones y antes de las 
+conclusiones, agregar esta página con la tabla de TEE:
+
+items.push(pageBreakPara());
+items.push(protocolHeader("INFORME DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", est));
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("Valores de Referencia (MTEySS 295/2003 — Anexo de estrés por frío)")] }),
+    new TableRow({ children: [cell(
+      "TEMPERATURA EQUIVALENTE DE ENFRIAMIENTO (TEE) EN RELACIÓN CON LA VELOCIDAD DEL AIRE:\n\n" +
+      "La TEE combina la temperatura de bulbo seco (TBS) y la velocidad del viento para estimar " +
+      "el efecto refrigerante sobre el cuerpo humano.\n\n" +
+      "Rangos de peligro según TEE:\n" +
+      "  TEE > 0°C              → SIN PELIGRO\n" +
+      "  TEE entre 0 y -10°C   → POCO PELIGROSO — Sensación de frío\n" +
+      "  TEE entre -10 y -25°C → PELIGROSO — Riesgo de congelamiento expuesto\n" +
+      "  TEE entre -25 y -50°C → MUY PELIGROSO — Peligro de congelamiento en 1 min\n" +
+      "  TEE entre -50 y -75°C → EXTREMADAMENTE PELIGROSO — Peligro en 30 segundos\n" +
+      "  TEE < -75°C            → PELIGRO MÁXIMO — Congelamiento en segundos\n\n" +
+      "Para trabajos a una temperatura equivalente de enfriamiento (TEE) de entre -25°C y -50°C, " +
+      "los trabajadores deberán ser provistos de ropa protectora adecuada. " +
+      "Se deberán tomar precauciones especiales cuando se realicen actividades por debajo de -25°C.\n\n" +
+      "Para temperaturas inferiores a -18°C se deberá proveer a los trabajadores de:\n" +
+      "• Ropa aislante seca que mantenga la temperatura corporal por encima de 36°C\n" +
+      "• Manoplas o guantes aislantes\n" +
+      "• Calzado de seguridad con aislación térmica\n" +
+      "• Medias de lana o similares\n\n" +
+      "Nota: No se requiere plan de trabajo/calentamiento cuando la TEE es superior a -25°C " +
+      "y la exposición es intermitente con períodos de recuperación en ambiente temperado."
+    )] }),
+  ],
+}));
+
+
+---
+
+CORRECCIÓN 3 — Constancia fotográfica y condiciones meteorológicas
+
+En buildThermalSection(), ya existe la página de constancia fotográfica al final.
+Agregar también la página de "Certificación de Condiciones Meteorológicas":
+
+// Después de la constancia fotográfica del calor:
+items.push(pageBreakPara());
+items.push(protocolHeader("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR EN EL AMBIENTE LABORAL", est));
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("Certificación de Condiciones Meteorológicas")] }),
+    new TableRow({ children: [cell(
+      "(Adjuntar certificado de condiciones meteorológicas del día de la medición)\n\n\n\n ",
+      { size: 8, color: "888888", align: AlignmentType.CENTER }
+    )] }),
+  ],
+}));
+
+En buildColdSection(), agregar al final las mismas dos páginas:
+
+items.push(pageBreakPara());
+items.push(protocolHeader("INFORME DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", est));
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("Constancia Fotográfica de las Tareas")] }),
+    new TableRow({ children: [cell(
+      "(Espacio para fotografías de los puestos evaluados)\n\n\n\n ",
+      { size: 8, color: "888888", align: AlignmentType.CENTER }
+    )] }),
+  ],
+}));
+items.push(pageBreakPara());
+items.push(protocolHeader("INFORME DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", est));
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("Certificación de Condiciones Meteorológicas")] }),
+    new TableRow({ children: [cell(
+      "(Adjuntar certificado de condiciones meteorológicas del día de la medición)\n\n\n\n ",
+      { size: 8, color: "888888", align: AlignmentType.CENTER }
+    )] }),
+  ],
+}));
+
+En buildNoiseSection(), agregar al final las mismas dos páginas con el header de ruido:
+
+items.push(pageBreakPara());
+items.push(protocolHeader("PROTOCOLO PARA MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", est));
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("Constancia Fotográfica De Las Tareas")] }),
+    new TableRow({ children: [cell(
+      "(Espacio para fotografías de los puestos evaluados)\n\n\n\n ",
+      { size: 8, color: "888888", align: AlignmentType.CENTER }
+    )] }),
+  ],
+}));
+items.push(pageBreakPara());
+items.push(protocolHeader("PROTOCOLO PARA MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", est));
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("Certificación de Condiciones Meteorológicas")] }),
+    new TableRow({ children: [cell(
+      "(Adjuntar certificado de condiciones meteorológicas del día de la medición)\n\n\n\n ",
+      { size: 8, color: "888888", align: AlignmentType.CENTER }
+    )] }),
+  ],
+}));
+
+
+---
+
+CORRECCIÓN 4 — Columna dosis % en ruido
+
+En buildNoiseSection(), en la tabla de mediciones de ruido, agregar la 
+columna (32) Dosis % entre Fracción y Cumple.
+
+Reemplazar los columnWidths de la tabla de mediciones de ruido:
+ANTES:
+columnWidths: [500, 1200, 1400, 900, 900, 1000, 900, 900, 900, 900],
+
+DESPUÉS:
+columnWidths: [500, 1100, 1300, 800, 800, 900, 800, 800, 800, 700, 900],
+
+Reemplazar los headers de esa tabla:
+ANTES:
+hdr("(23) Punto", ...),
+hdr("(24) Sector"),
+hdr("(25) Puesto"),
+hdr("(26) T. Exp. (h)", ...),
+hdr("(27) T. Integ.", ...),
+hdr("(28) Tipo Ruido", ...),
+hdr("(29) LC pico dBC", ...),
+hdr("(30) LAeq dBA", ...),
+hdr("(31) Fracción", ...),
+hdr("(33) Cumple", ...),
+
+DESPUÉS:
+hdr("(23) Punto", { align: AlignmentType.CENTER }),
+hdr("(24) Sector"),
+hdr("(25) Puesto"),
+hdr("(26) T. Exp. (h)", { align: AlignmentType.CENTER }),
+hdr("(27) T. Integ.", { align: AlignmentType.CENTER }),
+hdr("(28) Tipo Ruido", { align: AlignmentType.CENTER }),
+hdr("(29) LC pico dBC", { align: AlignmentType.CENTER }),
+hdr("(30) LAeq dBA", { align: AlignmentType.CENTER }),
+hdr("(31) Fracción", { align: AlignmentType.CENTER }),
+hdr("(32) Dosis %", { align: AlignmentType.CENTER }),
+hdr("(33) Cumple", { align: AlignmentType.CENTER }),
+
+Y en el map de filas de ruido, agregar la celda de dosisRuido entre fracción y cumple:
+// Después de: cell(r.fraccion || "", { align: AlignmentType.CENTER }),
+cell(r.dosisRuido || "-", { align: AlignmentType.CENTER }),
+
+
+---
+
+CORRECCIÓN 5 — Instructivos al final de cada protocolo
+
+En buildNoiseSection(), al final (después de la constancia fotográfica y 
+condiciones meteorológicas), agregar el instructivo oficial:
+
+items.push(pageBreakPara());
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("INSTRUCTIVO PARA COMPLETAR EL PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+    new TableRow({ children: [cell(
+      "1) Identificación del establecimiento (razón social completa).\n" +
+      "2) Domicilio real del establecimiento donde se realiza la medición.\n" +
+      "3) Localidad del establecimiento.\n" +
+      "4) Provincia en la cual se encuentra radicado el establecimiento.\n" +
+      "5) Código Postal del establecimiento.\n" +
+      "6) C.U.I.T. de la empresa o institución.\n" +
+      "7) Marca, modelo y número de serie del instrumento utilizado. Las mediciones se efectuarán " +
+      "con un medidor de nivel sonoro integrador (decibelímetro) o dosímetro, Clase o Tipo 2, " +
+      "según normas IRAM 4074 e IEC 804.\n" +
+      "8) Fecha de la última calibración realizada en laboratorio al instrumento empleado.\n" +
+      "9) Fecha de la medición.\n" +
+      "10) Hora de inicio de la primera medición.\n" +
+      "11) Hora de finalización de la última medición.\n" +
+      "12) Duración de la jornada laboral (en horas).\n" +
+      "13) Condiciones normales y/o habituales de los puestos de trabajo: fuentes de ruido, " +
+      "descripción y condición de funcionamiento.\n" +
+      "14) Condiciones de trabajo al momento de efectuar la medición.\n" +
+      "15) Adjuntar copia del certificado de calibración del equipo.\n" +
+      "16) Adjuntar plano o croquis del establecimiento con los puntos de medición.\n" +
+      "23) Punto de medición (número que coincide con el del croquis).\n" +
+      "24) Sector de la empresa donde se realiza la medición.\n" +
+      "25) Puesto de trabajo o puesto tipo.\n" +
+      "26) Tiempo de exposición del trabajador al ruido (en horas).\n" +
+      "27) Tiempo de integración o de medición.\n" +
+      "28) Tipo de ruido: continuo, intermitente o de impulso/impacto.\n" +
+      "29) Nivel pico ponderado C (LCpico en dBC) para ruido de impulso o impacto.\n" +
+      "30) Nivel de presión acústica LAeq,Te en dBA.\n" +
+      "31) Resultado de la suma de fracciones C1/T1 + C2/T2 + ... + Cn/Tn.\n" +
+      "32) Dosis de ruido en porcentaje, obtenida con dosímetro (índice 3dB, criterio 85 dBA/8h).\n" +
+      "33) Indica si cumple con el nivel de ruido máximo permitido (SI / NO).\n" +
+      "34) Información adicional de importancia."
+    )] }),
+  ],
+}));
+
+En buildThermalSection(), al final, agregar el instructivo de calor:
+
+items.push(pageBreakPara());
+items.push(new Table({
+  width: { size: CONT_W, type: WidthType.DXA },
+  columnWidths: [CONT_W],
+  rows: [
+    new TableRow({ children: [hdr("INSTRUCTIVO PARA COMPLETAR EL PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR", { align: AlignmentType.CENTER })] }),
+    new TableRow({ children: [cell(
+      "El presente protocolo debe completarse siguiendo los lineamientos de la Resolución SRT N° 30/2023.\n\n" +
+      "DATOS DEL ESTABLECIMIENTO: Completar con los datos reales del establecimiento evaluado.\n\n" +
+      "INSTRUMENTOS: Indicar marca, modelo, número de serie y número de certificado de calibración " +
+      "de cada instrumento utilizado (Monitor WBGT, Termohigrómetro, etc.).\n\n" +
+      "FECHA DE MEDICIÓN: La medición debe realizarse en el período de mayor carga térmica " +
+      "del año (período estival) y con las fuentes de calor encendidas.\n\n" +
+      "TGBH PONDERADO: Se calcula considerando el tiempo de exposición y recuperación " +
+      "durante una hora cronológica.\n\n" +
+      "TASA METABÓLICA (TM): Se determina según el Método a) del punto 4.2.1.1 de la " +
+      "Resolución SRT 30/2023 — Evaluación por requisitos de tareas/posturas/biomecánicos.\n\n" +
+      "VLA (Valor Límite de Acción): A partir de este valor el empleador debe instrumentar " +
+      "controles generales y declarar al personal expuesto ante la ART (ESOP 80001).\n\n" +
+      "VLP (Valor Límite Permisible): Límite máximo. Si se supera, el empleador debe realizar " +
+      "un estudio detallado o control fisiológico de la tensión térmica."
+    )] }),
+  ],
+}));
+
+
+---
+
+NOTAS:
+1. Todos los cambios van dentro del endpoint /api/generate-report en server/routes.ts.
+2. No tocar el resto del código del endpoint — solo agregar/modificar lo indicado.
+3. Reiniciar el servidor después de los cambios y probar generando un nuevo informe.
+4. Si los campos city/province siguen vacíos después del cambio, revisar cómo 
+   se carga el establishment en el store y en el formulario de datos del establecimiento.

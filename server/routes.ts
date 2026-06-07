@@ -506,7 +506,8 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
           new TableRow({ children: [hdr(title, { align: AlignmentType.CENTER, size: 10 })] }),
           new TableRow({ children: [hdr("Datos del establecimiento")] }),
           new TableRow({ children: [cell(`Razón Social: ${est.razonSocial || est.name || "-"}`)] }),
-          new TableRow({ children: [cell(`Dirección: ${est.address || "-"}    Localidad: ${est.city || "-"}    C.P.: ${est.postalCode || "-"}    Provincia: ${est.province || "-"}`)] }),
+          new TableRow({ children: [cell(`Dirección: ${est.address || "-"}`)] }),
+          new TableRow({ children: [cell(`Localidad: ${est.city || est.localidad || "-"}    C.P.: ${est.postalCode || est.cp || "-"}    Provincia: ${est.province || est.provincia || "-"}`)] }),
           new TableRow({ children: [cell(`C.U.I.T.: ${est.cuit || "-"}`)] }),
         ],
       });
@@ -615,7 +616,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
             new TableRow({ children: [cell(`Fecha de calibración: ${comp.instrumento1FechaCal || "-"}`)] }),
             new TableRow({ children: [cell(`Fecha de la medición: ${comp.fechaMedicion || "-"}    Hora de inicio: ${comp.horaInicio || "-"}    Hora finalización: ${comp.horaFin || "-"}`)] }),
             new TableRow({ children: [cell(`Horarios/turnos habituales de trabajo: ${comp.turnos || "-"}`)] }),
-            new TableRow({ children: [cell(`Condiciones atmosféricas: ${comp.condicionesAtm || "-"}    Temperatura exterior: ${comp.tempExterior || "-"} °C`)] }),
+            new TableRow({ children: [cell(`Condiciones atmosféricas: ${comp.condicionesAtm || "-"}    Temperatura exterior: ${comp.tempExterior || comp.tempExteriorEnvio || "-"} °C`)] }),
             new TableRow({ children: [hdr("Documentación que se adjuntará")] }),
             new TableRow({ children: [cell("• Certificado de calibración\n• Croquis")] }),
           ],
@@ -704,7 +705,41 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
           width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
           rows: [
             new TableRow({ children: [hdr("Constancia Fotográfica de las Tareas")] }),
-            new TableRow({ children: [cell(" \n\n\n\n(Espacio para fotografías de los puestos evaluados)\n\n\n\n ", { size: 8, color: "888888", align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [cell("(Adjuntar fotografías de los puestos evaluados)\n\n\n\n ", { size: 8, color: "888888", align: AlignmentType.CENTER })] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(protocolHeader("PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR EN EL AMBIENTE LABORAL", est));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("Certificación de Condiciones Meteorológicas")] }),
+            new TableRow({ children: [cell("(Adjuntar certificado de condiciones meteorológicas del día de la medición)\n\n\n\n ", { size: 8, color: "888888", align: AlignmentType.CENTER })] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("INSTRUCTIVO PARA COMPLETAR EL PROTOCOLO DE MEDICIÓN DE ESTRÉS POR CALOR", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [cell(
+              "El presente protocolo debe completarse siguiendo los lineamientos de la Resolución SRT N° 30/2023.\n\n" +
+              "DATOS DEL ESTABLECIMIENTO: Completar con los datos reales del establecimiento evaluado.\n\n" +
+              "INSTRUMENTOS: Indicar marca, modelo, número de serie y número de certificado de calibración " +
+              "de cada instrumento utilizado (Monitor WBGT, Termohigrómetro, etc.).\n\n" +
+              "FECHA DE MEDICIÓN: La medición debe realizarse en el período de mayor carga térmica " +
+              "del año (período estival) y con las fuentes de calor encendidas.\n\n" +
+              "TGBH PONDERADO: Se calcula considerando el tiempo de exposición y recuperación " +
+              "durante una hora cronológica.\n\n" +
+              "TASA METABÓLICA (TM): Se determina según el Método a) del punto 4.2.1.1 de la " +
+              "Resolución SRT 30/2023 — Evaluación por requisitos de tareas/posturas/biomecánicos.\n\n" +
+              "VLA (Valor Límite de Acción): A partir de este valor el empleador debe instrumentar " +
+              "controles generales y declarar al personal expuesto ante la ART (ESOP 80001).\n\n" +
+              "VLP (Valor Límite Permisible): Límite máximo. Si se supera, el empleador debe realizar " +
+              "un estudio detallado o control fisiológico de la tensión térmica."
+            )] }),
           ],
         }));
 
@@ -776,12 +811,63 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
         items.push(new Table({
           width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
           rows: [
+            new TableRow({ children: [hdr("Valores de Referencia (MTEySS 295/2003 — Anexo de estrés por frío)")] }),
+            new TableRow({ children: [cell(
+              "TEMPERATURA EQUIVALENTE DE ENFRIAMIENTO (TEE) EN RELACIÓN CON LA VELOCIDAD DEL AIRE:\n\n" +
+              "La TEE combina la temperatura de bulbo seco (TBS) y la velocidad del viento para estimar " +
+              "el efecto refrigerante sobre el cuerpo humano.\n\n" +
+              "Rangos de peligro según TEE:\n" +
+              "  TEE > 0°C              → SIN PELIGRO\n" +
+              "  TEE entre 0 y -10°C   → POCO PELIGROSO — Sensación de frío\n" +
+              "  TEE entre -10 y -25°C → PELIGROSO — Riesgo de congelamiento expuesto\n" +
+              "  TEE entre -25 y -50°C → MUY PELIGROSO — Peligro de congelamiento en 1 min\n" +
+              "  TEE entre -50 y -75°C → EXTREMADAMENTE PELIGROSO — Peligro en 30 segundos\n" +
+              "  TEE < -75°C            → PELIGRO MÁXIMO — Congelamiento en segundos\n\n" +
+              "Para trabajos a una temperatura equivalente de enfriamiento (TEE) de entre -25°C y -50°C, " +
+              "los trabajadores deberán ser provistos de ropa protectora adecuada. " +
+              "Se deberán tomar precauciones especiales cuando se realicen actividades por debajo de -25°C.\n\n" +
+              "Para temperaturas inferiores a -18°C se deberá proveer a los trabajadores de:\n" +
+              "• Ropa aislante seca que mantenga la temperatura corporal por encima de 36°C\n" +
+              "• Manoplas o guantes aislantes\n" +
+              "• Calzado de seguridad con aislación térmica\n" +
+              "• Medias de lana o similares\n\n" +
+              "Nota: No se requiere plan de trabajo/calentamiento cuando la TEE es superior a -25°C " +
+              "y la exposición es intermitente con períodos de recuperación en ambiente temperado."
+            )] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(protocolHeader("INFORME DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", est));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
             new TableRow({ children: [hdr("Observaciones")] }),
             new TableRow({ children: [cell(coldProtocol.observaciones || "-")] }),
             new TableRow({ children: [hdr("Conclusiones")] }),
             new TableRow({ children: [cell(coldProtocol.conclusiones || "(Sin conclusiones cargadas)")] }),
             new TableRow({ children: [hdr("Recomendaciones para Prevenir el Estrés por Frío")] }),
             new TableRow({ children: [cell(coldProtocol.recomendaciones || "(Sin recomendaciones cargadas)")] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(protocolHeader("INFORME DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", est));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("Constancia Fotográfica de las Tareas")] }),
+            new TableRow({ children: [cell("(Espacio para fotografías de los puestos evaluados)\n\n\n\n ", { size: 8, color: "888888", align: AlignmentType.CENTER })] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(protocolHeader("INFORME DE MEDICIÓN DE ESTRÉS POR FRÍO EN EL AMBIENTE LABORAL", est));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("Certificación de Condiciones Meteorológicas")] }),
+            new TableRow({ children: [cell("(Adjuntar certificado de condiciones meteorológicas del día de la medición)\n\n\n\n ", { size: 8, color: "888888", align: AlignmentType.CENTER })] }),
           ],
         }));
 
@@ -817,7 +903,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
         items.push(protocolHeader("PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", est));
         items.push(new Table({
           width: { size: CONT_W, type: WidthType.DXA },
-          columnWidths: [500, 1200, 1400, 900, 900, 1000, 900, 900, 900, 900],
+          columnWidths: [500, 1100, 1300, 800, 800, 900, 800, 800, 800, 700, 900],
           rows: [
             new TableRow({ children: [
               hdr("(23) Punto", { align: AlignmentType.CENTER }),
@@ -829,6 +915,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
               hdr("(29) LC pico dBC", { align: AlignmentType.CENTER }),
               hdr("(30) LAeq dBA", { align: AlignmentType.CENTER }),
               hdr("(31) Fracción", { align: AlignmentType.CENTER }),
+              hdr("(32) Dosis %", { align: AlignmentType.CENTER }),
               hdr("(33) Cumple", { align: AlignmentType.CENTER }),
             ]}),
             ...rows.map((r: any, i: number) => new TableRow({ children: [
@@ -840,6 +927,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
               cell(r.tipoRuido === "Impulso" ? r.valorMedido || "" : "No Aplica", { align: AlignmentType.CENTER }),
               cell(r.tipoRuido !== "Impulso" ? r.valorMedido || "" : "No Aplica", { align: AlignmentType.CENTER }),
               cell(r.fraccion || "", { align: AlignmentType.CENTER }),
+              cell(r.dosisRuido || "-", { align: AlignmentType.CENTER }),
               cumpleCell(r.cumple),
             ]})),
           ],
@@ -872,6 +960,67 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
             new TableRow({ children: [cell(noiseProtocol.conclusiones || "(Sin conclusiones cargadas)")] }),
             new TableRow({ children: [hdr("(42) Recomendaciones para adecuar el nivel de ruido a la legislación vigente")] }),
             new TableRow({ children: [cell(noiseProtocol.recomendaciones || "(Sin recomendaciones cargadas)")] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(protocolHeader("PROTOCOLO PARA MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", est));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("Constancia Fotográfica De Las Tareas")] }),
+            new TableRow({ children: [cell("(Espacio para fotografías de los puestos evaluados)\n\n\n\n ", { size: 8, color: "888888", align: AlignmentType.CENTER })] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(protocolHeader("PROTOCOLO PARA MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", est));
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("Certificación de Condiciones Meteorológicas")] }),
+            new TableRow({ children: [cell("(Adjuntar certificado de condiciones meteorológicas del día de la medición)\n\n\n\n ", { size: 8, color: "888888", align: AlignmentType.CENTER })] }),
+          ],
+        }));
+
+        items.push(pageBreakPara());
+        items.push(new Table({
+          width: { size: CONT_W, type: WidthType.DXA }, columnWidths: [CONT_W],
+          rows: [
+            new TableRow({ children: [hdr("INSTRUCTIVO PARA COMPLETAR EL PROTOCOLO DE MEDICIÓN DE RUIDO EN EL AMBIENTE LABORAL", { align: AlignmentType.CENTER })] }),
+            new TableRow({ children: [cell(
+              "1) Identificación del establecimiento (razón social completa).\n" +
+              "2) Domicilio real del establecimiento donde se realiza la medición.\n" +
+              "3) Localidad del establecimiento.\n" +
+              "4) Provincia en la cual se encuentra radicado el establecimiento.\n" +
+              "5) Código Postal del establecimiento.\n" +
+              "6) C.U.I.T. de la empresa o institución.\n" +
+              "7) Marca, modelo y número de serie del instrumento utilizado. Las mediciones se efectuarán " +
+              "con un medidor de nivel sonoro integrador (decibelímetro) o dosímetro, Clase o Tipo 2, " +
+              "según normas IRAM 4074 e IEC 804.\n" +
+              "8) Fecha de la última calibración realizada en laboratorio al instrumento empleado.\n" +
+              "9) Fecha de la medición.\n" +
+              "10) Hora de inicio de la primera medición.\n" +
+              "11) Hora de finalización de la última medición.\n" +
+              "12) Duración de la jornada laboral (en horas).\n" +
+              "13) Condiciones normales y/o habituales de los puestos de trabajo: fuentes de ruido, " +
+              "descripción y condición de funcionamiento.\n" +
+              "14) Condiciones de trabajo al momento de efectuar la medición.\n" +
+              "15) Adjuntar copia del certificado de calibración del equipo.\n" +
+              "16) Adjuntar plano o croquis del establecimiento con los puntos de medición.\n" +
+              "23) Punto de medición (número que coincide con el del croquis).\n" +
+              "24) Sector de la empresa donde se realiza la medición.\n" +
+              "25) Puesto de trabajo o puesto tipo.\n" +
+              "26) Tiempo de exposición del trabajador al ruido (en horas).\n" +
+              "27) Tiempo de integración o de medición.\n" +
+              "28) Tipo de ruido: continuo, intermitente o de impulso/impacto.\n" +
+              "29) Nivel pico ponderado C (LCpico en dBC) para ruido de impulso o impacto.\n" +
+              "30) Nivel de presión acústica LAeq,Te en dBA.\n" +
+              "31) Resultado de la suma de fracciones C1/T1 + C2/T2 + ... + Cn/Tn.\n" +
+              "32) Dosis de ruido en porcentaje, obtenida con dosímetro (índice 3dB, criterio 85 dBA/8h).\n" +
+              "33) Indica si cumple con el nivel de ruido máximo permitido (SI / NO).\n" +
+              "34) Información adicional de importancia."
+            )] }),
           ],
         }));
 
