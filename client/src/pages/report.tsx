@@ -148,6 +148,10 @@ export default function Report() {
     toast({ title: "Generando documento DOCX...", description: "Esto puede tomar unos segundos." });
     try {
       const state = useStore.getState();
+      const lightingSectors = state.sectors.filter((s: any) =>
+        s.measurements.some((m: any) => m.type === "lighting")
+      );
+
       const res = await fetch("/api/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,26 +160,29 @@ export default function Report() {
           noiseProtocol: state.noiseProtocol,
           thermalProtocol: state.thermalProtocol,
           coldProtocol: state.coldProtocol,
+          lightingSectors,
           signatory: {
-            name: state.signatoryName,
-            title: state.signatoryTitle,
-            registration: state.signatoryRegistration,
+            name: state.signatoryName || "",
+            title: state.signatoryTitle || "Lic. H&SL",
+            registration: state.signatoryRegistration || "",
           },
         }),
         credentials: "include",
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Error desconocido" }));
-        throw new Error(err.message || "Error al generar el informe");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Error del servidor");
       }
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Informe_SYSO_${state.establishment.razonSocial || state.establishment.name || "Informe"}.docx`;
+      a.download = `Informe_EEA_${state.establishment.razonSocial || state.establishment.name || "Informe"}_${new Date().toISOString().split("T")[0]}.docx`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast({ title: "Informe generado", description: "El DOCX fue descargado correctamente." });
