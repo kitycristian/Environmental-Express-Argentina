@@ -154,7 +154,7 @@ interface AppState {
 
   loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
   resetStore: () => void;
-  saveInspection: () => void;
+  saveInspection: () => Promise<void>;
   markClean: () => void;
   setDigitalSignature: (signature: string | null) => void;
   setSignatoryName: (name: string | null) => void;
@@ -312,16 +312,57 @@ export const useStore = create<AppState>()(
         coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
         isDirty: false, lastSavedAt: null,
       }),
-      saveInspection: () => {
+      saveInspection: async () => {
         const state = get();
         const inspectionData = {
-          establishment: state.establishment, sectors: state.sectors,
-          noiseProtocol: state.noiseProtocol, thermalProtocol: state.thermalProtocol, coldProtocol: state.coldProtocol,
-          savedAt: new Date().toISOString()
+          establishment: state.establishment,
+          sectors: state.sectors,
+          noiseProtocol: state.noiseProtocol,
+          thermalProtocol: state.thermalProtocol,
+          coldProtocol: state.coldProtocol,
+          digitalSignature: state.digitalSignature,
+          signatoryName: state.signatoryName,
+          signatoryTitle: state.signatoryTitle,
+          signatoryRegistration: state.signatoryRegistration,
+          savedAt: new Date().toISOString(),
         };
+
+        // 1. Backup offline en localStorage
         const saved = JSON.parse(localStorage.getItem('syh-saved-inspections') || '[]');
-        saved.push(inspectionData);
+        const existingIdx = saved.findIndex((s: any) => s.establishment?.id === state.establishment.id);
+        if (existingIdx >= 0) {
+          saved[existingIdx] = inspectionData;
+        } else {
+          saved.push(inspectionData);
+        }
         localStorage.setItem('syh-saved-inspections', JSON.stringify(saved));
+
+        // 2. Persistir en la base de datos (fuente de verdad)
+        try {
+          const dbId = (state.establishment as any)._dbId;
+          if (dbId) {
+            await fetch(`/api/inspections/${dbId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(inspectionData),
+            });
+          } else {
+            const res = await fetch('/api/inspections', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(inspectionData),
+            });
+            if (res.ok) {
+              const created = await res.json();
+              set((s) => ({
+                establishment: { ...s.establishment, _dbId: created.id } as any,
+              }));
+            }
+          }
+        } catch (err) {
+          console.warn('Sin conexión — datos guardados localmente como backup:', err);
+        }
+
         set({ lastSavedAt: new Date().toISOString(), isDirty: false });
       },
       markClean: () => set({ isDirty: false, lastSavedAt: new Date().toISOString() }),

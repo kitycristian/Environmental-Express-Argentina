@@ -1,0 +1,108 @@
+Necesito que hagas 3 cambios en el proyecto para persistir los datos de las planillas de medición en la base de datos PostgreSQL. Actualmente solo se guardan en localStorage y se pierden si el técnico cambia de dispositivo.
+
+---
+
+CAMBIO 1 — shared/schema.ts
+Reemplazar la definición de la tabla "inspections" por esta versión extendida (agregar las columnas de protocolos y firma):
+
+```ts
+export const inspections = pgTable("inspections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  savedAt: timestamp("saved_at").notNull().defaultNow(),
+  establishment: jsonb("establishment").notNull(),
+  sectors: jsonb("sectors").notNull(),
+  noiseProtocol: jsonb("noise_protocol"),
+  thermalProtocol: jsonb("thermal_protocol"),
+  coldProtocol: jsonb("cold_protocol"),
+  digitalSignature: text("digital_signature"),
+  signatoryName: text("signatory_name"),
+  signatoryTitle: text("signatory_title"),
+  signatoryRegistration: text("signatory_registration"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+```
+
+---
+
+CAMBIO 2 — client/src/lib/store.ts
+Cambiar el tipo de saveInspection en la interfaz AppState de:
+  saveInspection: () => void;
+a:
+  saveInspection: () => Promise<void>;
+
+Luego reemplazar la implementación de saveInspection por esta versión que guarda en localStorage Y en la DB:
+
+```ts
+saveInspection: async () => {
+  const state = get();
+  const inspectionData = {
+    establishment: state.establishment,
+    sectors: state.sectors,
+    noiseProtocol: state.noiseProtocol,
+    thermalProtocol: state.thermalProtocol,
+    coldProtocol: state.coldProtocol,
+    digitalSignature: state.digitalSignature,
+    signatoryName: state.signatoryName,
+    signatoryTitle: state.signatoryTitle,
+    signatoryRegistration: state.signatoryRegistration,
+    savedAt: new Date().toISOString(),
+  };
+
+  // 1. Backup offline en localStorage
+  const saved = JSON.parse(localStorage.getItem('syh-saved-inspections') || '[]');
+  const existingIdx = saved.findIndex((s: any) => s.establishment?.id === state.establishment.id);
+  if (existingIdx >= 0) {
+    saved[existingIdx] = inspectionData;
+  } else {
+    saved.push(inspectionData);
+  }
+  localStorage.setItem('syh-saved-inspections', JSON.stringify(saved));
+
+  // 2. Persistir en la base de datos (fuente de verdad)
+  try {
+    const dbId = (state.establishment as any)._dbId;
+    if (dbId) {
+      await fetch(`/api/inspections/${dbId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inspectionData),
+      });
+    } else {
+      const res = await fetch('/api/inspections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inspectionData),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        set((s) => ({
+          establishment: { ...s.establishment, _dbId: created.id } as any,
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('Sin conexión — datos guardados localmente como backup:', err);
+  }
+
+  set({ lastSavedAt: new Date().toISOString(), isDirty: false });
+},
+```
+
+---
+
+CAMBIO 3 — Base de datos
+Correr esta migración SQL para agregar las columnas nuevas a la tabla existente:
+
+```sql
+ALTER TABLE inspections
+  ADD COLUMN IF NOT EXISTS noise_protocol JSONB,
+  ADD COLUMN IF NOT EXISTS thermal_protocol JSONB,
+  ADD COLUMN IF NOT EXISTS cold_protocol JSONB,
+  ADD COLUMN IF NOT EXISTS digital_signature TEXT,
+  ADD COLUMN IF NOT EXISTS signatory_name TEXT,
+  ADD COLUMN IF NOT EXISTS signatory_title TEXT,
+  ADD COLUMN IF NOT EXISTS signatory_registration TEXT;
+```
+
+Después de los cambios, reiniciar el servidor para que tome el nuevo schema.

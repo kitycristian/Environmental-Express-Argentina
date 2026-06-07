@@ -86,8 +86,15 @@ export type Instrument = typeof instruments.$inferSelect;
 export const inspections = pgTable("inspections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   savedAt: timestamp("saved_at").notNull().defaultNow(),
-  establishment: jsonb("establishment").notNull(), // Full Establishment object
-  sectors: jsonb("sectors").notNull(), // Array of Sector objects with measurements
+  establishment: jsonb("establishment").notNull(),
+  sectors: jsonb("sectors").notNull(),
+  noiseProtocol: jsonb("noise_protocol"),
+  thermalProtocol: jsonb("thermal_protocol"),
+  coldProtocol: jsonb("cold_protocol"),
+  digitalSignature: text("digital_signature"),
+  signatoryName: text("signatory_name"),
+  signatoryTitle: text("signatory_title"),
+  signatoryRegistration: text("signatory_registration"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
