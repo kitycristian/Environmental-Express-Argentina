@@ -317,15 +317,23 @@ export async function registerRoutes(
 
   // ============= PANEL ANALYZER (AI Vision) =============
 
-  const openai = new OpenAI({
-    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  });
+  const getOpenAI = () => {
+    const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+    if (!apiKey) return null;
+    return new OpenAI({
+      apiKey,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+  };
 
   const panelUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
   app.post("/api/analyze-panel", panelUpload.single('image'), async (req, res) => {
     try {
+      const openai = getOpenAI();
+      if (!openai) {
+        return res.status(503).json({ message: "Servicio de análisis AI no disponible. Configure OPENAI_API_KEY." });
+      }
       if (!req.file) {
         return res.status(400).json({ message: "Se requiere una imagen del tablero eléctrico" });
       }

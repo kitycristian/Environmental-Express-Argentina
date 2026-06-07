@@ -7,8 +7,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 // @ts-ignore
-import jsPDF from "jspdf";
-// @ts-ignore
 import { saveAs } from "file-saver";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, Header, Footer } from "docx";
 // @ts-ignore
@@ -168,99 +166,11 @@ export default function PanelAnalyzer() {
   };
 
   const downloadPDF = async (result: AnalysisResult) => {
-    try {
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = doc.internal.pageSize.width;
-      const margin = 20;
-      const contentWidth = pageWidth - margin * 2;
-      let y = margin;
-
-      doc.setFillColor(0, 51, 102);
-      doc.rect(0, 0, pageWidth, 35, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor(255, 255, 255);
-      doc.text("INFORME TÉCNICO", pageWidth / 2, 15, { align: "center" });
-      doc.setFontSize(11);
-      doc.text("Tablero Eléctrico - Environmental Express Argentina", pageWidth / 2, 23, { align: "center" });
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Fecha: ${new Date(result.timestamp).toLocaleString('es-AR')}  |  Archivo: ${result.filename}`, pageWidth / 2, 30, { align: "center" });
-      y = 45;
-
-      try {
-        const imgData = await loadImageAsBase64(result.imageUrl);
-        const imgWidth = 70;
-        const imgHeight = 50;
-        doc.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight);
-        y += imgHeight + 10;
-      } catch {
-        y += 5;
-      }
-
-      const secs = parseAnalysis(result.analysis);
-      const riskSec = secs.find(s => s.title.toLowerCase().includes('clasificación') || s.title.toLowerCase().includes('riesgo'));
-      if (riskSec) {
-        const r = parseRiskLevel(riskSec.content);
-        const riskColors: Record<string, number[]> = {
-          'BAJO': [34, 139, 34], 'MEDIO': [218, 165, 32], 'ALTO': [255, 140, 0], 'CRÍTICO': [200, 0, 0]
-        };
-        const c = riskColors[r.level] || [100, 100, 100];
-        doc.setFillColor(c[0], c[1], c[2]);
-        doc.roundedRect(pageWidth - margin - 50, 45, 50, 12, 2, 2, "F");
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(255, 255, 255);
-        doc.text(`Riesgo: ${r.level}`, pageWidth - margin - 25, 52.5, { align: "center" });
-      }
-
-      for (const section of secs) {
-        if (y > 270) { doc.addPage(); y = margin; }
-        doc.setFillColor(0, 51, 102);
-        doc.rect(margin, y, contentWidth, 7, "F");
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(255, 255, 255);
-        doc.text(section.title, margin + 3, y + 5);
-        y += 10;
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(50, 50, 50);
-        const lines = doc.splitTextToSize(section.content.trim(), contentWidth - 4);
-        for (const line of lines) {
-          if (y > 280) { doc.addPage(); y = margin; }
-          doc.text(line, margin + 2, y);
-          y += 4.5;
-        }
-        y += 4;
-      }
-
-      if (secs.length === 0) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(50, 50, 50);
-        const lines = doc.splitTextToSize(result.analysis, contentWidth);
-        for (const line of lines) {
-          if (y > 280) { doc.addPage(); y = margin; }
-          doc.text(line, margin, y);
-          y += 4.5;
-        }
-      }
-
-      const totalPages = (doc as any).internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(7);
-        doc.setTextColor(150);
-        doc.text(`Environmental Express Argentina - Pág. ${i}/${totalPages}`, pageWidth / 2, 290, { align: "center" });
-      }
-
-      doc.save(`Informe_Tablero_${result.filename.replace(/\.[^/.]+$/, '')}.pdf`);
-      toast({ title: "PDF descargado", description: "El informe fue descargado correctamente" });
-    } catch (err: any) {
-      toast({ title: "Error", description: "No se pudo generar el PDF", variant: "destructive" });
-    }
+    const prevTitle = document.title;
+    document.title = `Informe_Tablero_${result.filename.replace(/\.[^/.]+$/, '')}`;
+    window.print();
+    document.title = prevTitle;
+    toast({ title: "Impresión iniciada", description: "Use 'Guardar como PDF' en el diálogo de impresión." });
   };
 
   const downloadDOCX = async (result: AnalysisResult) => {

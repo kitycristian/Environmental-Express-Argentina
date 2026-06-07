@@ -46,3 +46,5 @@ waitForPort = 5000
 [agent]
 mockupState = "FULLSTACK"
 integrations = ["google-sheet:1.0.0", "javascript_openai_ai_integrations:2.0.0"]
+stack = "FULLSTACK_JS"
+expertMode = true
