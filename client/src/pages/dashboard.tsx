@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer,
   Wind, Beaker, Factory, CheckCircle2, ChevronsUpDown, Plus, Check,
-  Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, Gauge, BarChart3
+  Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, Gauge, BarChart3,
+  Sparkles, ClipboardList, Users, TrendingUp, Clock, ExternalLink
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
@@ -18,6 +18,9 @@ import { useAuth } from "@/lib/auth";
 import { MeasurementModal } from "@/components/measurement-modal";
 import { SketchEditor } from "@/components/sketch-editor";
 import { useClients, useCreateInspection } from "@/lib/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { format, isThisMonth } from "date-fns";
+import { es } from "date-fns/locale";
 
 const SHEET_ROUTES: Record<string, string> = {
   lighting: '/lighting-sheet',
@@ -59,6 +62,31 @@ function getIcon(type: MeasurementType, size = 20) {
   }
 }
 
+function getInspectionProtocols(insp: any): string {
+  const protocols: string[] = [];
+  const np = insp.noiseProtocol || insp.noise_protocol;
+  const tp = insp.thermalProtocol || insp.thermal_protocol;
+  const cp = insp.coldProtocol || insp.cold_protocol;
+  if (np?.rows?.length) protocols.push("Ruido");
+  if (tp?.rows?.length) protocols.push("Calor");
+  if (cp?.rows?.length) protocols.push("Frío");
+  const est = insp.establishment || {};
+  if (est.sectors?.length) protocols.push("Iluminación");
+  return protocols.length ? protocols.join(", ") : "Sin protocolo";
+}
+
+function getInspectionStatus(insp: any): { label: string; color: string } {
+  const np = insp.noiseProtocol || insp.noise_protocol;
+  const tp = insp.thermalProtocol || insp.thermal_protocol;
+  const hasData = np?.rows?.length || tp?.rows?.length;
+  if (!hasData) return { label: "Pendiente", color: "bg-yellow-100 text-yellow-800 border-yellow-200" };
+  const noiseRows = np?.rows || [];
+  const hasNonCompliant = noiseRows.some((r: any) => r.cumple === "NO") ||
+    (tp?.rows || []).some((r: any) => r.cumpleVla === "NO");
+  if (hasNonCompliant) return { label: "No cumple", color: "bg-red-100 text-red-700 border-red-200" };
+  return { label: "Cumple", color: "bg-green-100 text-green-700 border-green-200" };
+}
+
 export default function Dashboard() {
   const establishment = useStore((state) => state.establishment);
   const updateEstablishment = useStore((state) => state.updateEstablishment);
@@ -69,6 +97,7 @@ export default function Dashboard() {
   const coldProtocol = useStore((s) => s.coldProtocol);
 
   const { data: clients = [] } = useClients();
+  const { data: inspections = [] } = useQuery<any[]>({ queryKey: ["/api/inspections"] });
   const [, setLocation] = useLocation();
   const [openClientSelect, setOpenClientSelect] = useState(false);
   const [activeMeasurementType, setActiveMeasurementType] = useState<MeasurementType | null>(null);
@@ -77,7 +106,6 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   const getMeasurementStats = (type: MeasurementType) => {
-    // For protocols stored in their own slice, check those rows
     if (type === 'noise') {
       const filled = noiseProtocol.rows.filter(r => r.sector || r.valorMedido).length;
       return { count: filled, completed: noiseProtocol.rows.filter(r => r.cumple).length, isFullyComplete: filled > 0 && noiseProtocol.rows.every(r => r.cumple) };
@@ -121,12 +149,21 @@ export default function Dashboard() {
     return stats.count > 0;
   }).length;
 
+  // Metrics
+  const inspThisMonth = inspections.filter(i => {
+    try { return isThisMonth(new Date(i.updatedAt || i.createdAt)); } catch { return false; }
+  }).length;
+
+  const recentInspections = [...inspections]
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())
+    .slice(0, 5);
+
   return (
     <div className="pb-20 stagger">
       <MeasurementModal isOpen={!!activeMeasurementType} onClose={() => setActiveMeasurementType(null)} type={activeMeasurementType} />
 
       {/* ── Header ── */}
-      <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
             <BarChart3 size={14} />
@@ -190,8 +227,121 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── Metric Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="eea-card p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <ClipboardList className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <div className="text-[28px] font-bold text-foreground leading-none">{inspThisMonth}</div>
+            <div className="text-[12px] text-muted-foreground mt-0.5">Inspecciones este mes</div>
+          </div>
+        </div>
+        <div className="eea-card p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+            <Users className="h-5 w-5 text-green-600" />
+          </div>
+          <div>
+            <div className="text-[28px] font-bold text-foreground leading-none">{clients.length}</div>
+            <div className="text-[12px] text-muted-foreground mt-0.5">Clientes activos</div>
+          </div>
+        </div>
+        <div className="eea-card p-5 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+            <TrendingUp className="h-5 w-5 text-purple-600" />
+          </div>
+          <div>
+            <div className="text-[28px] font-bold text-foreground leading-none">{inspections.length}</div>
+            <div className="text-[12px] text-muted-foreground mt-0.5">Informes en historial</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── AI Card + Recent Inspections (side by side on desktop) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+        {/* AI Card */}
+        <Link href="/report">
+          <div className="eea-card p-5 cursor-pointer group hover:shadow-md transition-all border-2 border-[hsl(144,60%,40%)]/20 hover:border-[hsl(144,60%,40%)]/50 h-full flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[hsl(144,60%,40%)] to-[hsl(200,80%,40%)] flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-[hsl(144,60%,40%)] text-white px-2 py-0.5 rounded-full">NUEVO</span>
+              </div>
+              <div className="font-semibold text-[15px] text-foreground leading-tight mb-1.5">
+                Análisis IA disponible
+              </div>
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
+                Analizá tableros eléctricos con visión artificial e identificá riesgos y no conformidades automáticamente.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[13px] font-medium text-[hsl(144,60%,35%)] mt-4 group-hover:gap-2 transition-all">
+              <span>Abrir Analizador</span>
+              <ArrowRight size={14} />
+            </div>
+          </div>
+        </Link>
+
+        {/* Recent Inspections Table */}
+        <div className="eea-card lg:col-span-2 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold text-[14px]">Inspecciones recientes</span>
+            </div>
+            <Link href="/history">
+              <Button variant="ghost" size="sm" className="text-[12px] h-7 gap-1 text-primary hover:text-primary">
+                Ver todo <ExternalLink size={11} />
+              </Button>
+            </Link>
+          </div>
+
+          {recentInspections.length === 0 ? (
+            <div className="px-5 py-8 text-center text-muted-foreground text-[13px]">
+              <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
+              <p>Todavía no hay inspecciones guardadas.</p>
+              <p className="text-[12px] mt-1">Guardá una inspección desde el botón "Guardar" arriba.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {recentInspections.map((insp) => {
+                const est = insp.establishment || {};
+                const empresa = est.razonSocial || est.name || "Sin nombre";
+                const protocols = getInspectionProtocols(insp);
+                const status = getInspectionStatus(insp);
+                const date = insp.updatedAt || insp.createdAt;
+                return (
+                  <div key={insp.id} className="px-5 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-[13px] truncate">{empresa}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">{protocols}</div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.color}`}>
+                        {status.label}
+                      </span>
+                      {date && (
+                        <span className="text-[11px] text-muted-foreground hidden sm:block">
+                          {format(new Date(date), "dd/MM", { locale: es })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* ── Establishment Card ── */}
-      <div className="eea-card p-5 mb-8">
+      <div className="eea-card p-5 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Building2 size={16} className="text-primary" />
           <span className="font-semibold text-[13px] text-foreground">Datos del Establecimiento</span>
@@ -215,7 +365,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Croquis */}
         <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-3">
           <span className="field-label mb-0">Croquis del Establecimiento (Anexo 1)</span>
           {establishment.sketchImage ? (
@@ -265,7 +414,6 @@ export default function Dashboard() {
               onClick={() => route ? setLocation(route) : setActiveMeasurementType(type)}
             >
               <div className="p-5">
-                {/* Icon + check */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: colors.bg, color: colors.icon }}>
                     {getIcon(type, 18)}
@@ -278,7 +426,6 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Title + count */}
                 <div className="mb-3">
                   <div className="font-semibold text-[14px] text-foreground leading-tight">{label}</div>
                   {hasData && (
@@ -289,27 +436,20 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Progress */}
                 {hasData && stats.count > 0 && (
                   <div className="mb-4">
                     <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.round((stats.completed / stats.count) * 100)}%`,
-                          background: colors.icon
-                        }}
+                        style={{ width: `${Math.round((stats.completed / stats.count) * 100)}%`, background: colors.icon }}
                       />
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-1">{stats.completed}/{stats.count} completos</div>
                   </div>
                 )}
 
-                {/* CTA */}
-                <div
-                  className={`flex items-center justify-between text-[13px] font-medium pt-3 border-t transition-colors
-                    ${hasData ? 'border-green-100 text-green-700 group-hover:text-green-800' : 'border-border text-muted-foreground group-hover:text-primary'}`}
-                >
+                <div className={`flex items-center justify-between text-[13px] font-medium pt-3 border-t transition-colors
+                  ${hasData ? 'border-green-100 text-green-700 group-hover:text-green-800' : 'border-border text-muted-foreground group-hover:text-primary'}`}>
                   <span>{hasData ? 'Continuar carga' : 'Comenzar'}</span>
                   <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                 </div>
