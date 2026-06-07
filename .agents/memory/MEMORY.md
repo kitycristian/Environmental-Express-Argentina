@@ -1,0 +1,1 @@
+- [Auth real con passport-local](auth-setup.md) — sesiones en DB con connect-pg-simple; contraseñas SHA-256+salt; seedUsers crea admin/admin123 y operador/op123 si tabla vacía

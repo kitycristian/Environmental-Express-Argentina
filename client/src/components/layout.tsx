@@ -84,7 +84,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [newInspectionOpen, setNewInspectionOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleLogout = () => { logout(); setLocation("/login"); };
+  const handleLogout = async () => { await logout(); setLocation("/login"); };
 
   const handleNewInspection = (saveFirst: boolean) => {
     if (saveFirst) {
@@ -114,7 +114,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <User className="h-4 w-4 text-white" />
           </div>
           <div className="overflow-hidden">
-            <div className="text-white text-[13px] font-semibold truncate leading-tight">{user.name}</div>
+            <div className="text-white text-[13px] font-semibold truncate leading-tight">{user.username}</div>
             <div className="text-white/50 text-[10px] capitalize">{user.role}</div>
           </div>
         </div>

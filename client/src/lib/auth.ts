@@ -1,35 +1,69 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export type Role = 'admin' | 'operator';
+export type Role = "admin" | "operator";
 
 export interface User {
+  id: string;
   username: string;
   role: Role;
-  name: string;
 }
 
 interface AuthState {
   user: User | null;
-  login: (username: string, role: Role) => void;
-  logout: () => void;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  checkSession: () => Promise<void>;
 }
 
 export const useAuth = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      login: (username, role) => set({ 
-        user: { 
-          username, 
-          role, 
-          name: role === 'admin' ? 'Administrador' : 'Operador' 
-        } 
-      }),
-      logout: () => set({ user: null }),
+      isLoading: false,
+
+      login: async (username, password) => {
+        set({ isLoading: true });
+        try {
+          const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+            credentials: "include",
+          });
+          if (!res.ok) {
+            set({ isLoading: false });
+            return false;
+          }
+          const user = await res.json();
+          set({ user, isLoading: false });
+          return true;
+        } catch {
+          set({ isLoading: false });
+          return false;
+        }
+      },
+
+      logout: async () => {
+        await fetch("/api/logout", { method: "POST", credentials: "include" });
+        set({ user: null });
+      },
+
+      checkSession: async () => {
+        try {
+          const res = await fetch("/api/me", { credentials: "include" });
+          if (res.ok) {
+            const user = await res.json();
+            set({ user });
+          } else {
+            set({ user: null });
+          }
+        } catch {
+          set({ user: null });
+        }
+      },
     }),
-    {
-      name: 'auth-storage',
-    }
+    { name: "eea-auth-v2" }
   )
 );

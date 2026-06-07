@@ -1,0 +1,274 @@
+Necesito implementar autenticación real en el proyecto. Actualmente el login usa usuarios hardcodeados (admin/admin, operador/operador) con Zustand, lo que no es seguro para producción. Necesito reemplazarlo por autenticación real con sesiones en el servidor.
+
+---
+
+CONTEXTO DEL PROYECTO:
+- Backend: Node.js + Express + TypeScript
+- Base de datos: PostgreSQL con Drizzle ORM
+- Frontend: React 18 + Zustand
+- Ya existe la tabla "users" en el schema con campos: id, username, password
+- Ya existe passport y passport-local en las dependencias
+- Ya existe express-session y connect-pg-simple en las dependencias
+
+---
+
+CAMBIO 1 — server/auth.ts (archivo nuevo)
+Crear este archivo que configura passport con hashing de contraseñas:
+
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
+import { Express } from "express";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { storage, db } from "./storage";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import crypto from "crypto";
+
+function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password + "eea-salt-2024").digest("hex");
+}
+
+function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash;
+}
+
+export function setupAuth(app: Express) {
+  const PgStore = connectPgSimple(session);
+
+  app.use(session({
+    store: new PgStore({
+      conString: process.env.DATABASE_URL,
+      tableName: "user_sessions",
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || "eea-session-secret-2024",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    },
+  }));
+
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  passport.use(new LocalStrategy(async (username, password, done) => {
+    try {
+      const result = await db.select().from(users).where(eq(users.username, username));
+      const user = result[0];
+      if (!user) return done(null, false, { message: "Usuario no encontrado" });
+      if (!verifyPassword(password, user.password)) return done(null, false, { message: "Contraseña incorrecta" });
+      return done(null, user);
+    } catch (err) {
+      return done(err);
+    }
+  }));
+
+  passport.serializeUser((user: any, done) => done(null, user.id));
+
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const result = await db.select().from(users).where(eq(users.id, id));
+      done(null, result[0] || null);
+    } catch (err) {
+      done(err);
+    }
+  });
+
+  // Endpoint de login
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) return next(err);
+      if (!user) return res.status(401).json({ message: info?.message || "Credenciales inválidas" });
+      req.logIn(user, (err) => {
+        if (err) return next(err);
+        res.json({ id: user.id, username: user.username, role: user.role });
+      });
+    })(req, res, next);
+  });
+
+  // Endpoint de logout
+  app.post("/api/logout", (req, res) => {
+    req.logout(() => res.json({ ok: true }));
+  });
+
+  // Endpoint para verificar sesión activa
+  app.get("/api/me", (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autenticado" });
+    const user = req.user as any;
+    res.json({ id: user.id, username: user.username, role: user.role });
+  });
+}
+
+export { hashPassword };
+
+
+---
+
+CAMBIO 2 — shared/schema.ts
+Agregar el campo "role" a la tabla users (si no existe ya):
+
+Modificar la tabla users para que quede así:
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  role: text("role").notNull().default("operator"),
+});
+
+
+---
+
+CAMBIO 3 — server/index.ts
+Importar y llamar setupAuth ANTES de registrar las rutas. Agregar al inicio del archivo:
+
+import { setupAuth, hashPassword } from "./auth";
+
+Y dentro de la función que inicializa el servidor, llamar setupAuth(app) antes de registerRoutes.
+
+También agregar esta función para crear usuarios iniciales si la tabla está vacía:
+
+async function seedUsers() {
+  const { db } = await import("./storage");
+  const { users } = await import("@shared/schema");
+  const existing = await db.select().from(users);
+  if (existing.length === 0) {
+    await db.insert(users).values([
+      { username: "admin", password: hashPassword("admin123"), role: "admin" },
+      { username: "operador", password: hashPassword("op123"), role: "operator" },
+    ]);
+    console.log("Usuarios iniciales creados: admin/admin123 y operador/op123");
+  }
+}
+
+Llamar seedUsers() después de setupAuth.
+
+
+---
+
+CAMBIO 4 — client/src/lib/auth.ts (modificar el existente)
+Reemplazar el login mock por llamadas reales a la API:
+
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+interface User {
+  id: string;
+  username: string;
+  role: "admin" | "operator";
+}
+
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  checkSession: () => Promise<void>;
+}
+
+export const useAuth = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isLoading: false,
+
+      login: async (username, password) => {
+        set({ isLoading: true });
+        try {
+          const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+            credentials: "include",
+          });
+          if (!res.ok) {
+            set({ isLoading: false });
+            return false;
+          }
+          const user = await res.json();
+          set({ user, isLoading: false });
+          return true;
+        } catch {
+          set({ isLoading: false });
+          return false;
+        }
+      },
+
+      logout: async () => {
+        await fetch("/api/logout", { method: "POST", credentials: "include" });
+        set({ user: null });
+      },
+
+      checkSession: async () => {
+        try {
+          const res = await fetch("/api/me", { credentials: "include" });
+          if (res.ok) {
+            const user = await res.json();
+            set({ user });
+          } else {
+            set({ user: null });
+          }
+        } catch {
+          set({ user: null });
+        }
+      },
+    }),
+    { name: "eea-auth-v2" }
+  )
+);
+
+
+---
+
+CAMBIO 5 — client/src/pages/login.tsx
+En el componente de login, reemplazar la lógica del submit para usar el nuevo useAuth. Donde actualmente hace la validación hardcodeada, reemplazar por:
+
+const { login } = useAuth();
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const success = await login(username, password);
+  if (success) {
+    navigate("/");
+  } else {
+    setError("Usuario o contraseña incorrectos");
+  }
+};
+
+
+---
+
+CAMBIO 6 — client/src/App.tsx
+Al inicio del componente App, agregar un efecto para verificar la sesión al cargar:
+
+import { useEffect } from "react";
+import { useAuth } from "@/lib/auth";
+
+// Dentro del componente App:
+const checkSession = useAuth((s) => s.checkSession);
+useEffect(() => {
+  checkSession();
+}, []);
+
+
+---
+
+CAMBIO 7 — Base de datos (SQL)
+Correr estas dos migraciones:
+
+-- Agregar columna role a users (si no existe)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'operator';
+
+-- La tabla de sesiones la crea automáticamente connect-pg-simple,
+-- pero por si acaso:
+CREATE TABLE IF NOT EXISTS user_sessions (
+  sid VARCHAR NOT NULL PRIMARY KEY,
+  sess JSON NOT NULL,
+  expire TIMESTAMP(6) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_session_expire ON user_sessions (expire);
+
+Después de todos los cambios, reiniciar el servidor.

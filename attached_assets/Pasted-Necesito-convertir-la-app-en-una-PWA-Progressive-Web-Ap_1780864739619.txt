@@ -1,0 +1,303 @@
+Necesito convertir la app en una PWA (Progressive Web App) con soporte offline. 
+Los técnicos trabajan con señal inestable desde celulares y notebooks, y no pueden 
+perder datos si se corta la conexión mientras cargan una planilla.
+
+---
+
+CONTEXTO:
+- Frontend: React 18 + Vite
+- Los datos ya se guardan en localStorage/Zustand como backup (paso anterior)
+- El objetivo es: app instalable + funciona offline + sincroniza al volver la señal
+
+---
+
+CAMBIO 1 — client/public/manifest.json (archivo nuevo)
+Crear este archivo para que la app sea instalable:
+
+{
+  "name": "Environmental Express Argentina",
+  "short_name": "EEA",
+  "description": "Sistema de gestión de seguridad e higiene laboral",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#003366",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
+
+---
+
+CAMBIO 2 — client/public/sw.js (archivo nuevo)
+Crear el Service Worker que maneja el cache offline y la sincronización:
+
+const CACHE_NAME = 'eea-v1';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+];
+
+// Instalar: cachear assets estáticos
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+  );
+  self.skipWaiting();
+});
+
+// Activar: limpiar caches viejos
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+// Fetch: estrategia según tipo de request
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Requests a la API: network-first, si falla guardar en cola
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request.clone())
+        .then(res => res)
+        .catch(() => {
+          // Si es un POST/PATCH de inspección, encolar para sincronizar después
+          if (['POST', 'PATCH'].includes(event.request.method) &&
+              url.pathname.includes('/inspections')) {
+            return event.request.json().then(body => {
+              // Guardar en IndexedDB para sync posterior
+              saveToSyncQueue({ url: url.pathname, method: event.request.method, body });
+              return new Response(JSON.stringify({ queued: true, offline: true }), {
+                headers: { 'Content-Type': 'application/json' }
+              });
+            });
+          }
+          return new Response(JSON.stringify({ error: 'Sin conexión' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
+    );
+    return;
+  }
+
+  // Assets estáticos: cache-first
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return res;
+      }).catch(() => caches.match('/index.html'));
+    })
+  );
+});
+
+// Sincronización en background cuando vuelve la señal
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-inspections') {
+    event.waitUntil(syncPendingInspections());
+  }
+});
+
+// IndexedDB helpers para la cola offline
+function openSyncDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('eea-sync', 1);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore('queue', { autoIncrement: true });
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function saveToSyncQueue(item) {
+  const db = await openSyncDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('queue', 'readwrite');
+    tx.objectStore('queue').add({ ...item, timestamp: Date.now() });
+    tx.oncomplete = resolve;
+    tx.onerror = reject;
+  });
+}
+
+async function syncPendingInspections() {
+  const db = await openSyncDB();
+  const tx = db.transaction('queue', 'readwrite');
+  const store = tx.objectStore('queue');
+  const items = await new Promise((resolve) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+  });
+
+  for (const item of items) {
+    try {
+      await fetch(item.url, {
+        method: item.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item.body),
+      });
+    } catch (e) {
+      console.warn('Sync falló, reintentando después:', e);
+      return;
+    }
+  }
+
+  // Limpiar cola si todo sincronizó
+  const clearTx = db.transaction('queue', 'readwrite');
+  clearTx.objectStore('queue').clear();
+}
+
+
+---
+
+CAMBIO 3 — client/index.html
+Agregar dentro del <head>:
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#003366">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EEA">
+
+
+---
+
+CAMBIO 4 — client/src/main.tsx
+Registrar el service worker al final del archivo, después del ReactDOM.render:
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        console.log('SW registrado:', reg.scope);
+        // Intentar sincronizar al recuperar conexión
+        window.addEventListener('online', () => {
+          if ('sync' in reg) {
+            reg.sync.register('sync-inspections');
+          }
+        });
+      })
+      .catch(err => console.warn('SW no pudo registrarse:', err));
+  });
+}
+
+
+---
+
+CAMBIO 5 — client/src/hooks/useOnlineStatus.ts (archivo nuevo)
+Hook para mostrar al técnico si está online u offline:
+
+import { useState, useEffect } from 'react';
+
+export function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [wasOffline, setWasOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (wasOffline) {
+        setWasOffline(false);
+        // Disparar sincronización
+        navigator.serviceWorker.ready.then(reg => {
+          if ('sync' in reg) reg.sync.register('sync-inspections');
+        });
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setWasOffline(true);
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [wasOffline]);
+
+  return { isOnline, wasOffline };
+}
+
+
+---
+
+CAMBIO 6 — client/src/components/layout.tsx
+Agregar un banner de estado de conexión visible para el técnico. Importar el hook y agregar esto al inicio del layout, antes del contenido principal:
+
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+
+// Dentro del componente Layout:
+const { isOnline } = useOnlineStatus();
+
+// Agregar este banner justo después del tag de apertura del contenedor principal:
+{!isOnline && (
+  <div style={{
+    background: '#854F0B',
+    color: '#FAEEDA',
+    padding: '8px 16px',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500,
+  }}>
+    Sin conexión — los datos se guardan localmente y se sincronizan al reconectarse
+  </div>
+)}
+
+
+---
+
+CAMBIO 7 — vite.config.ts
+Agregar el plugin de PWA para que Vite genere el service worker correctamente en producción. 
+Instalar primero: npm install -D vite-plugin-pwa
+
+Luego en vite.config.ts agregar:
+
+import { VitePWA } from 'vite-plugin-pwa';
+
+// Y dentro de plugins[]:
+VitePWA({
+  registerType: 'autoUpdate',
+  filename: 'sw.js',
+  strategies: 'injectManifest',
+  srcDir: 'client/public',
+  injectManifest: {
+    injectionPoint: undefined,
+  },
+  manifest: false, // ya tenemos nuestro manifest.json
+  devOptions: {
+    enabled: true,
+  },
+})
+
+
+---
+
+NOTAS IMPORTANTES para el agente:
+1. Los íconos icon-192.png e icon-512.png se pueden generar a partir del logo existente 
+   en attached_assets/logo-eea.png usando sharp o cualquier herramienta de imagen.
+2. El service worker solo funciona en HTTPS o localhost — en Replit funciona bien porque 
+   usa HTTPS por defecto.
+3. Después de los cambios, reiniciar el servidor y abrir la app en Chrome. 
+   En la barra de direcciones debería aparecer el ícono de "Instalar app".

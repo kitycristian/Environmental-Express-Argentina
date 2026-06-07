@@ -123,6 +123,11 @@ function Router() {
 }
 
 function App() {
+  const checkSession = useAuth((s) => s.checkSession);
+  useEffect(() => {
+    checkSession();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster />

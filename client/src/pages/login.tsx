@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth, Role } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,17 +8,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ShieldCheck, User, Loader2 } from "lucide-react";
 import logoUrl from "@assets/image_1773940561975.png";
 
-const USERS: Record<string, { password: string; role: Role }> = {
-  admin: { password: "admin", role: "admin" },
-  operador: { password: "operador", role: "operator" },
-};
-
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const login = useAuth((state) => state.login);
+  const isLoading = useAuth((state) => state.isLoading);
   const user = useAuth((state) => state.user);
   const [, setLocation] = useLocation();
 
@@ -28,17 +23,12 @@ export default function Login() {
     }
   }, [user, setLocation]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    const trimmedUser = username.trim().toLowerCase();
-    const trimmedPass = password.trim();
-
-    const match = USERS[trimmedUser];
-    if (match && match.password === trimmedPass) {
-      setLoading(true);
-      login(trimmedUser, match.role);
+    const success = await login(username.trim(), password.trim());
+    if (success) {
+      setLocation("/");
     } else {
       setError("Usuario o contraseña incorrectos");
     }
@@ -71,7 +61,8 @@ export default function Login() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={isLoading}
+                  data-testid="input-username"
                 />
               </div>
             </div>
@@ -88,7 +79,8 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={isLoading}
+                  data-testid="input-password"
                 />
               </div>
             </div>
@@ -99,13 +91,13 @@ export default function Login() {
             )}
             <div className="text-xs text-center text-gray-400 mt-2 space-y-0.5">
               <p className="font-medium text-gray-500">Credenciales:</p>
-              <p>Admin: <span className="font-mono bg-gray-100 px-1 rounded">admin</span> / <span className="font-mono bg-gray-100 px-1 rounded">admin</span></p>
-              <p>Operador: <span className="font-mono bg-gray-100 px-1 rounded">operador</span> / <span className="font-mono bg-gray-100 px-1 rounded">operador</span></p>
+              <p>Admin: <span className="font-mono bg-gray-100 px-1 rounded">admin</span> / <span className="font-mono bg-gray-100 px-1 rounded">admin123</span></p>
+              <p>Operador: <span className="font-mono bg-gray-100 px-1 rounded">operador</span> / <span className="font-mono bg-gray-100 px-1 rounded">op123</span></p>
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
+            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Ingresando...
