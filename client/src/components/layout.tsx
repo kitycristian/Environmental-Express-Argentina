@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Home, FileText, Menu, PlusCircle, LogOut, User, Settings, Wrench, Users, FileStack, History, Cloud, CloudOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -80,6 +81,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const saveInspection = useStore((state) => state.saveInspection);
   const resetStore = useStore((state) => state.resetStore);
   const { user, logout } = useAuth();
+  const { isOnline } = useOnlineStatus();
   const [open, setOpen] = useState(false);
   const [newInspectionOpen, setNewInspectionOpen] = useState(false);
   const { toast } = useToast();
@@ -212,8 +214,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <SaveIndicator />
       </div>
 
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-800 text-amber-50 py-2 px-4 text-center text-sm font-medium print:hidden">
+          Sin conexión — los datos se guardan localmente y se sincronizan al reconectarse
+        </div>
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full print:p-0 print:max-w-none animate-fade-in">
+      <main className={`flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full print:p-0 print:max-w-none animate-fade-in${!isOnline ? ' mt-10' : ''}`}>
         {children}
       </main>
     </div>
