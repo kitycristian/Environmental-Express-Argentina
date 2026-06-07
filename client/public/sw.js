@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eea-v1';
+const CACHE_NAME = 'eea-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
