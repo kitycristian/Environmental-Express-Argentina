@@ -448,7 +448,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
       const {
         Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
         WidthType, BorderStyle, AlignmentType, Footer, PageNumber,
-        VerticalAlign, ShadingType,
+        VerticalAlign, ShadingType, Header,
       } = await import("docx");
 
       const NAVY = "0D2F5E";
@@ -500,7 +500,12 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
             ]})],
           }),
           new Paragraph({
-            children: [run("Página ", { size: 8 }), new PageNumber()],
+            children: [
+              new TextRun({ text: "Página ", font: "Arial", size: 16 }),
+              new TextRun({ children: [PageNumber.CURRENT], font: "Arial", size: 16 }),
+              new TextRun({ text: " de ", font: "Arial", size: 16 }),
+              new TextRun({ children: [PageNumber.TOTAL_PAGES], font: "Arial", size: 16 }),
+            ],
             alignment: AlignmentType.RIGHT,
           }),
         ],
