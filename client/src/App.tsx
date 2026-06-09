@@ -31,6 +31,7 @@ import ReportsList from "@/pages/reports-list";
 import BudgetGenerator from "@/pages/budget-generator";
 import ClientPortalAdmin from "@/pages/client-portal";
 import Portal from "@/pages/portal";
+import PortalAdmin from "@/pages/portal-admin";
 
 import InstrumentsPage from "@/pages/instruments";
 
@@ -66,6 +67,11 @@ function Router() {
   // Portal público de clientes — sin layout de admin
   if (location === "/portal") {
     return <Portal />;
+  }
+
+  // Panel admin del portal — token simple, sin sesión de admin
+  if (location === "/portal-admin") {
+    return <PortalAdmin />;
   }
 
   // Fullscreen pages without Layout

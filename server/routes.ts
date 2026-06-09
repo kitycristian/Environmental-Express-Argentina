@@ -1410,6 +1410,85 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.send(buffer);
   });
 
+  // ── PORTAL ADMIN — token-based (x-admin-token header) ──
+  const PADMIN_TOKEN = "EEA2024admin";
+  function requireAdminToken(req: any, res: any, next: any) {
+    if (req.headers["x-admin-token"] === PADMIN_TOKEN) return next();
+    return res.status(401).json({ message: "Token inválido" });
+  }
+
+  app.get("/api/padmin/users", requireAdminToken, async (req, res) => {
+    const users = await db.select().from(clientPortalUsers).orderBy(desc(clientPortalUsers.creadoEn));
+    res.json(users);
+  });
+
+  app.post("/api/padmin/users", requireAdminToken, async (req, res) => {
+    const { nombre, email } = req.body;
+    if (!nombre || !email) return res.status(400).json({ message: "nombre y email requeridos" });
+    const plainPass = generatePassword();
+    const hashed = hashPortalPassword(plainPass);
+    try {
+      const [user] = await db.insert(clientPortalUsers).values({ nombre, email, password: hashed }).returning();
+      if (process.env.SMTP_HOST) {
+        try {
+          const nodemailer = await import("nodemailer");
+          const t = nodemailer.default.createTransport({ host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT || "587"), auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+          await t.sendMail({ from: process.env.SMTP_USER, to: email, subject: "Acceso al Portal de Informes — EEA", text: `Hola ${nombre},\n\nTu acceso al portal está listo.\n\nURL: envexar.com/portal\nEmail: ${email}\nContraseña: ${plainPass}\n\nSaludos,\nEnvironmental Express Argentina` });
+        } catch (e) { console.warn("Email no enviado:", e); }
+      }
+      res.json({ ok: true, id: user.id, password: plainPass });
+    } catch (err: any) {
+      if (err?.code === "23505") return res.status(409).json({ message: "Email ya registrado" });
+      throw err;
+    }
+  });
+
+  app.patch("/api/padmin/users/:id", requireAdminToken, async (req, res) => {
+    await db.update(clientPortalUsers).set({ activo: req.body.activo }).where(eq(clientPortalUsers.id, req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.delete("/api/padmin/users/:id", requireAdminToken, async (req, res) => {
+    await db.delete(clientReports).where(eq(clientReports.clientPortalUserId, req.params.id));
+    await db.delete(clientPortalUsers).where(eq(clientPortalUsers.id, req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.get("/api/padmin/reports", requireAdminToken, async (req, res) => {
+    const reports = await db.select({
+      id: clientReports.id, clientPortalUserId: clientReports.clientPortalUserId,
+      titulo: clientReports.titulo, descripcion: clientReports.descripcion,
+      tipoEstudio: clientReports.tipoEstudio, fechaEstudio: clientReports.fechaEstudio,
+      pdfNombre: clientReports.pdfNombre, notificacionEnviada: clientReports.notificacionEnviada,
+      creadoEn: clientReports.creadoEn,
+    }).from(clientReports).orderBy(desc(clientReports.creadoEn));
+    res.json(reports);
+  });
+
+  app.post("/api/padmin/reports", requireAdminToken, async (req, res) => {
+    const { clientPortalUserId, titulo, descripcion, tipoEstudio, fechaEstudio, pdfData, pdfNombre } = req.body;
+    if (!clientPortalUserId || !titulo || !pdfData || !pdfNombre)
+      return res.status(400).json({ message: "Faltan campos requeridos" });
+    const [report] = await db.insert(clientReports).values({ clientPortalUserId, titulo, descripcion, tipoEstudio, fechaEstudio, pdfData, pdfNombre }).returning();
+    if (process.env.SMTP_HOST) {
+      try {
+        const [usuario] = await db.select().from(clientPortalUsers).where(eq(clientPortalUsers.id, clientPortalUserId));
+        if (usuario) {
+          const nodemailer = await import("nodemailer");
+          const t = nodemailer.default.createTransport({ host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT || "587"), auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+          await t.sendMail({ from: process.env.SMTP_USER, to: usuario.email, subject: `📄 Nuevo informe: ${titulo}`, text: `Hola ${usuario.nombre},\n\nTenés un nuevo informe disponible en el portal.\n\nenvexar.com/portal\n\nSaludos,\nEEA` });
+          await db.update(clientReports).set({ notificacionEnviada: true }).where(eq(clientReports.id, report.id));
+        }
+      } catch (e) { console.warn("Email no enviado:", e); }
+    }
+    res.json({ ok: true, id: report.id });
+  });
+
+  app.delete("/api/padmin/reports/:id", requireAdminToken, async (req, res) => {
+    await db.delete(clientReports).where(eq(clientReports.id, req.params.id));
+    res.json({ ok: true });
+  });
+
   // ── PORTAL DE CLIENTES — admin ──
 
   app.post("/api/portal/users", async (req, res) => {
