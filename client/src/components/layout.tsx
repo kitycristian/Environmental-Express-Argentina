@@ -209,6 +209,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <>
             <NavItem href="/reports" icon={<FileStack className="h-4 w-4" />} label="Informes" location={location} onClick={closeMenu} />
             <NavItem href="/client-portal" icon={<Globe className="h-4 w-4" />} label="Portal Clientes" location={location} onClick={closeMenu} />
+            <a href="/portal-admin" target="_blank" rel="noopener noreferrer">
+              <div className="eea-nav-item" onClick={closeMenu}>
+                <Globe className="h-4 w-4 opacity-70" />
+                <span>Admin Portal</span>
+              </div>
+            </a>
             <Link href="/budget-generator">
               <div className={`eea-nav-item relative ${location === "/budget-generator" ? "active" : ""}`} onClick={closeMenu}>
                 <FileText className="h-4 w-4" />
