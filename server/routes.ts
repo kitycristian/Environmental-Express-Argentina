@@ -9,11 +9,15 @@ import {
   insertClientSchema, 
   insertInstrumentSchema,
   insertInspectionSchema,
+  budgetRequests,
+  priceConfig,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { getSpreadsheetSheets, readSheetData, parseExcelBuffer } from "./google-sheets";
 import multer from "multer";
 import OpenAI from "openai";
+import { db } from "./storage";
+import { eq, desc } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1187,6 +1191,205 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
       console.error("Error generando informe:", error);
       res.status(500).json({ message: String(error?.message || error) });
     }
+  });
+
+  // ── PRESUPUESTOS — público ──
+  app.post("/api/budget-requests", async (req, res) => {
+    try {
+      const d = req.body;
+      const [created] = await db.insert(budgetRequests).values({
+        razonSocial: d.razonSocial || d.empresa || "Sin nombre",
+        cuit: d.cuit,
+        direccion: d.direccion,
+        localidad: d.localidad,
+        provincia: d.provincia,
+        rubro: d.rubro,
+        contactoNombre: d.contactoNombre || d.nombre || "Sin nombre",
+        contactoCargo: d.contactoCargo || d.cargo,
+        contactoEmail: d.contactoEmail || d.email || "sin-email",
+        contactoTelefono: d.contactoTelefono || d.telefono,
+        medicionesSolicitadas: d.medicionesSolicitadas || d.mediciones || [],
+        detallesPorMedicion: d.detallesPorMedicion || d.detalles || {},
+        cantidadTrabajadores: d.cantidadTrabajadores,
+        art: d.art,
+        fechaEstimada: d.fechaEstimada,
+        observaciones: d.observaciones,
+        origen: d.origen || "web",
+      }).returning();
+
+      if (process.env.SMTP_HOST) {
+        try {
+          const nodemailer = await import("nodemailer");
+          const transporter = nodemailer.default.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || "587"),
+            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+          });
+          await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: process.env.ADMIN_EMAIL || "contacto@envexar.com",
+            subject: `🔔 Nuevo presupuesto: ${created.razonSocial}`,
+            text: `Nuevo pedido desde: ${created.origen}\n\nEMPRESA: ${created.razonSocial}\nCUIT: ${created.cuit || "-"}\nCONTACTO: ${created.contactoNombre}\nEMAIL: ${created.contactoEmail}\nMEDICIONES: ${JSON.stringify(created.medicionesSolicitadas)}`,
+          });
+        } catch (emailErr) {
+          console.warn("Email no enviado:", emailErr);
+        }
+      }
+
+      res.json({ ok: true, id: created.id });
+    } catch (error) {
+      console.error("Error guardando pedido:", error);
+      res.status(500).json({ message: "Error al guardar el pedido" });
+    }
+  });
+
+  // ── PRESUPUESTOS — privados ──
+  app.get("/api/budget-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const requests = await db.select().from(budgetRequests).orderBy(desc(budgetRequests.creadoEn));
+    res.json(requests);
+  });
+
+  app.get("/api/budget-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const [request] = await db.select().from(budgetRequests).where(eq(budgetRequests.id, req.params.id));
+    if (!request) return res.status(404).json({ message: "No encontrado" });
+    if (request.estado === "nuevo") {
+      await db.update(budgetRequests).set({ estado: "leido", actualizadoEn: new Date() }).where(eq(budgetRequests.id, req.params.id));
+    }
+    res.json(request);
+  });
+
+  app.patch("/api/budget-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const { estado, respuesta, presupuestoTotal } = req.body;
+    await db.update(budgetRequests).set({ estado, respuesta, presupuestoTotal, actualizadoEn: new Date() }).where(eq(budgetRequests.id, req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.get("/api/price-config", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const prices = await db.select().from(priceConfig);
+    res.json(prices);
+  });
+
+  app.patch("/api/price-config/:medicion", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    await db.update(priceConfig).set({ precioBase: req.body.precio_base, actualizadoEn: new Date() }).where(eq(priceConfig.medicion, req.params.medicion));
+    res.json({ ok: true });
+  });
+
+  app.post("/api/budget-requests/:id/pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const [request] = await db.select().from(budgetRequests).where(eq(budgetRequests.id, req.params.id));
+    if (!request) return res.status(404).json({ message: "No encontrado" });
+
+    const prices = await db.select().from(priceConfig);
+    const priceMap = Object.fromEntries(prices.map(p => [p.medicion, p.precioBase]));
+    const mediciones = request.medicionesSolicitadas as string[];
+    const items = mediciones.map(m => ({
+      nombre: prices.find(p => p.medicion === m)?.descripcion || m,
+      precio: priceMap[m] || 0,
+    }));
+    const total = request.presupuestoTotal ?? items.reduce((acc, i) => acc + i.precio, 0);
+    const nro = `PRES-${Date.now().toString().slice(-6)}`;
+    const fecha = new Date().toLocaleDateString("es-AR");
+
+    const {
+      Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+      WidthType, BorderStyle, AlignmentType, VerticalAlign, ShadingType,
+    } = await import("docx");
+
+    const NAVY = "0D2F5E", HDR = "D6E4F0";
+    const BD = () => ({ style: BorderStyle.SINGLE, size: 4, color: "999999" });
+    const BORDERS = () => ({ top: BD(), bottom: BD(), left: BD(), right: BD() });
+
+    const run = (text: string, opts: any = {}) => new TextRun({
+      text: String(text ?? ""), font: "Arial",
+      size: (opts.size || 9) * 2, bold: !!opts.bold,
+      color: opts.color || "000000", italics: !!opts.italic,
+    });
+
+    const mkCell = (text: string, opts: any = {}) => new TableCell({
+      children: [new Paragraph({
+        children: [run(text, opts)],
+        alignment: opts.align || AlignmentType.LEFT,
+        spacing: { before: 40, after: 40 },
+      })],
+      borders: BORDERS(),
+      shading: opts.fill ? { type: ShadingType.CLEAR, fill: opts.fill, color: opts.fill } : undefined,
+      columnSpan: opts.span,
+      margins: { top: 60, bottom: 60, left: 120, right: 120 },
+      verticalAlign: VerticalAlign.CENTER,
+    });
+
+    const hdr = (text: string, opts: any = {}) => mkCell(text, { bold: true, fill: HDR, color: NAVY, ...opts });
+
+    const doc = new Document({
+      sections: [{
+        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, right: 720, bottom: 1080, left: 720 } } },
+        children: [
+          new Paragraph({ children: [run("ENVIRONMENTAL EXPRESS ARGENTINA", { size: 16, bold: true, color: NAVY })], alignment: AlignmentType.CENTER, spacing: { before: 200, after: 80 } }),
+          new Paragraph({ children: [run("Servicios de Higiene y Seguridad en el Trabajo", { size: 10, italic: true, color: "555555" })], alignment: AlignmentType.CENTER, spacing: { before: 0, after: 400 } }),
+          new Table({
+            width: { size: 10460, type: WidthType.DXA },
+            columnWidths: [5230, 5230],
+            rows: [new TableRow({ children: [hdr(`PRESUPUESTO N° ${nro}`, { size: 11 }), hdr(`Fecha: ${fecha}`, { size: 10, align: AlignmentType.RIGHT })] })],
+          }),
+          new Paragraph({ spacing: { before: 200, after: 80 } }),
+          new Table({
+            width: { size: 10460, type: WidthType.DXA },
+            columnWidths: [10460],
+            rows: [
+              new TableRow({ children: [hdr("DATOS DEL CLIENTE")] }),
+              new TableRow({ children: [mkCell(`Razón Social: ${request.razonSocial}  |  CUIT: ${request.cuit || "-"}`)] }),
+              new TableRow({ children: [mkCell(`Dirección: ${request.direccion || "-"}, ${request.localidad || "-"}, ${request.provincia || "-"}`)] }),
+              new TableRow({ children: [mkCell(`Rubro: ${request.rubro || "-"}`)] }),
+              new TableRow({ children: [mkCell(`Contacto: ${request.contactoNombre} (${request.contactoCargo || "-"})  |  Email: ${request.contactoEmail}  |  Tel: ${request.contactoTelefono || "-"}`)] }),
+            ],
+          }),
+          new Paragraph({ spacing: { before: 200, after: 80 } }),
+          new Table({
+            width: { size: 10460, type: WidthType.DXA },
+            columnWidths: [7000, 1730, 1730],
+            rows: [
+              new TableRow({ children: [hdr("SERVICIO / ESTUDIO"), hdr("PRECIO UNIT.", { align: AlignmentType.RIGHT }), hdr("SUBTOTAL", { align: AlignmentType.RIGHT })] }),
+              ...items.map(item => new TableRow({ children: [mkCell(item.nombre), mkCell(`$ ${item.precio.toLocaleString("es-AR")}`, { align: AlignmentType.RIGHT }), mkCell(`$ ${item.precio.toLocaleString("es-AR")}`, { align: AlignmentType.RIGHT })] })),
+              new TableRow({ children: [hdr("TOTAL", { align: AlignmentType.RIGHT, span: 2 }), hdr(`$ ${total.toLocaleString("es-AR")}`, { align: AlignmentType.RIGHT })] }),
+            ],
+          }),
+          new Paragraph({ spacing: { before: 200, after: 80 } }),
+          new Table({
+            width: { size: 10460, type: WidthType.DXA },
+            columnWidths: [10460],
+            rows: [
+              new TableRow({ children: [hdr("CONDICIONES")] }),
+              new TableRow({ children: [mkCell("• Validez: 15 días corridos desde la fecha de emisión.\n• Forma de pago: a convenir.\n• Entrega de informe: 48-72 horas hábiles posteriores a la medición.\n• Los precios no incluyen IVA.\n• Instrumentos calibrados con trazabilidad al INTI.")] }),
+            ],
+          }),
+          ...(request.respuesta ? [
+            new Paragraph({ spacing: { before: 200, after: 80 } }),
+            new Table({
+              width: { size: 10460, type: WidthType.DXA },
+              columnWidths: [10460],
+              rows: [
+                new TableRow({ children: [hdr("OBSERVACIONES")] }),
+                new TableRow({ children: [mkCell(request.respuesta)] }),
+              ],
+            }),
+          ] : []),
+          new Paragraph({ spacing: { before: 600, after: 80 } }),
+          new Paragraph({ children: [run("________________________________", { size: 18, color: NAVY })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [run("Environmental Express Argentina", { size: 16, bold: true, color: NAVY })], alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [run("contacto@envexar.com  |  envexar.com", { size: 14, color: "555555" })], alignment: AlignmentType.CENTER }),
+        ],
+      }],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename=Presupuesto_EEA_${request.razonSocial.replace(/\s+/g, "_")}_${nro}.docx`);
+    res.send(buffer);
   });
 
   return httpServer;

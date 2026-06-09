@@ -13,6 +13,27 @@ import logoUrl from "@assets/image_1773940561975.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+function useBudgetBadge(isAdmin: boolean) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchCount = async () => {
+      try {
+        const res = await fetch("/api/budget-requests", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setCount((data as any[]).filter((r: any) => r.estado === "nuevo").length);
+      } catch { /* ignorar */ }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
+  return count;
+}
+
 function EEALogo({ size = 72 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -116,6 +137,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [newInspectionOpen, setNewInspectionOpen] = useState(false);
   const { toast } = useToast();
+  const budgetBadge = useBudgetBadge(user?.role === "admin");
 
   const handleLogout = async () => { await logout(); setLocation("/login"); };
 
@@ -186,7 +208,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {user?.role === 'admin' && (
           <>
             <NavItem href="/reports" icon={<FileStack className="h-4 w-4" />} label="Informes" location={location} onClick={closeMenu} />
-            <NavItem href="/budget-generator" icon={<FileText className="h-4 w-4" />} label="Presupuestos" location={location} onClick={closeMenu} />
+            <Link href="/budget-generator">
+              <div className={`eea-nav-item relative ${location === "/budget-generator" ? "active" : ""}`} onClick={closeMenu}>
+                <FileText className="h-4 w-4" />
+                <span>Presupuestos</span>
+                {budgetBadge > 0 && (
+                  <span className="ml-auto min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                    {budgetBadge}
+                  </span>
+                )}
+              </div>
+            </Link>
           </>
         )}
 

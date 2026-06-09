@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -109,3 +109,44 @@ export const insertInspectionSchema = createInsertSchema(inspections).omit({
 
 export type InsertInspection = z.infer<typeof insertInspectionSchema>;
 export type Inspection = typeof inspections.$inferSelect;
+
+// Budget Requests
+export const budgetRequests = pgTable("budget_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  razonSocial: text("razon_social").notNull(),
+  cuit: text("cuit"),
+  direccion: text("direccion"),
+  localidad: text("localidad"),
+  provincia: text("provincia"),
+  rubro: text("rubro"),
+  contactoNombre: text("contacto_nombre").notNull(),
+  contactoCargo: text("contacto_cargo"),
+  contactoEmail: text("contacto_email").notNull(),
+  contactoTelefono: text("contacto_telefono"),
+  medicionesSolicitadas: jsonb("mediciones_solicitadas").notNull().default([]),
+  detallesPorMedicion: jsonb("detalles_por_medicion"),
+  cantidadTrabajadores: text("cantidad_trabajadores"),
+  art: text("art"),
+  fechaEstimada: text("fecha_estimada"),
+  observaciones: text("observaciones"),
+  estado: text("estado").notNull().default("nuevo"),
+  respuesta: text("respuesta"),
+  presupuestoTotal: integer("presupuesto_total"),
+  origen: text("origen").default("web"),
+  creadoEn: timestamp("creado_en").notNull().defaultNow(),
+  actualizadoEn: timestamp("actualizado_en").notNull().defaultNow(),
+});
+
+export type BudgetRequest = typeof budgetRequests.$inferSelect;
+
+// Price Config
+export const priceConfig = pgTable("price_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  medicion: text("medicion").notNull().unique(),
+  precioBase: integer("precio_base").notNull().default(0),
+  descripcion: text("descripcion"),
+  activo: boolean("activo").default(true),
+  actualizadoEn: timestamp("actualizado_en").notNull().defaultNow(),
+});
+
+export type PriceConfig = typeof priceConfig.$inferSelect;

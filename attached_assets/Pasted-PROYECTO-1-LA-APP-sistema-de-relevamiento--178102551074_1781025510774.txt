@@ -1,0 +1,453 @@
+PROYECTO 1 — LA APP (sistema de relevamiento)
+=====================================================================
+
+--- CAMBIO 1: shared/schema.ts ---
+Agregar estas dos tablas al final del archivo:
+
+export const budgetRequests = pgTable("budget_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  razonSocial: text("razon_social").notNull(),
+  cuit: text("cuit"),
+  direccion: text("direccion"),
+  localidad: text("localidad"),
+  provincia: text("provincia"),
+  rubro: text("rubro"),
+  contactoNombre: text("contacto_nombre").notNull(),
+  contactoCargo: text("contacto_cargo"),
+  contactoEmail: text("contacto_email").notNull(),
+  contactoTelefono: text("contacto_telefono"),
+  medicionesSolicitadas: jsonb("mediciones_solicitadas").notNull().default([]),
+  detallesPorMedicion: jsonb("detalles_por_medicion"),
+  cantidadTrabajadores: text("cantidad_trabajadores"),
+  art: text("art"),
+  fechaEstimada: text("fecha_estimada"),
+  observaciones: text("observaciones"),
+  estado: text("estado").notNull().default("nuevo"),
+  respuesta: text("respuesta"),
+  presupuestoTotal: integer("presupuesto_total"),
+  origen: text("origen").default("web"),
+  creadoEn: timestamp("creado_en").notNull().defaultNow(),
+  actualizadoEn: timestamp("actualizado_en").notNull().defaultNow(),
+});
+
+export const priceConfig = pgTable("price_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  medicion: text("medicion").notNull().unique(),
+  precioBase: integer("precio_base").notNull().default(0),
+  descripcion: text("descripcion"),
+  activo: boolean("activo").default(true),
+  actualizadoEn: timestamp("actualizado_en").notNull().defaultNow(),
+});
+
+
+--- CAMBIO 2: SQL (correr en la base de datos) ---
+
+CREATE TABLE IF NOT EXISTS budget_requests (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  razon_social TEXT NOT NULL,
+  cuit TEXT,
+  direccion TEXT,
+  localidad TEXT,
+  provincia TEXT,
+  rubro TEXT,
+  contacto_nombre TEXT NOT NULL,
+  contacto_cargo TEXT,
+  contacto_email TEXT NOT NULL,
+  contacto_telefono TEXT,
+  mediciones_solicitadas JSONB NOT NULL DEFAULT '[]',
+  detalles_por_medicion JSONB,
+  cantidad_trabajadores TEXT,
+  art TEXT,
+  fecha_estimada TEXT,
+  observaciones TEXT,
+  estado TEXT NOT NULL DEFAULT 'nuevo',
+  respuesta TEXT,
+  presupuesto_total INTEGER,
+  origen TEXT DEFAULT 'web',
+  creado_en TIMESTAMP NOT NULL DEFAULT NOW(),
+  actualizado_en TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS price_config (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  medicion TEXT NOT NULL UNIQUE,
+  precio_base INTEGER NOT NULL DEFAULT 0,
+  descripcion TEXT,
+  activo BOOLEAN DEFAULT true,
+  actualizado_en TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO price_config (medicion, precio_base, descripcion) VALUES
+  ('iluminacion', 0, 'Iluminación laboral — Resol. SRT 84/2012'),
+  ('ruido', 0, 'Ruido y dosimetrías — Resol. SRT 85/2012'),
+  ('calor', 0, 'Carga térmica — Resol. SRT 30/2023'),
+  ('frio', 0, 'Estrés por frío — MTEySS 295/2003'),
+  ('puesta_tierra', 0, 'Puesta a tierra — Resol. SRT 900/2015'),
+  ('ventilacion', 0, 'Ventilación — Decreto 351/79'),
+  ('espesores', 0, 'Espesores por ultrasonido — ASME VIII'),
+  ('quimicos', 0, 'Agentes químicos — MTEySS 295/2003'),
+  ('ergonomia', 0, 'Ergonomía y vibraciones — MTEySS 295/2003')
+ON CONFLICT (medicion) DO NOTHING;
+
+
+--- CAMBIO 3: server/routes.ts ---
+Agregar estos endpoints. El POST es público (sin auth).
+Los demás requieren req.isAuthenticated().
+
+// ── PÚBLICO — recibe pedidos de Vera y del formulario web ──
+app.post("/api/budget-requests", async (req, res) => {
+  try {
+    const d = req.body;
+    const [created] = await db.insert(budgetRequests).values({
+      razonSocial: d.razonSocial || d.empresa || "Sin nombre",
+      cuit: d.cuit,
+      direccion: d.direccion,
+      localidad: d.localidad,
+      provincia: d.provincia,
+      rubro: d.rubro,
+      contactoNombre: d.contactoNombre || d.nombre || "Sin nombre",
+      contactoCargo: d.contactoCargo || d.cargo,
+      contactoEmail: d.contactoEmail || d.email || "sin-email",
+      contactoTelefono: d.contactoTelefono || d.telefono,
+      medicionesSolicitadas: d.medicionesSolicitadas || d.mediciones || [],
+      detallesPorMedicion: d.detallesPorMedicion || d.detalles || {},
+      cantidadTrabajadores: d.cantidadTrabajadores,
+      art: d.art,
+      fechaEstimada: d.fechaEstimada,
+      observaciones: d.observaciones,
+      origen: d.origen || "web",
+    }).returning();
+
+    // Email de notificación
+    if (process.env.SMTP_HOST) {
+      try {
+        const nodemailer = await import("nodemailer");
+        const transporter = nodemailer.default.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || "587"),
+          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        });
+        await transporter.sendMail({
+          from: process.env.SMTP_USER,
+          to: process.env.ADMIN_EMAIL || "contacto@envexar.com",
+          subject: `🔔 Nuevo presupuesto: ${created.razonSocial}`,
+          text: `
+Nuevo pedido recibido desde: ${created.origen}
+
+EMPRESA: ${created.razonSocial}
+CUIT: ${created.cuit || "-"}
+DIRECCIÓN: ${created.direccion || "-"}, ${created.localidad || "-"}, ${created.provincia || "-"}
+RUBRO: ${created.rubro || "-"}
+
+CONTACTO: ${created.contactoNombre} (${created.contactoCargo || "-"})
+EMAIL: ${created.contactoEmail}
+TELÉFONO: ${created.contactoTelefono || "-"}
+
+MEDICIONES: ${JSON.stringify(created.medicionesSolicitadas)}
+OBSERVACIONES: ${created.observaciones || "-"}
+FECHA ESTIMADA: ${created.fechaEstimada || "-"}
+ART: ${created.art || "-"}
+          `,
+        });
+      } catch(emailErr) {
+        console.warn("Email no enviado:", emailErr);
+      }
+    }
+
+    res.json({ ok: true, id: created.id });
+  } catch (error) {
+    console.error("Error guardando pedido:", error);
+    res.status(500).json({ message: "Error al guardar el pedido" });
+  }
+});
+
+// ── PRIVADOS ──
+app.get("/api/budget-requests", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+  const { desc } = await import("drizzle-orm");
+  const requests = await db.select().from(budgetRequests)
+    .orderBy(desc(budgetRequests.creadoEn));
+  res.json(requests);
+});
+
+app.get("/api/budget-requests/:id", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+  const [request] = await db.select().from(budgetRequests)
+    .where(eq(budgetRequests.id, req.params.id));
+  if (!request) return res.status(404).json({ message: "No encontrado" });
+  if (request.estado === "nuevo") {
+    await db.update(budgetRequests)
+      .set({ estado: "leido", actualizadoEn: new Date() })
+      .where(eq(budgetRequests.id, req.params.id));
+  }
+  res.json(request);
+});
+
+app.patch("/api/budget-requests/:id", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+  const { estado, respuesta, presupuestoTotal } = req.body;
+  await db.update(budgetRequests)
+    .set({ estado, respuesta, presupuestoTotal, actualizadoEn: new Date() })
+    .where(eq(budgetRequests.id, req.params.id));
+  res.json({ ok: true });
+});
+
+app.get("/api/price-config", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+  const prices = await db.select().from(priceConfig);
+  res.json(prices);
+});
+
+app.patch("/api/price-config/:medicion", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+  await db.update(priceConfig)
+    .set({ precioBase: req.body.precio_base, actualizadoEn: new Date() })
+    .where(eq(priceConfig.medicion, req.params.medicion));
+  res.json({ ok: true });
+});
+
+app.post("/api/budget-requests/:id/pdf", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+  const [request] = await db.select().from(budgetRequests)
+    .where(eq(budgetRequests.id, req.params.id));
+  if (!request) return res.status(404).json({ message: "No encontrado" });
+
+  const prices = await db.select().from(priceConfig);
+  const priceMap = Object.fromEntries(prices.map(p => [p.medicion, p.precioBase]));
+  const mediciones = request.medicionesSolicitadas as string[];
+  const items = mediciones.map(m => ({
+    nombre: prices.find(p => p.medicion === m)?.descripcion || m,
+    precio: priceMap[m] || 0,
+  }));
+  const total = request.presupuestoTotal ||
+    items.reduce((acc, i) => acc + i.precio, 0);
+  const nro = `PRES-${Date.now().toString().slice(-6)}`;
+  const fecha = new Date().toLocaleDateString("es-AR");
+
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    WidthType, BorderStyle, AlignmentType, VerticalAlign, ShadingType
+  } = await import("docx");
+
+  const NAVY = "0D2F5E", HDR = "D6E4F0";
+  const BD = () => ({ style: BorderStyle.SINGLE, size: 4, color: "999999" });
+  const BORDERS = () => ({ top: BD(), bottom: BD(), left: BD(), right: BD() });
+
+  const run = (text: string, opts: any = {}) => new TextRun({
+    text: String(text ?? ""), font: "Arial",
+    size: (opts.size || 9) * 2, bold: !!opts.bold,
+    color: opts.color || "000000", italics: !!opts.italic,
+  });
+
+  const cell = (text: string, opts: any = {}) => new TableCell({
+    children: [new Paragraph({
+      children: [run(text, opts)],
+      alignment: opts.align || AlignmentType.LEFT,
+      spacing: { before: 40, after: 40 },
+    })],
+    borders: BORDERS(),
+    shading: opts.fill ? { type: ShadingType.CLEAR, fill: opts.fill, color: opts.fill } : undefined,
+    columnSpan: opts.span,
+    margins: { top: 60, bottom: 60, left: 120, right: 120 },
+    verticalAlign: VerticalAlign.CENTER,
+  });
+
+  const hdr = (text: string, opts: any = {}) =>
+    cell(text, { bold: true, fill: HDR, color: NAVY, ...opts });
+
+  const doc = new Document({
+    sections: [{
+      properties: { page: {
+        size: { width: 11906, height: 16838 },
+        margin: { top: 720, right: 720, bottom: 1080, left: 720 },
+      }},
+      children: [
+        new Paragraph({ children: [run("ENVIRONMENTAL EXPRESS ARGENTINA",
+          { size: 16, bold: true, color: NAVY })],
+          alignment: AlignmentType.CENTER, spacing: { before: 200, after: 80 } }),
+        new Paragraph({ children: [run("Servicios de Higiene y Seguridad en el Trabajo",
+          { size: 10, italic: true, color: "555555" })],
+          alignment: AlignmentType.CENTER, spacing: { before: 0, after: 400 } }),
+
+        new Table({
+          width: { size: 10460, type: WidthType.DXA },
+          columnWidths: [5230, 5230],
+          rows: [new TableRow({ children: [
+            hdr(`PRESUPUESTO N° ${nro}`, { size: 11 }),
+            hdr(`Fecha: ${fecha}`, { size: 10, align: AlignmentType.RIGHT }),
+          ]})],
+        }),
+
+        new Paragraph({ spacing: { before: 200, after: 80 } }),
+        new Table({
+          width: { size: 10460, type: WidthType.DXA },
+          columnWidths: [10460],
+          rows: [
+            new TableRow({ children: [hdr("DATOS DEL CLIENTE")] }),
+            new TableRow({ children: [cell(`Razón Social: ${request.razonSocial}  |  CUIT: ${request.cuit || "-"}`)] }),
+            new TableRow({ children: [cell(`Dirección: ${request.direccion || "-"}, ${request.localidad || "-"}, ${request.provincia || "-"}`)] }),
+            new TableRow({ children: [cell(`Rubro: ${request.rubro || "-"}`)] }),
+            new TableRow({ children: [cell(`Contacto: ${request.contactoNombre} (${request.contactoCargo || "-"})  |  Email: ${request.contactoEmail}  |  Tel: ${request.contactoTelefono || "-"}`)] }),
+          ],
+        }),
+
+        new Paragraph({ spacing: { before: 200, after: 80 } }),
+        new Table({
+          width: { size: 10460, type: WidthType.DXA },
+          columnWidths: [7000, 1730, 1730],
+          rows: [
+            new TableRow({ children: [
+              hdr("SERVICIO / ESTUDIO"),
+              hdr("PRECIO UNIT.", { align: AlignmentType.RIGHT }),
+              hdr("SUBTOTAL", { align: AlignmentType.RIGHT }),
+            ]}),
+            ...items.map(item => new TableRow({ children: [
+              cell(item.nombre),
+              cell(`$ ${item.precio.toLocaleString("es-AR")}`, { align: AlignmentType.RIGHT }),
+              cell(`$ ${item.precio.toLocaleString("es-AR")}`, { align: AlignmentType.RIGHT }),
+            ]})),
+            new TableRow({ children: [
+              hdr("TOTAL", { align: AlignmentType.RIGHT, span: 2 }),
+              hdr(`$ ${total.toLocaleString("es-AR")}`, { align: AlignmentType.RIGHT }),
+            ]}),
+          ],
+        }),
+
+        new Paragraph({ spacing: { before: 200, after: 80 } }),
+        new Table({
+          width: { size: 10460, type: WidthType.DXA },
+          columnWidths: [10460],
+          rows: [
+            new TableRow({ children: [hdr("CONDICIONES")] }),
+            new TableRow({ children: [cell(
+              "• Validez: 15 días corridos desde la fecha de emisión.\n" +
+              "• Forma de pago: a convenir.\n" +
+              "• Entrega de informe: 48-72 horas hábiles posteriores a la medición.\n" +
+              "• Los precios no incluyen IVA.\n" +
+              "• Instrumentos calibrados con trazabilidad al INTI."
+            )] }),
+          ],
+        }),
+
+        ...(request.respuesta ? [
+          new Paragraph({ spacing: { before: 200, after: 80 } }),
+          new Table({
+            width: { size: 10460, type: WidthType.DXA },
+            columnWidths: [10460],
+            rows: [
+              new TableRow({ children: [hdr("OBSERVACIONES")] }),
+              new TableRow({ children: [cell(request.respuesta)] }),
+            ],
+          }),
+        ] : []),
+
+        new Paragraph({ spacing: { before: 600, after: 80 } }),
+        new Paragraph({ children: [run("________________________________",
+          { size: 18, color: NAVY })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [run("Environmental Express Argentina",
+          { size: 16, bold: true, color: NAVY })], alignment: AlignmentType.CENTER }),
+        new Paragraph({ children: [run("contacto@envexar.com  |  envexar.com",
+          { size: 14, color: "555555" })], alignment: AlignmentType.CENTER }),
+      ],
+    }],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  res.setHeader("Content-Type",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+  res.setHeader("Content-Disposition",
+    `attachment; filename=Presupuesto_EEA_${request.razonSocial.replace(/\s+/g,"_")}_${nro}.docx`);
+  res.send(buffer);
+});
+
+
+--- CAMBIO 4: server/index.ts ---
+Agregar CORS para permitir llamadas desde la web pública.
+Instalar si no está: npm install cors @types/cors
+
+Agregar al inicio después de crear el app:
+import cors from "cors";
+app.use(cors({
+  origin: [
+    "https://envexar.com",
+    "http://localhost:5000",
+    "http://localhost:3000",
+  ],
+  credentials: true,
+}));
+
+También instalar nodemailer si no está:
+npm install nodemailer @types/nodemailer
+
+Agregar en Replit Secrets:
+SMTP_HOST = smtp.gmail.com
+SMTP_PORT = 587
+SMTP_USER = contacto@envexar.com
+SMTP_PASS = (contraseña de aplicación de Gmail — generarla en myaccount.google.com)
+ADMIN_EMAIL = contacto@envexar.com
+
+
+--- CAMBIO 5: client/src/pages/budget-generator.tsx ---
+Agregar tabs a la página existente SIN tocar el formulario actual.
+
+Envolver todo el contenido actual en un Tab llamado "Nuevo Presupuesto".
+Agregar Tab 2 "Pedidos recibidos" y Tab 3 "Precios".
+
+TAB 2 — PEDIDOS RECIBIDOS:
+Cargar con: GET /api/budget-requests
+
+Mostrar lista de cards. Cada card tiene:
+- Pill de estado:
+  · "nuevo" → rojo con punto parpadeante
+  · "leido" → amarillo
+  · "respondido" → azul
+  · "cerrado" → verde gris
+- Empresa, CUIT, rubro
+- Contacto: nombre, email, teléfono
+- Origen: pill pequeño ("vera" o "web-form")
+- Mediciones como pills verdes
+- Fecha de recepción formateada
+- Botón "Ver detalle →"
+
+Al hacer clic en "Ver detalle", abrir un Sheet lateral con:
+  · Sección "Datos empresa" con todos los campos
+  · Sección "Contacto"
+  · Sección "Mediciones solicitadas" con lista detallada
+  · Sección "Detalles técnicos" (detallesPorMedicion en JSON legible)
+  · Sección "Respuesta" con:
+    - Textarea para escribir la respuesta
+    - Select de estado (nuevo/leido/respondido/cerrado)
+    - Botón "Guardar" → PATCH /api/budget-requests/:id
+  · Botón "Generar PDF presupuesto" → 
+    POST /api/budget-requests/:id/pdf
+    descarga el archivo DOCX
+  · Botón "Cargar en generador" →
+    cambia al Tab 1 y pre-rellena el formulario con:
+    - cliente: buscar por razonSocial o crear nuevo
+    - agregar items de mediciones como filas en el sector General
+
+Estado vacío cuando no hay pedidos:
+"Aún no recibiste pedidos. Cuando los clientes completen el 
+formulario en tu web o hablen con Vera, los pedidos aparecerán acá."
+
+TAB 3 — PRECIOS:
+Cargar con: GET /api/price-config
+
+Tabla con columnas: Medición | Normativa | Precio base ($) | Guardar
+- Input numérico editable por fila
+- Al cambiar el valor y hacer clic en Guardar:
+  PATCH /api/price-config/:medicion con { precio_base: valor }
+  Mostrar toast "Precio actualizado"
+
+Nota al pie:
+"Estos precios se usan como base al exportar el PDF 
+desde un pedido recibido."
+
+
+--- CAMBIO 6: sidebar ---
+En el componente del sidebar, en el link de "Presupuestos":
+- Hacer un fetch a GET /api/budget-requests al cargar
+- Filtrar los que tienen estado === "nuevo"
+- Mostrar badge rojo con ese número al lado del ícono
+- Actualizar el badge cada 60 segundos
+
