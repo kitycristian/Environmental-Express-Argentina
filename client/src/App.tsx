@@ -30,6 +30,7 @@ import ClientsPage from "@/pages/clients";
 import ReportsList from "@/pages/reports-list";
 import BudgetGenerator from "@/pages/budget-generator";
 import ClientPortalAdmin from "@/pages/client-portal";
+import Portal from "@/pages/portal";
 
 import InstrumentsPage from "@/pages/instruments";
 
@@ -60,6 +61,11 @@ function Router() {
 
   if (location === "/login") {
     return <Login />;
+  }
+
+  // Portal público de clientes — sin layout de admin
+  if (location === "/portal") {
+    return <Portal />;
   }
 
   // Fullscreen pages without Layout

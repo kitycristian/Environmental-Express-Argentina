@@ -1575,7 +1575,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
       return res.status(404).json({ message: "Informe no encontrado" });
     const buf = Buffer.from(report.pdfData, "base64");
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${report.pdfNombre}"`);
+    res.setHeader("Content-Disposition", `inline; filename="${report.pdfNombre}"`);
     res.send(buf);
   });
 
