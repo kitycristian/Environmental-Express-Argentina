@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, Menu, PlusCircle, LogOut, User, Settings, Wrench, Users, FileStack, History, CheckCircle2 } from "lucide-react";
+import { Home, FileText, Menu, PlusCircle, LogOut, User, Settings, Wrench, Users, FileStack, History, CheckCircle2, Globe } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -208,6 +208,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {user?.role === 'admin' && (
           <>
             <NavItem href="/reports" icon={<FileStack className="h-4 w-4" />} label="Informes" location={location} onClick={closeMenu} />
+            <NavItem href="/client-portal" icon={<Globe className="h-4 w-4" />} label="Portal Clientes" location={location} onClick={closeMenu} />
             <Link href="/budget-generator">
               <div className={`eea-nav-item relative ${location === "/budget-generator" ? "active" : ""}`} onClick={closeMenu}>
                 <FileText className="h-4 w-4" />

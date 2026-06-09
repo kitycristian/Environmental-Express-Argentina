@@ -139,6 +139,36 @@ export const budgetRequests = pgTable("budget_requests", {
 
 export type BudgetRequest = typeof budgetRequests.$inferSelect;
 
+// Client Portal Users
+export const clientPortalUsers = pgTable("client_portal_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").references(() => clients.id),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  nombre: text("nombre").notNull(),
+  activo: boolean("activo").default(true),
+  creadoEn: timestamp("creado_en").notNull().defaultNow(),
+});
+
+export type ClientPortalUser = typeof clientPortalUsers.$inferSelect;
+
+// Client Reports
+export const clientReports = pgTable("client_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientPortalUserId: varchar("client_portal_user_id")
+    .references(() => clientPortalUsers.id).notNull(),
+  titulo: text("titulo").notNull(),
+  descripcion: text("descripcion"),
+  tipoEstudio: text("tipo_estudio"),
+  fechaEstudio: text("fecha_estudio"),
+  pdfData: text("pdf_data").notNull(),
+  pdfNombre: text("pdf_nombre").notNull(),
+  notificacionEnviada: boolean("notificacion_enviada").default(false),
+  creadoEn: timestamp("creado_en").notNull().defaultNow(),
+});
+
+export type ClientReport = typeof clientReports.$inferSelect;
+
 // Price Config
 export const priceConfig = pgTable("price_config", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

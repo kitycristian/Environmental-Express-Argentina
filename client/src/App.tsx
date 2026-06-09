@@ -29,6 +29,7 @@ import { useEffect } from "react";
 import ClientsPage from "@/pages/clients";
 import ReportsList from "@/pages/reports-list";
 import BudgetGenerator from "@/pages/budget-generator";
+import ClientPortalAdmin from "@/pages/client-portal";
 
 import InstrumentsPage from "@/pages/instruments";
 
@@ -111,6 +112,7 @@ function Router() {
         <Route path="/reports" component={() => <ProtectedRoute component={ReportsList} adminOnly />} />
         <Route path="/instruments" component={() => <ProtectedRoute component={InstrumentsPage} />} />
         <Route path="/budget-generator" component={() => <ProtectedRoute component={BudgetGenerator} adminOnly />} />
+        <Route path="/client-portal" component={() => <ProtectedRoute component={ClientPortalAdmin} adminOnly />} />
         <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} adminOnly />} />
         <Route path="/campaign/:type" component={() => <ProtectedRoute component={MeasurementCampaign} />} />
         <Route path="/campaign/:type/entry" component={() => <ProtectedRoute component={MeasurementEntry} />} />

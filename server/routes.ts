@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import crypto from "crypto";
 import { 
   insertRubroSchema, 
   insertClientSchema, 
@@ -11,6 +12,8 @@ import {
   insertInspectionSchema,
   budgetRequests,
   priceConfig,
+  clientPortalUsers,
+  clientReports,
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { getSpreadsheetSheets, readSheetData, parseExcelBuffer } from "./google-sheets";
@@ -18,6 +21,21 @@ import multer from "multer";
 import OpenAI from "openai";
 import { db } from "./storage";
 import { eq, desc } from "drizzle-orm";
+
+declare module "express-session" {
+  interface SessionData {
+    portalUserId?: string;
+  }
+}
+
+function hashPortalPassword(pass: string) {
+  return crypto.createHash("sha256").update(pass + "eea-portal-2024").digest("hex");
+}
+
+function generatePassword() {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1390,6 +1408,175 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     res.setHeader("Content-Disposition", `attachment; filename=Presupuesto_EEA_${request.razonSocial.replace(/\s+/g, "_")}_${nro}.docx`);
     res.send(buffer);
+  });
+
+  // ── PORTAL DE CLIENTES — admin ──
+
+  app.post("/api/portal/users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const { nombre, email, clientId } = req.body;
+    if (!nombre || !email) return res.status(400).json({ message: "nombre y email son requeridos" });
+    const plainPass = generatePassword();
+    const hashed = hashPortalPassword(plainPass);
+    try {
+      const [user] = await db.insert(clientPortalUsers).values({
+        nombre, email, password: hashed, clientId: clientId || null,
+      }).returning();
+
+      // Enviar email con credenciales si hay SMTP configurado
+      if (process.env.SMTP_HOST) {
+        try {
+          const nodemailer = await import("nodemailer");
+          const transporter = nodemailer.default.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || "587"),
+            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+          });
+          await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: email,
+            subject: "Acceso al Portal de Informes — Environmental Express Argentina",
+            text: `Hola ${nombre},\n\nTu acceso al portal de informes de EEA está listo.\n\nURL: envexar.com/portal\nEmail: ${email}\nContraseña: ${plainPass}\n\nEn el portal podrás ver y descargar todos tus informes de higiene y seguridad.\n\nSaludos,\nEnvironmental Express Argentina`,
+          });
+        } catch (e) {
+          console.warn("Email portal no enviado:", e);
+        }
+      }
+
+      res.json({ ok: true, id: user.id, password: plainPass });
+    } catch (err: any) {
+      if (err?.code === "23505") return res.status(409).json({ message: "Ya existe un usuario con ese email" });
+      throw err;
+    }
+  });
+
+  app.get("/api/portal/users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const users = await db.select().from(clientPortalUsers).orderBy(desc(clientPortalUsers.creadoEn));
+    res.json(users);
+  });
+
+  app.patch("/api/portal/users/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    await db.update(clientPortalUsers).set({ activo: req.body.activo }).where(eq(clientPortalUsers.id, req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.delete("/api/portal/users/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    await db.delete(clientReports).where(eq(clientReports.clientPortalUserId, req.params.id));
+    await db.delete(clientPortalUsers).where(eq(clientPortalUsers.id, req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.post("/api/portal/reports", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const { clientPortalUserId, titulo, descripcion, tipoEstudio, fechaEstudio, pdfData, pdfNombre } = req.body;
+    if (!clientPortalUserId || !titulo || !pdfData || !pdfNombre)
+      return res.status(400).json({ message: "Campos requeridos: clientPortalUserId, titulo, pdfData, pdfNombre" });
+
+    const [report] = await db.insert(clientReports).values({
+      clientPortalUserId, titulo, descripcion, tipoEstudio, fechaEstudio,
+      pdfData, pdfNombre,
+    }).returning();
+
+    // Notificación al cliente si hay SMTP
+    if (process.env.SMTP_HOST) {
+      try {
+        const [usuario] = await db.select().from(clientPortalUsers).where(eq(clientPortalUsers.id, clientPortalUserId));
+        if (usuario) {
+          const nodemailer = await import("nodemailer");
+          const transporter = nodemailer.default.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || "587"),
+            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+          });
+          await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: usuario.email,
+            subject: `📄 Nuevo informe disponible: ${titulo}`,
+            text: `Hola ${usuario.nombre},\n\nTenés un nuevo informe disponible en tu portal:\n\n"${titulo}"\n\nIngresá en envexar.com/portal para descargarlo.\n\nSaludos,\nEnvironmental Express Argentina`,
+          });
+          await db.update(clientReports).set({ notificacionEnviada: true }).where(eq(clientReports.id, report.id));
+        }
+      } catch (e) {
+        console.warn("Email notificación informe no enviado:", e);
+      }
+    }
+
+    res.json({ ok: true, id: report.id });
+  });
+
+  app.get("/api/portal/reports", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    const reports = await db.select({
+      id: clientReports.id,
+      clientPortalUserId: clientReports.clientPortalUserId,
+      titulo: clientReports.titulo,
+      descripcion: clientReports.descripcion,
+      tipoEstudio: clientReports.tipoEstudio,
+      fechaEstudio: clientReports.fechaEstudio,
+      pdfNombre: clientReports.pdfNombre,
+      notificacionEnviada: clientReports.notificacionEnviada,
+      creadoEn: clientReports.creadoEn,
+    }).from(clientReports).orderBy(desc(clientReports.creadoEn));
+    res.json(reports);
+  });
+
+  app.delete("/api/portal/reports/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
+    await db.delete(clientReports).where(eq(clientReports.id, req.params.id));
+    res.json({ ok: true });
+  });
+
+  // ── PORTAL DE CLIENTES — acceso cliente (sesión independiente) ──
+
+  app.post("/api/portal/login", async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: "email y contraseña requeridos" });
+    const [user] = await db.select().from(clientPortalUsers).where(eq(clientPortalUsers.email, email.toLowerCase().trim()));
+    if (!user) return res.status(401).json({ message: "Credenciales inválidas" });
+    if (!user.activo) return res.status(403).json({ message: "Acceso desactivado. Contactá a EEA." });
+    if (hashPortalPassword(password) !== user.password) return res.status(401).json({ message: "Credenciales inválidas" });
+    req.session.portalUserId = user.id;
+    req.session.save(() => res.json({ ok: true, nombre: user.nombre, email: user.email }));
+  });
+
+  app.post("/api/portal/logout", (req, res) => {
+    delete req.session.portalUserId;
+    req.session.save(() => res.json({ ok: true }));
+  });
+
+  app.get("/api/portal/me", async (req, res) => {
+    if (!req.session.portalUserId) return res.status(401).json({ message: "No autenticado" });
+    const [user] = await db.select({
+      id: clientPortalUsers.id,
+      nombre: clientPortalUsers.nombre,
+      email: clientPortalUsers.email,
+      activo: clientPortalUsers.activo,
+    }).from(clientPortalUsers).where(eq(clientPortalUsers.id, req.session.portalUserId));
+    if (!user || !user.activo) return res.status(401).json({ message: "Sesión inválida" });
+    res.json(user);
+  });
+
+  app.get("/api/portal/me/reports", async (req, res) => {
+    if (!req.session.portalUserId) return res.status(401).json({ message: "No autenticado" });
+    const reports = await db.select().from(clientReports)
+      .where(eq(clientReports.clientPortalUserId, req.session.portalUserId))
+      .orderBy(desc(clientReports.creadoEn));
+    res.json(reports);
+  });
+
+  app.get("/api/portal/me/reports/:id/download", async (req, res) => {
+    if (!req.session.portalUserId) return res.status(401).json({ message: "No autenticado" });
+    const [report] = await db.select().from(clientReports)
+      .where(eq(clientReports.id, req.params.id));
+    if (!report || report.clientPortalUserId !== req.session.portalUserId)
+      return res.status(404).json({ message: "Informe no encontrado" });
+    const buf = Buffer.from(report.pdfData, "base64");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${report.pdfNombre}"`);
+    res.send(buf);
   });
 
   return httpServer;
