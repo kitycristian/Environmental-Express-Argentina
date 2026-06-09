@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -500,7 +501,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
 // ─────────────── EXPORT ───────────────
 export default function PortalAdmin() {
-  const [authed, setAuthed] = useState(isAuthed());
+  const appUser = useAuth((s) => s.user);
+  const [authed, setAuthed] = useState(() => isAuthed() || appUser?.role === "admin");
+
+  useLayoutEffect(() => {
+    if (appUser?.role === "admin") setAuthed(true);
+  }, [appUser]);
 
   const handleLogout = () => {
     clearAuthed();

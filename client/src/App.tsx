@@ -69,11 +69,6 @@ function Router() {
     return <Portal />;
   }
 
-  // Panel admin del portal — token simple, sin sesión de admin
-  if (location === "/portal-admin") {
-    return <PortalAdmin />;
-  }
-
   // Fullscreen pages without Layout
   if (location === "/lighting-sheet") {
     return <ProtectedRoute component={LightingSheet} />;
@@ -125,6 +120,7 @@ function Router() {
         <Route path="/instruments" component={() => <ProtectedRoute component={InstrumentsPage} />} />
         <Route path="/budget-generator" component={() => <ProtectedRoute component={BudgetGenerator} adminOnly />} />
         <Route path="/client-portal" component={() => <ProtectedRoute component={ClientPortalAdmin} adminOnly />} />
+        <Route path="/portal-admin" component={() => <ProtectedRoute component={PortalAdmin} adminOnly />} />
         <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} adminOnly />} />
         <Route path="/campaign/:type" component={() => <ProtectedRoute component={MeasurementCampaign} />} />
         <Route path="/campaign/:type/entry" component={() => <ProtectedRoute component={MeasurementEntry} />} />
