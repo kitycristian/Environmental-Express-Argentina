@@ -1263,8 +1263,10 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
 
   // ── PRESUPUESTOS — privados ──
   app.get("/api/budget-requests", async (req, res) => {
+    console.log("GET budget-requests - authenticated:", req.isAuthenticated(), "- session:", req.session?.id);
     if (!req.isAuthenticated()) return res.status(401).json({ message: "No autorizado" });
     const requests = await db.select().from(budgetRequests).orderBy(desc(budgetRequests.creadoEn));
+    console.log("budget-requests found:", requests.length);
     res.json(requests);
   });
 
