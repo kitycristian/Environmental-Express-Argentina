@@ -1619,7 +1619,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     if (!user.activo) return res.status(403).json({ message: "Acceso desactivado. Contactá a EEA." });
     if (hashPortalPassword(password) !== user.password) return res.status(401).json({ message: "Credenciales inválidas" });
     req.session.portalUserId = user.id;
-    req.session.save(() => res.json({ ok: true, nombre: user.nombre, email: user.email }));
+    req.session.save(() => res.json({ ok: true, id: user.id, nombre: user.nombre, email: user.email, activo: user.activo }));
   });
 
   app.post("/api/portal/logout", (req, res) => {

@@ -66,8 +66,12 @@ function LoginScreen({ onLogin }: { onLogin: (user: PortalUser) => void }) {
       if (meRes.ok) {
         const me = await meRes.json();
         onLogin(me);
+      } else {
+        // Login OK pero no pudo obtener sesión (puede pasar en producción con cookies)
+        // Usar los datos que ya devolvió el login
+        onLogin(data);
       }
-    } catch {
+    } catch (err: any) {
       setError("Error de conexión. Intentá de nuevo.");
     } finally {
       setLoading(false);
