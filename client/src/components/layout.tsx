@@ -168,7 +168,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <NavSection label="Principal" />
 
         <NavItem href="/" icon={<Home className="h-4 w-4" />} label="Inicio" location={location} onClick={closeMenu} />
-        <NavItem href="/nueva-inspeccion" icon={<PlusCircle className="h-4 w-4" />} label="Nueva Inspección" location={location} onClick={closeMenu} />
+        <NavItem href="/clients" icon={<PlusCircle className="h-4 w-4" />} label="Nueva Inspección" location={location} onClick={closeMenu} />
 
         <NavItem href="/history" icon={<History className="h-4 w-4" />} label="Historial" location={location} onClick={closeMenu} />
 

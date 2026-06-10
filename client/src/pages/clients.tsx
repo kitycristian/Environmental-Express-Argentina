@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useStore } from "@/lib/store";
 import { Client } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail, FileText, Calendar, RotateCcw, Tag, X, Layers } from "lucide-react";
+import { Plus, Search, Trash2, Edit, UserPlus, FileUp, Building2, MapPin, Phone, Mail, FileText, Calendar, RotateCcw, Tag, X, Layers, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -23,7 +24,16 @@ export default function ClientsPage() {
   const deleteClientMutation = useDeleteClient();
   const { data: history = [] } = useInspections();
   const loadInspectionData = useStore((state) => state.loadInspectionData);
+  const resetStore = useStore((state) => state.resetStore);
+  const updateEstablishment = useStore((state) => state.updateEstablishment);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const handleNuevaInspeccion = (client: Client) => {
+    resetStore();
+    updateEstablishment({ name: client.name, razonSocial: client.razonSocial, cuit: client.cuit, address: client.address });
+    setLocation("/nueva-inspeccion");
+  };
 
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -367,14 +377,24 @@ export default function ClientsPage() {
                   </div>
                 )}
                 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mt-4 gap-2 text-primary border-primary/20 hover:bg-primary/5"
-                  onClick={() => handleViewHistory(client)}
-                >
-                  <FileText className="h-4 w-4" /> Ver Informes Realizados
-                </Button>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => handleNuevaInspeccion(client)}
+                    data-testid={`button-nueva-inspeccion-${client.id}`}
+                  >
+                    <ClipboardList className="h-4 w-4" /> Nueva Inspección
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2 text-primary border-primary/20 hover:bg-primary/5"
+                    onClick={() => handleViewHistory(client)}
+                  >
+                    <FileText className="h-4 w-4" /> Informes
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

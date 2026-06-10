@@ -3,20 +3,16 @@ import { useStore } from "@/lib/store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Building2, MapPin, Calendar, ArrowRight, Lightbulb, Volume2, Thermometer,
-  Wind, Beaker, Factory, CheckCircle2, ChevronsUpDown, Plus, Check,
-  Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, Gauge, ClipboardList,
+  Building2, ArrowRight, Lightbulb, Volume2, Thermometer,
+  Wind, Beaker, Factory, CheckCircle2,
+  Save, FileText, Image as ImageIcon, Trash2, Zap, PenTool, Gauge, ClipboardList, Users,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { MEASUREMENT_LABELS, MeasurementType } from "@/lib/types";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { MeasurementModal } from "@/components/measurement-modal";
 import { SketchEditor } from "@/components/sketch-editor";
-import { useClients } from "@/lib/hooks";
 
 const SHEET_ROUTES: Record<string, string> = {
   lighting: '/lighting-sheet',
@@ -67,9 +63,7 @@ export default function NuevaInspeccion() {
   const thermalProtocol = useStore((s) => s.thermalProtocol);
   const coldProtocol = useStore((s) => s.coldProtocol);
 
-  const { data: clients = [] } = useClients();
   const [, setLocation] = useLocation();
-  const [openClientSelect, setOpenClientSelect] = useState(false);
   const [activeMeasurementType, setActiveMeasurementType] = useState<MeasurementType | null>(null);
   const [sketchEditorOpen, setSketchEditorOpen] = useState(false);
   const { toast } = useToast();
@@ -97,12 +91,6 @@ export default function NuevaInspeccion() {
   const handleSave = () => {
     saveInspection();
     toast({ title: "✓ Inspección guardada", description: "Los datos se guardaron en el historial." });
-  };
-
-  const loadClientToEstablishment = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    if (!client) return;
-    updateEstablishment({ name: client.name, razonSocial: client.razonSocial, cuit: client.cuit, address: client.address });
   };
 
   const handleSketchUpload = (file: File) => {
@@ -150,43 +138,35 @@ export default function NuevaInspeccion() {
             </Link>
           )}
 
-          <Popover open={openClientSelect} onOpenChange={setOpenClientSelect}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" role="combobox" className="justify-between w-[220px] h-9 text-[13px] shadow-sm">
-                {establishment.name
-                  ? <span className="truncate">{establishment.name}</span>
-                  : <span className="text-muted-foreground">Seleccionar Cliente...</span>}
-                <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-0">
-              <Command>
-                <CommandInput placeholder="Buscar cliente..." />
-                <CommandList>
-                  <CommandEmpty>No encontrado.</CommandEmpty>
-                  <CommandGroup heading="Clientes">
-                    {clients.map((client) => (
-                      <CommandItem key={client.id} value={client.name} onSelect={() => { loadClientToEstablishment(client.id); setOpenClientSelect(false); }}>
-                        <Check className={cn("mr-2 h-4 w-4", establishment.name === client.name ? "opacity-100" : "opacity-0")} />
-                        {client.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                  {user?.role === 'admin' && (
-                    <CommandGroup>
-                      <Link href="/clients">
-                        <CommandItem className="text-primary font-medium cursor-pointer">
-                          <Plus className="mr-2 h-4 w-4" /> Nuevo cliente
-                        </CommandItem>
-                      </Link>
-                    </CommandGroup>
-                  )}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <div className="flex items-center gap-2 h-9 px-3 rounded-md border bg-muted/50 text-[13px] max-w-[260px]">
+            <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="truncate font-medium text-foreground">{establishment.name}</span>
+            <Link href="/clients">
+              <span className="ml-1 text-[11px] text-primary hover:underline shrink-0 cursor-pointer">Cambiar</span>
+            </Link>
+          </div>
         </div>
       </div>
+
+      {/* ── Sin cliente — pantalla de aviso ── */}
+      {!establishment.name && (
+        <div className="eea-card p-10 flex flex-col items-center justify-center text-center gap-4 mb-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/8 flex items-center justify-center">
+            <Users className="h-7 w-7 text-primary/60" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-[16px] text-foreground">Ningún cliente seleccionado</h2>
+            <p className="text-muted-foreground text-[13px] mt-1 max-w-xs">
+              Seleccioná un cliente desde la sección Clientes para comenzar el relevamiento.
+            </p>
+          </div>
+          <Link href="/clients">
+            <Button className="gap-2 bg-primary hover:bg-primary/90">
+              <Users className="h-4 w-4" /> Ir a Clientes
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* ── Establishment Card ── */}
       <div className="eea-card p-5 mb-6">
