@@ -3,12 +3,10 @@ import { Home, FileText, Menu, PlusCircle, LogOut, User, Settings, Wrench, Users
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState, useEffect, useCallback } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateInspection } from "@/lib/hooks";
 import logoUrl from "@assets/image_1773940561975.png";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -130,28 +128,12 @@ function NavSection({ label }: { label: string }) {
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const establishment = useStore((state) => state.establishment);
-  const saveInspection = useStore((state) => state.saveInspection);
-  const resetStore = useStore((state) => state.resetStore);
   const { user, logout } = useAuth();
   const { isOnline } = useOnlineStatus();
   const [open, setOpen] = useState(false);
-  const [newInspectionOpen, setNewInspectionOpen] = useState(false);
-  const { toast } = useToast();
   const budgetBadge = useBudgetBadge(user?.role === "admin");
 
   const handleLogout = async () => { await logout(); setLocation("/login"); };
-
-  const handleNewInspection = (saveFirst: boolean) => {
-    if (saveFirst) {
-      saveInspection();
-      toast({ title: "Inspección guardada en el historial." });
-    }
-    resetStore();
-    setNewInspectionOpen(false);
-    setOpen(false);
-    setLocation("/");
-    toast({ title: "Nueva inspección lista." });
-  };
 
   const closeMenu = () => setOpen(false);
 
@@ -186,14 +168,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <NavSection label="Principal" />
 
         <NavItem href="/" icon={<Home className="h-4 w-4" />} label="Inicio" location={location} onClick={closeMenu} />
-
-        <div
-          className="eea-nav-item text-[hsl(144,75%,72%)] hover:text-[hsl(144,80%,80%)]"
-          onClick={() => { setNewInspectionOpen(true); closeMenu(); }}
-        >
-          <PlusCircle className="h-4 w-4" />
-          <span>Nueva Inspección</span>
-        </div>
+        <NavItem href="/nueva-inspeccion" icon={<PlusCircle className="h-4 w-4" />} label="Nueva Inspección" location={location} onClick={closeMenu} />
 
         <NavItem href="/history" icon={<History className="h-4 w-4" />} label="Historial" location={location} onClick={closeMenu} />
 
@@ -240,23 +215,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <AlertDialog open={newInspectionOpen} onOpenChange={setNewInspectionOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Comenzar Nueva Inspección?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se limpiarán los datos actuales. Podés guardar en el historial antes de continuar.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <Button variant="outline" onClick={() => handleNewInspection(false)} className="text-destructive border-destructive/30 hover:bg-destructive/8">
-              No guardar
-            </Button>
-            <Button onClick={() => handleNewInspection(true)}>Guardar y limpiar</Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </nav>
   );
 

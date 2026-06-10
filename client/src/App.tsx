@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
+import NuevaInspeccion from "@/pages/nueva-inspeccion";
 import SectorDetail from "@/pages/sector-detail"; // Keeping it for backward compat or if needed
 import MeasurementCampaign from "@/pages/measurement-campaign";
 import MeasurementEntry from "@/pages/measurement-entry";
@@ -123,6 +124,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
+        <Route path="/nueva-inspeccion" component={() => <ProtectedRoute component={NuevaInspeccion} />} />
         <Route path="/history" component={() => <ProtectedRoute component={HistoryPage} />} />
         <Route path="/clients" component={() => <ProtectedRoute component={ClientsPage} adminOnly />} />
         <Route path="/reports" component={() => <ProtectedRoute component={ReportsList} adminOnly />} />
