@@ -1438,8 +1438,9 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
       }
       res.json({ ok: true, id: user.id, password: plainPass });
     } catch (err: any) {
+      console.error("Error creando usuario portal (padmin):", err);
       if (err?.code === "23505") return res.status(409).json({ message: "Email ya registrado" });
-      throw err;
+      res.status(500).json({ message: "Error al crear usuario", detail: String(err?.message || err) });
     }
   });
 
