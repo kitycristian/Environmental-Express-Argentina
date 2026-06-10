@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 export type Role = "admin" | "operator";
 
@@ -7,63 +6,41 @@ export interface User {
   id: string;
   username: string;
   role: Role;
+  name: string;
 }
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
   logout: () => Promise<void>;
-  checkSession: () => Promise<void>;
 }
 
-export const useAuth = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isLoading: false,
+export const useAuth = create<AuthState>()((set) => ({
+  user: null,
+  isLoading: true,
 
-      login: async (username, password) => {
-        set({ isLoading: true });
-        try {
-          const res = await fetch("/api/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password }),
-            credentials: "include",
-          });
-          if (!res.ok) {
-            set({ isLoading: false });
-            return false;
-          }
-          const user = await res.json();
-          set({ user, isLoading: false });
-          return true;
-        } catch {
-          set({ isLoading: false });
-          return false;
-        }
-      },
+  setUser: (user) => set({ user, isLoading: false }),
+  setLoading: (isLoading) => set({ isLoading }),
 
-      logout: async () => {
-        await fetch("/api/logout", { method: "POST", credentials: "include" });
-        set({ user: null });
-      },
+  logout: async () => {
+    await fetch("/api/logout", { method: "POST", credentials: "include" });
+    set({ user: null });
+  },
+}));
 
-      checkSession: async () => {
-        try {
-          const res = await fetch("/api/me", { credentials: "include" });
-          if (res.ok) {
-            const user = await res.json();
-            set({ user });
-          } else {
-            set({ user: null });
-          }
-        } catch {
-          set({ user: null });
-        }
-      },
-    }),
-    { name: "eea-auth-v2" }
-  )
-);
+export async function checkSession(): Promise<void> {
+  const { setUser } = useAuth.getState();
+  try {
+    const res = await fetch("/api/me", { credentials: "include" });
+    if (res.ok) {
+      const user = await res.json();
+      setUser(user);
+    } else {
+      setUser(null);
+    }
+  } catch {
+    setUser(null);
+  }
+}

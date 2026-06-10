@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,25 +13,38 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const login = useAuth((state) => state.login);
+  const setUser = useAuth((state) => state.setUser);
+  const setLoading = useAuth((state) => state.setLoading);
   const isLoading = useAuth((state) => state.isLoading);
   const user = useAuth((state) => state.user);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (user) {
-      setLocation("/");
-    }
+    if (user) setLocation("/");
   }, [user, setLocation]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const success = await login(username.trim(), password.trim());
-    if (success) {
-      setLocation("/");
-    } else {
-      setError("Usuario o contraseña incorrectos");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim(), password: password.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+        setLocation("/");
+      } else {
+        setLoading(false);
+        setError(data.message || "Usuario o contraseña incorrectos");
+      }
+    } catch {
+      setLoading(false);
+      setError("Error de conexión. Intentá de nuevo.");
     }
   };
 
@@ -89,11 +103,6 @@ export default function Login() {
                 {error}
               </div>
             )}
-            <div className="text-xs text-center text-gray-400 mt-2 space-y-0.5">
-              <p className="font-medium text-gray-500">Credenciales:</p>
-              <p>Admin: <span className="font-mono bg-gray-100 px-1 rounded">admin</span> / <span className="font-mono bg-gray-100 px-1 rounded">admin123</span></p>
-              <p>Operador: <span className="font-mono bg-gray-100 px-1 rounded">operador</span> / <span className="font-mono bg-gray-100 px-1 rounded">op123</span></p>
-            </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login">

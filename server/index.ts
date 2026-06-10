@@ -3,20 +3,7 @@ import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { setupAuth, hashPassword } from "./auth";
-
-async function seedUsers() {
-  const { db } = await import("./storage");
-  const { users } = await import("@shared/schema");
-  const existing = await db.select().from(users);
-  if (existing.length === 0) {
-    await db.insert(users).values([
-      { username: "admin", password: hashPassword("admin123"), role: "admin" },
-      { username: "operador", password: hashPassword("op123"), role: "operator" },
-    ]);
-    console.log("Usuarios iniciales creados: admin/admin123 y operador/op123");
-  }
-}
+import { setupAuth, seedDefaultUsers } from "./auth";
 
 const app = express();
 const httpServer = createServer(app);
@@ -85,7 +72,7 @@ app.use((req, res, next) => {
 
 (async () => {
   setupAuth(app);
-  await seedUsers();
+  await seedDefaultUsers();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

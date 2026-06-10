@@ -23,7 +23,7 @@ import ThicknessSheet from "@/pages/thickness-sheet";
 import Report from "@/pages/report";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
-import { useAuth } from "@/lib/auth";
+import { useAuth, checkSession } from "@/lib/auth";
 import { useEffect } from "react";
 
 import ClientsPage from "@/pages/clients";
@@ -38,17 +38,26 @@ import InstrumentsPage from "@/pages/instruments";
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType, adminOnly?: boolean }) {
   const [location, setLocation] = useLocation();
   const user = useAuth((state) => state.user);
+  const isLoading = useAuth((state) => state.isLoading);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
       setLocation("/login");
-    } else if (adminOnly && user.role !== 'admin') {
+    } else if (adminOnly && user.role !== "admin") {
       setLocation("/");
     }
-  }, [user, location, setLocation, adminOnly]);
+  }, [user, isLoading, location, setLocation, adminOnly]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
   if (!user) return null;
-  if (adminOnly && user.role !== 'admin') return null;
+  if (adminOnly && user.role !== "admin") return null;
 
   return <Component />;
 }
@@ -133,7 +142,6 @@ function Router() {
 }
 
 function App() {
-  const checkSession = useAuth((s) => s.checkSession);
   useEffect(() => {
     checkSession();
   }, []);

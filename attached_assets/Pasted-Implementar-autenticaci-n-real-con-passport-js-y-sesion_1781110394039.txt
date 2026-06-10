@@ -1,0 +1,21 @@
+Implementar autenticación real con passport.js y sesiones en servidor. Reemplazar el sistema actual que tiene credenciales hardcodeadas en el frontend.
+Cambios requeridos:
+1. shared/schema.ts — Agregar campos role (text, default "operator") y name (text, default "Usuario") y createdAt (timestamp) a la tabla users.
+2. server/auth.ts — Crear este archivo nuevo con:
+
+Función hashPassword(plain) usando scrypt nativo de Node con salt aleatorio, formato hash.salt
+Función verifyPassword(plain, stored) usando timingSafeEqual
+Función seedDefaultUsers() que inserta usuarios admin (role: admin, name: Administrador) y operador (role: operator, name: Operador) con contraseñas hasheadas solo si la tabla está vacía
+Función setupSession(app) que configura express-session con store en PostgreSQL usando connect-pg-simple, cookie httpOnly, 7 días, secure: true solo en producción
+Función setupPassport(app) con passport-local que busca el usuario en BD por username y verifica el hash
+Middleware requireAuth(req, res, next) que responde 401 si no hay sesión
+Middleware requireAdmin(req, res, next) que responde 403 si el rol no es admin
+Función registerAuthRoutes(app) con: POST /api/login (passport.authenticate local), POST /api/logout (req.logout + session.destroy), GET /api/me (devuelve usuario sin password), POST /api/change-password (requiere auth, verifica contraseña actual), GET /api/users (solo admin), POST /api/users (solo admin, crea usuario con hash), DELETE /api/users/:id (solo admin, no puede borrarse a sí mismo)
+
+3. server/index.ts — Importar y llamar setupSession(app) y setupPassport(app) ANTES de registerRoutes. Llamar await seedDefaultUsers() dentro del IIFE antes de registerRoutes.
+4. server/routes.ts — Importar requireAuth y requireAdmin desde ./auth y llamar registerAuthRoutes(app) al inicio. Agregar requireAuth como middleware en todas las rutas GET de rubros, clients, instruments, inspections, upload-excel, google-sheets. Agregar requireAdmin en las rutas POST/PATCH/DELETE de rubros, y DELETE de clients e instruments. Agregar requireAuth en analyze-panel y en POST/PATCH de inspections.
+5. client/src/lib/auth.ts — Reemplazar completamente. Usar zustand SIN persist middleware. Estado: user: User | null, isLoading: boolean. Métodos: setUser, setLoading, logout (llama POST /api/logout con credentials: include y luego limpia el estado). Exportar también función checkSession() que llama GET /api/me con credentials: include y llama setUser con el resultado o null. El tipo User debe tener id: string, username: string, role: 'admin' | 'operator', name: string. El estado inicial de isLoading debe ser true.
+6. client/src/pages/login.tsx — Eliminar el objeto USERS con credenciales hardcodeadas. El handleLogin debe hacer fetch('/api/login', { method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password}) }). Si res.ok, llamar setUser(data.user) y navegar a /. Si no, mostrar data.message como error. Eliminar el bloque de texto que muestra las credenciales de ejemplo.
+7. client/src/App.tsx — Importar checkSession desde @/lib/auth. En el componente Router, agregar useEffect(() => { checkSession(); }, []). En ProtectedRoute, leer isLoading del store: si isLoading es true mostrar un spinner centrado (<div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"/></div>). La condición de redirect debe verificar !isLoading antes de hacer el setLocation.
+Después de los cambios correr: npm run db:push para aplicar la migración del schema.
+Al primer arranque el servidor debe loguear: [auth] Usuarios iniciales creados: admin / operador

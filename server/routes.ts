@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import crypto from "crypto";
+import { requireAuth, requireAdmin, registerAuthRoutes } from "./auth";
 import { 
   insertRubroSchema, 
   insertClientSchema, 
@@ -41,6 +42,20 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ── Auth routes (login, logout, me, change-password, users CRUD) ──
+  registerAuthRoutes(app);
+
+  // ── Protección global: todas las rutas /api/* excepto las públicas ──
+  app.use((req, res, next) => {
+    if (!req.path.startsWith("/api/")) return next();
+    const PUBLIC = ["/api/login", "/api/logout", "/api/me"];
+    if (PUBLIC.includes(req.path)) return next();
+    if (req.path.startsWith("/api/portal")) return next();   // portal de clientes
+    if (req.path.startsWith("/api/padmin")) return next();  // portal admin (token)
+    if (req.path === "/api/budget-requests" && req.method === "POST") return next(); // formulario público
+    return requireAuth(req, res, next);
+  });
 
   // ============= DESCARGA DE CÓDIGO FUENTE (temporal) =============
   app.get("/api/download-source", (req, res) => {
