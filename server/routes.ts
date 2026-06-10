@@ -1460,6 +1460,13 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.json({ ok: true });
   });
 
+  app.post("/api/padmin/users/:id/reset-password", requireAdmin, async (req, res) => {
+    const plainPass = crypto.randomBytes(4).toString("hex");
+    const hashed = hashPortalPassword(plainPass);
+    await db.update(clientPortalUsers).set({ password: hashed }).where(eq(clientPortalUsers.id, req.params.id));
+    res.json({ password: plainPass });
+  });
+
   app.delete("/api/padmin/users/:id", requireAdmin, async (req, res) => {
     await db.delete(clientReports).where(eq(clientReports.clientPortalUserId, req.params.id));
     await db.delete(clientPortalUsers).where(eq(clientPortalUsers.id, req.params.id));

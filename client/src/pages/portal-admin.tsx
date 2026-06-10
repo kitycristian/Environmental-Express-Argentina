@@ -19,7 +19,7 @@ import {
 import {
   Users, FileText, Upload, Plus, Trash2, Eye, EyeOff,
   LogOut, Loader2, AlertCircle, CheckCircle2, Mail,
-  Calendar, Globe,
+  Calendar, Globe, KeyRound,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -59,6 +59,9 @@ function UsuariosTab() {
   const [creating, setCreating] = useState(false);
   const [lastPass, setLastPass] = useState<{ nombre: string; email: string; pass: string } | null>(null);
   const [passOpen, setPassOpen] = useState(false);
+  const [resetPass, setResetPass] = useState<{ nombre: string; email: string; pass: string } | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetting, setResetting] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -99,6 +102,16 @@ function UsuariosTab() {
     load();
   };
 
+  const handleReset = async (u: PortalUser) => {
+    setResetting(u.id);
+    const res = await apiFetch(`/api/padmin/users/${u.id}/reset-password`, { method: "POST" });
+    setResetting(null);
+    if (!res.ok) { toast({ title: "Error al resetear clave", variant: "destructive" }); return; }
+    const data = await res.json();
+    setResetPass({ nombre: u.nombre, email: u.email, pass: data.password });
+    setResetOpen(true);
+  };
+
   if (loading) return <div className="text-center py-16 text-gray-400"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>;
 
   return (
@@ -130,6 +143,25 @@ function UsuariosTab() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Modal reset de contraseña */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2 text-[#0D2F5E]"><KeyRound className="h-5 w-5" />Clave reseteada</DialogTitle></DialogHeader>
+          {resetPass && (
+            <div className="space-y-3">
+              <p className="text-sm">Compartí las nuevas credenciales con el cliente:</p>
+              <div className="bg-gray-50 rounded-lg p-4 font-mono text-sm space-y-1 border">
+                <div><span className="text-gray-500">Email:</span> {resetPass.email}</div>
+                <div><span className="text-gray-500">Contraseña:</span> <span className="font-bold text-[#0D2F5E]">{resetPass.pass}</span></div>
+                <div><span className="text-gray-500">Portal:</span> /portal</div>
+              </div>
+              <p className="text-xs text-gray-500">La contraseña anterior quedó invalidada. Esta no se puede recuperar.</p>
+              <Button className="w-full bg-[#0D2F5E] hover:bg-[#0D2F5E]/90" onClick={() => setResetOpen(false)}>Entendido</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Modal contraseña generada */}
       <Dialog open={passOpen} onOpenChange={setPassOpen}>
@@ -174,6 +206,9 @@ function UsuariosTab() {
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handleToggle(u.id, !u.activo)} data-testid={`button-toggle-${u.id}`}>
                     {u.activo ? <><EyeOff className="h-3 w-3 mr-1" />Desactivar</> : <><Eye className="h-3 w-3 mr-1" />Activar</>}
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handleReset(u)} disabled={resetting === u.id} data-testid={`button-reset-${u.id}`}>
+                    {resetting === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><KeyRound className="h-3 w-3 mr-1" />Resetear clave</>}
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
