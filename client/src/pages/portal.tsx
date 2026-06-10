@@ -159,9 +159,27 @@ function LoginScreen({ onLogin }: { onLogin: (user: PortalUser) => void }) {
 // ── MODAL DE PDF ──
 function PdfModal({ report, onClose }: { report: Report; onClose: () => void }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  // Cargar el PDF con credentials y crear un blob URL
+  useEffect(() => {
+    let url: string | null = null;
+    fetch(`/api/portal/me/reports/${report.id}/download`, { credentials: "include" })
+      .then(r => {
+        if (!r.ok) throw new Error("No autorizado");
+        return r.arrayBuffer();
+      })
+      .then(buf => {
+        url = URL.createObjectURL(new Blob([buf], { type: "application/pdf" }));
+        setBlobUrl(url);
+      })
+      .catch(() => setLoadError(true));
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [report.id]);
 
   const handlePrint = () => {
-    iframeRef.current?.contentWindow?.print();
+    iframeRef.current?.contentWindow?.postMessage("print", "*");
   };
 
   // Cerrar con Escape
@@ -171,9 +189,13 @@ function PdfModal({ report, onClose }: { report: Report; onClose: () => void }) 
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const viewerSrc = blobUrl
+    ? `/pdf-viewer.html?src=${encodeURIComponent(blobUrl)}`
+    : null;
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-900/95" data-testid="modal-pdf">
-      {/* Barra superior del modal */}
+      {/* Barra superior */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#0D2F5E] shrink-0">
         <div className="flex items-center gap-2 text-white min-w-0">
           <FileText className="h-4 w-4 shrink-0 text-green-400" />
@@ -185,6 +207,7 @@ function PdfModal({ report, onClose }: { report: Report; onClose: () => void }) 
             variant="secondary"
             className="h-8 text-xs bg-white/10 text-white hover:bg-white/20 border-0"
             onClick={handlePrint}
+            disabled={!blobUrl}
             data-testid="button-imprimir-pdf"
           >
             <Printer className="h-3.5 w-3.5 mr-1.5" />
@@ -202,14 +225,26 @@ function PdfModal({ report, onClose }: { report: Report; onClose: () => void }) 
         </div>
       </div>
 
-      {/* iframe con el PDF */}
-      <iframe
-        ref={iframeRef}
-        src={`/api/portal/me/reports/${report.id}/download`}
-        className="flex-1 w-full bg-white"
-        title={report.titulo}
-        data-testid="iframe-pdf"
-      />
+      {/* Visor PDF */}
+      {loadError ? (
+        <div className="flex-1 flex items-center justify-center text-white/60 text-sm">
+          No se pudo cargar el informe. Cerrá e intentá de nuevo.
+        </div>
+      ) : !viewerSrc ? (
+        <div className="flex-1 flex items-center justify-center gap-3 text-white/60 text-sm">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Cargando informe…
+        </div>
+      ) : (
+        <iframe
+          ref={iframeRef}
+          src={viewerSrc}
+          className="flex-1 w-full"
+          title={report.titulo}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+          data-testid="iframe-pdf"
+        />
+      )}
     </div>
   );
 }
