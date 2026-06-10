@@ -1640,10 +1640,12 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
   });
 
   app.get("/api/portal/me/reports", async (req, res) => {
+    console.log("Portal user ID:", req.session.portalUserId);
     if (!req.session.portalUserId) return res.status(401).json({ message: "No autenticado" });
     const reports = await db.select().from(clientReports)
       .where(eq(clientReports.clientPortalUserId, req.session.portalUserId))
       .orderBy(desc(clientReports.creadoEn));
+    console.log("Reports found:", reports.length);
     res.json(reports);
   });
 

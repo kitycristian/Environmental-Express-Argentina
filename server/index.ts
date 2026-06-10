@@ -21,6 +21,9 @@ async function seedUsers() {
 const app = express();
 const httpServer = createServer(app);
 
+// Necesario para que las cookies secure funcionen detrás del proxy de Replit
+app.set("trust proxy", 1);
+
 app.use(cors({
   origin: ["https://envexar.com", "http://localhost:5000", "http://localhost:3000"],
   credentials: true,
