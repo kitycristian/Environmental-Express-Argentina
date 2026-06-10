@@ -52,7 +52,7 @@ export async function registerRoutes(
     const PUBLIC = ["/api/login", "/api/logout", "/api/me"];
     if (PUBLIC.includes(req.path)) return next();
     if (req.path.startsWith("/api/portal")) return next();   // portal de clientes
-    if (req.path.startsWith("/api/padmin")) return next();  // portal admin (token)
+    if (req.path.startsWith("/api/padmin")) return next();  // requireAdmin lo protege a nivel de ruta
     if (req.path === "/api/budget-requests" && req.method === "POST") return next(); // formulario público
     return requireAuth(req, res, next);
   });
@@ -1427,19 +1427,13 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.send(buffer);
   });
 
-  // ── PORTAL ADMIN — token-based (x-admin-token header) ──
-  const PADMIN_TOKEN = "EEA2024admin";
-  function requireAdminToken(req: any, res: any, next: any) {
-    if (req.headers["x-admin-token"] === PADMIN_TOKEN) return next();
-    return res.status(401).json({ message: "Token inválido" });
-  }
-
-  app.get("/api/padmin/users", requireAdminToken, async (req, res) => {
+  // ── PORTAL ADMIN ──
+  app.get("/api/padmin/users", requireAdmin, async (req, res) => {
     const users = await db.select().from(clientPortalUsers).orderBy(desc(clientPortalUsers.creadoEn));
     res.json(users);
   });
 
-  app.post("/api/padmin/users", requireAdminToken, async (req, res) => {
+  app.post("/api/padmin/users", requireAdmin, async (req, res) => {
     const { nombre, email } = req.body;
     if (!nombre || !email) return res.status(400).json({ message: "nombre y email requeridos" });
     const plainPass = generatePassword();
@@ -1461,18 +1455,18 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     }
   });
 
-  app.patch("/api/padmin/users/:id", requireAdminToken, async (req, res) => {
+  app.patch("/api/padmin/users/:id", requireAdmin, async (req, res) => {
     await db.update(clientPortalUsers).set({ activo: req.body.activo }).where(eq(clientPortalUsers.id, req.params.id));
     res.json({ ok: true });
   });
 
-  app.delete("/api/padmin/users/:id", requireAdminToken, async (req, res) => {
+  app.delete("/api/padmin/users/:id", requireAdmin, async (req, res) => {
     await db.delete(clientReports).where(eq(clientReports.clientPortalUserId, req.params.id));
     await db.delete(clientPortalUsers).where(eq(clientPortalUsers.id, req.params.id));
     res.json({ ok: true });
   });
 
-  app.get("/api/padmin/reports", requireAdminToken, async (req, res) => {
+  app.get("/api/padmin/reports", requireAdmin, async (req, res) => {
     const reports = await db.select({
       id: clientReports.id, clientPortalUserId: clientReports.clientPortalUserId,
       titulo: clientReports.titulo, descripcion: clientReports.descripcion,
@@ -1483,7 +1477,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.json(reports);
   });
 
-  app.post("/api/padmin/reports", requireAdminToken, async (req, res) => {
+  app.post("/api/padmin/reports", requireAdmin, async (req, res) => {
     const { clientPortalUserId, titulo, descripcion, tipoEstudio, fechaEstudio, pdfData, pdfNombre } = req.body;
     if (!clientPortalUserId || !titulo || !pdfData || !pdfNombre)
       return res.status(400).json({ message: "Faltan campos requeridos" });
@@ -1502,7 +1496,7 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.json({ ok: true, id: report.id });
   });
 
-  app.delete("/api/padmin/reports/:id", requireAdminToken, async (req, res) => {
+  app.delete("/api/padmin/reports/:id", requireAdmin, async (req, res) => {
     await db.delete(clientReports).where(eq(clientReports.id, req.params.id));
     res.json({ ok: true });
   });

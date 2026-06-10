@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -18,37 +19,13 @@ import {
 import {
   Users, FileText, Upload, Plus, Trash2, Eye, EyeOff,
   LogOut, Loader2, AlertCircle, CheckCircle2, Mail,
-  Calendar, Lock, Globe,
+  Calendar, Globe,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-// ── TOKEN HARDCODEADO (temporal) ──
-const ADMIN_TOKEN = "EEA2024admin";
-const SESSION_KEY = "eea-portal-admin-auth";
-
-function isAuthed(): boolean {
-  return sessionStorage.getItem(SESSION_KEY) === "1";
-}
-function setAuthed() {
-  sessionStorage.setItem(SESSION_KEY, "1");
-}
-function clearAuthed() {
-  sessionStorage.removeItem(SESSION_KEY);
-}
-
-// Helper: llama a los endpoints de portal-admin con el token en header
-async function adminFetch(url: string, options: RequestInit = {}) {
-  return fetch(url, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-token": ADMIN_TOKEN,
-      ...(options.headers || {}),
-    },
-  });
-}
+const apiFetch = (url: string, opts: RequestInit = {}) =>
+  fetch(url, { ...opts, credentials: "include", headers: { "Content-Type": "application/json", ...(opts.headers as Record<string, string> || {}) } });
 
 // ─────────────── TIPOS ───────────────
 type PortalUser = {
@@ -71,64 +48,6 @@ type ClientReport = {
   creadoEn: string;
 };
 
-// ─────────────── PANTALLA LOGIN ───────────────
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
-  const [token, setToken] = useState("");
-  const [error, setError] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (token === ADMIN_TOKEN) {
-      setAuthed();
-      onLogin();
-    } else {
-      setError("Token incorrecto.");
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#f0f4f8] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-xs">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[#0D2F5E] flex items-center justify-center shadow-lg mb-3">
-            <Lock className="h-6 w-6 text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-[#0D2F5E]">Panel Administrativo</h1>
-          <p className="text-sm text-gray-500 mt-1">Portal de Clientes — EEA</p>
-        </div>
-        <Card className="shadow-lg border-0">
-          <CardContent className="p-5">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="admin-token">Token de acceso</Label>
-                <Input
-                  id="admin-token"
-                  type="password"
-                  value={token}
-                  onChange={e => { setToken(e.target.value); setError(""); }}
-                  placeholder="••••••••••"
-                  autoFocus
-                  className="mt-1"
-                  data-testid="input-admin-token"
-                />
-              </div>
-              {error && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {error}
-                </div>
-              )}
-              <Button type="submit" className="w-full bg-[#0D2F5E] hover:bg-[#0D2F5E]/90" data-testid="button-admin-ingresar">
-                Ingresar
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
 // ─────────────── TAB USUARIOS ───────────────
 function UsuariosTab() {
   const { toast } = useToast();
@@ -143,7 +62,7 @@ function UsuariosTab() {
 
   const load = () => {
     setLoading(true);
-    adminFetch("/api/padmin/users")
+    apiFetch("/api/padmin/users")
       .then(r => r.json())
       .then(setUsuarios)
       .catch(() => setUsuarios([]))
@@ -155,7 +74,7 @@ function UsuariosTab() {
   const handleCreate = async () => {
     if (!nombre || !email) return;
     setCreating(true);
-    const res = await adminFetch("/api/padmin/users", {
+    const res = await apiFetch("/api/padmin/users", {
       method: "POST",
       body: JSON.stringify({ nombre, email }),
     });
@@ -170,12 +89,12 @@ function UsuariosTab() {
   };
 
   const handleToggle = async (id: string, activo: boolean) => {
-    await adminFetch(`/api/padmin/users/${id}`, { method: "PATCH", body: JSON.stringify({ activo }) });
+    await apiFetch(`/api/padmin/users/${id}`, { method: "PATCH", body: JSON.stringify({ activo }) });
     load();
   };
 
   const handleDelete = async (id: string) => {
-    await adminFetch(`/api/padmin/users/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/padmin/users/${id}`, { method: "DELETE" });
     toast({ title: "Usuario eliminado" });
     load();
   };
@@ -298,8 +217,8 @@ function InformesTab() {
   const load = () => {
     setLoading(true);
     Promise.all([
-      adminFetch("/api/padmin/reports").then(r => r.json()),
-      adminFetch("/api/padmin/users").then(r => r.json()),
+      apiFetch("/api/padmin/reports").then(r => r.json()),
+      apiFetch("/api/padmin/users").then(r => r.json()),
     ]).then(([reps, usrs]) => {
       setInformes(Array.isArray(reps) ? reps : []);
       setUsuarios(Array.isArray(usrs) ? usrs : []);
@@ -316,7 +235,7 @@ function InformesTab() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       const base64 = (e.target?.result as string).split(",")[1];
-      const res = await adminFetch("/api/padmin/reports", {
+      const res = await apiFetch("/api/padmin/reports", {
         method: "POST",
         body: JSON.stringify({ ...form, pdfData: base64, pdfNombre: pdfFile.name }),
       });
@@ -335,7 +254,7 @@ function InformesTab() {
   };
 
   const handleDelete = async (id: string) => {
-    await adminFetch(`/api/padmin/reports/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/padmin/reports/${id}`, { method: "DELETE" });
     toast({ title: "Informe eliminado" });
     load();
   };
@@ -501,21 +420,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
 // ─────────────── EXPORT ───────────────
 export default function PortalAdmin() {
-  const appUser = useAuth((s) => s.user);
-  const [authed, setAuthed] = useState(() => isAuthed() || appUser?.role === "admin");
-
-  useLayoutEffect(() => {
-    if (appUser?.role === "admin") setAuthed(true);
-  }, [appUser]);
-
-  const handleLogout = () => {
-    clearAuthed();
-    setAuthed(false);
-  };
-
-  if (!authed) {
-    return <LoginScreen onLogin={() => setAuthed(true)} />;
-  }
-
-  return <AdminPanel onLogout={handleLogout} />;
+  const [, setLocation] = useLocation();
+  return <AdminPanel onLogout={() => setLocation("/")} />;
 }
