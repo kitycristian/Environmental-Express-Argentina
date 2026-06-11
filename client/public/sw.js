@@ -1,23 +1,15 @@
-const CACHE_NAME = 'eea-v7';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-];
+const CACHE_NAME = 'eea-v8';
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
-  );
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -25,36 +17,28 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(event.request.clone())
-        .then(res => res)
-        .catch(() => {
-          if (['POST', 'PATCH'].includes(event.request.method) &&
-              url.pathname.includes('/inspections')) {
-            return event.request.json().then(body => {
-              saveToSyncQueue({ url: url.pathname, method: event.request.method, body });
-              return new Response(JSON.stringify({ queued: true, offline: true }), {
-                headers: { 'Content-Type': 'application/json' }
-              });
+      fetch(event.request.clone()).catch(() => {
+        if (['POST', 'PATCH'].includes(event.request.method) &&
+            url.pathname.includes('/inspections')) {
+          return event.request.json().then(body => {
+            saveToSyncQueue({ url: url.pathname, method: event.request.method, body });
+            return new Response(JSON.stringify({ queued: true, offline: true }), {
+              headers: { 'Content-Type': 'application/json' }
             });
-          }
-          return new Response(JSON.stringify({ error: 'Sin conexión' }), {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
           });
-        })
+        }
+        return new Response(JSON.stringify({ error: 'Sin conexión' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      })
     );
     return;
   }
 
+  // Network-first for all app assets — never serve stale JS/CSS
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return res;
-      }).catch(() => caches.match('/index.html'));
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
 
@@ -102,7 +86,6 @@ async function syncPendingInspections() {
         body: JSON.stringify(item.body),
       });
     } catch (e) {
-      console.warn('Sync falló, reintentando después:', e);
       return;
     }
   }
