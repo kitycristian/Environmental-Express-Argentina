@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardList, Users, TrendingUp, Clock, ExternalLink,
-  Building2, ArrowRight, Sparkles, Home,
+  Building2, ArrowRight, Home,
 } from "lucide-react";
 
 function getInspectionProtocols(insp: any): string {
@@ -89,34 +89,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── AI Card + Recent Inspections ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* AI Card */}
-        <Link href="/grounding">
-          <div className="eea-card p-5 cursor-pointer group hover:shadow-md transition-all border-2 border-[hsl(144,60%,40%)]/20 hover:border-[hsl(144,60%,40%)]/50 h-full flex flex-col justify-between">
-            <div>
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[hsl(144,60%,40%)] to-[hsl(200,80%,40%)] flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-[hsl(144,60%,40%)] text-white px-2 py-0.5 rounded-full">NUEVO</span>
-              </div>
-              <div className="font-semibold text-[15px] text-foreground leading-tight mb-1.5">
-                Puesta a Tierra + IA
-              </div>
-              <p className="text-[12px] text-muted-foreground leading-relaxed">
-                Protocolo PAT, continuidad eléctrica y análisis de tableros con visión artificial.
-              </p>
-            </div>
-            <div className="flex items-center gap-1 text-[13px] font-medium text-[hsl(144,60%,35%)] mt-4 group-hover:gap-2 transition-all">
-              <span>Ir a PAT</span>
-              <ArrowRight size={14} />
-            </div>
-          </div>
-        </Link>
-
+      {/* ── Recent Inspections ── */}
+      <div className="grid grid-cols-1 gap-4">
         {/* Recent Inspections Table */}
-        <div className="eea-card lg:col-span-2 overflow-hidden">
+        <div className="eea-card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
