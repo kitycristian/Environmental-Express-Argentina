@@ -357,10 +357,11 @@ export async function registerRoutes(
 
   const getOpenAI = () => {
     const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-    if (!apiKey) return null;
+    const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+    if (!apiKey && !baseURL) return null;
     return new OpenAI({
-      apiKey,
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      apiKey: apiKey || "replit",
+      baseURL,
     });
   };
 
