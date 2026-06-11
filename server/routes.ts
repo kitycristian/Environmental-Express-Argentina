@@ -1682,6 +1682,34 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.send(buf);
   });
 
+  // ── AI text generation for lighting protocol ─────────────────────────────
+  app.post("/api/lighting/generate-text", requireAuth, async (req, res) => {
+    const { field, summary, empresa } = req.body as { field: string; summary: string; empresa: string };
+    if (!field || !summary) return res.status(400).json({ message: "Faltan datos" });
+    try {
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      const prompts: Record<string, string> = {
+        conclusiones: `Sos un profesional en higiene y seguridad laboral argentino. Redactá las CONCLUSIONES técnicas de un informe de Iluminación (Resol. SRT 84/2012, Dec. 351/79 Anexo IV) para la empresa "${empresa}" en base a los siguientes resultados por sector:\n\n${summary}\n\nRedactá 2-3 párrafos técnicos en español formal, indicando si cumplen o no los valores legales, y mencionando los sectores críticos. Sin viñetas, solo texto corrido.`,
+        recomendaciones: `Sos un profesional en higiene y seguridad laboral argentino. Redactá las RECOMENDACIONES de mejora lumínica (Resol. SRT 84/2012) para la empresa "${empresa}" en base a los siguientes resultados:\n\n${summary}\n\nRedactá medidas de mejora (reemplazo de luminarias, mantenimiento, redistribución, etc.). 2-3 párrafos en español formal. Sin viñetas, solo texto corrido.`,
+      };
+      const prompt = prompts[field];
+      if (!prompt) return res.status(400).json({ message: "Campo inválido" });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 600,
+        temperature: 0.4,
+      });
+      res.json({ text: completion.choices[0]?.message?.content?.trim() ?? "" });
+    } catch (err) {
+      console.error("Error generando texto IA (iluminación):", err);
+      res.status(500).json({ message: "Error generando texto" });
+    }
+  });
+
   // ── AI text generation for cold stress protocol ─────────────────────────
   app.post("/api/cold/generate-text", requireAuth, async (req, res) => {
     const { field, summary, empresa } = req.body as { field: string; summary: string; empresa: string };

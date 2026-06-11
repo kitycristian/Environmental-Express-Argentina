@@ -119,12 +119,31 @@ export interface ColdProtocol {
   recomendaciones: string;
 }
 
+// ─── Lighting Protocol Types ──────────────────────────────────────────────────
+export interface LightingProtocol {
+  company: {
+    razonSocial: string; direccion: string; localidad: string; provincia: string;
+    cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
+    turnos: string;
+    instrumento1Marca: string; instrumento1Modelo: string; instrumento1Serie: string;
+    instrumento1Cert: string; instrumento1FechaCal: string;
+    instrumento2Marca: string; instrumento2Modelo: string; instrumento2Serie: string;
+    tempExterior: string; humedad: string; presionAtm: string;
+    metodologia: string; observacionesGenerales: string;
+  };
+  mantenimiento: Record<string, boolean>;
+  observaciones: string;
+  conclusiones: string;
+  recomendaciones: string;
+}
+
 interface AppState {
   establishment: Establishment;
   sectors: Sector[];
   noiseProtocol: NoiseProtocol;
   thermalProtocol: ThermalProtocol;
   coldProtocol: ColdProtocol;
+  lightingProtocol: LightingProtocol;
   digitalSignature: string | null;
   signatoryName: string | null;
   signatoryTitle: string | null;
@@ -164,6 +183,10 @@ interface AppState {
   updateColdCompany: (data: Partial<ColdProtocol['company']>) => void;
   updateColdText: (field: 'observaciones' | 'metodologia' | 'conclusiones' | 'recomendaciones', value: string) => void;
   setColdRows: (rows: ColdRow[]) => void;
+
+  updateLightingCompany: (data: Partial<LightingProtocol['company']>) => void;
+  updateLightingText: (field: 'observaciones' | 'conclusiones' | 'recomendaciones', value: string) => void;
+  updateLightingMantenimiento: (key: string, value: boolean) => void;
 
   loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
   resetStore: () => void;
@@ -233,6 +256,16 @@ const defaultColdCompany = () => ({
   tempExterior: '', humedad: '', presionAtm: '', condicionesNormales: '', condicionesMedicion: ''
 });
 
+const defaultLightingCompany = () => ({
+  razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
+  fechaMedicion: '', horaInicio: '', horaFin: '', turnos: '',
+  instrumento1Marca: '', instrumento1Modelo: 'Luxómetro', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
+  instrumento2Marca: '', instrumento2Modelo: '', instrumento2Serie: '',
+  tempExterior: '', humedad: '', presionAtm: '',
+  metodologia: 'Metodología de la cuadrícula (Guía SRT 2012)',
+  observacionesGenerales: ''
+});
+
 const initialEstablishment: Establishment = {
   id: 'default', name: '', razonSocial: '', cuit: '', address: '',
   date: new Date().toISOString().split('T')[0], responsible: '',
@@ -246,6 +279,7 @@ export const useStore = create<AppState>()(
       noiseProtocol: { rows: [defaultNoiseRow()], company: defaultNoiseCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
       thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
       coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', metodologia: '', conclusiones: '', recomendaciones: '' },
+      lightingProtocol: { company: defaultLightingCompany(), mantenimiento: {}, observaciones: '', conclusiones: '', recomendaciones: '' },
       digitalSignature: null, signatoryName: null, signatoryTitle: null, signatoryRegistration: null,
       lastSavedAt: null, isDirty: false,
 
@@ -315,6 +349,11 @@ export const useStore = create<AppState>()(
       updateColdText: (field, value) => set((s) => ({ coldProtocol: { ...s.coldProtocol, [field]: value }, isDirty: true })),
       setColdRows: (rows) => set((s) => ({ coldProtocol: { ...s.coldProtocol, rows }, isDirty: true })),
 
+      // Lighting
+      updateLightingCompany: (data) => set((s) => ({ lightingProtocol: { ...s.lightingProtocol, company: { ...s.lightingProtocol.company, ...data } }, isDirty: true })),
+      updateLightingText: (field, value) => set((s) => ({ lightingProtocol: { ...s.lightingProtocol, [field]: value }, isDirty: true })),
+      updateLightingMantenimiento: (key, value) => set((s) => ({ lightingProtocol: { ...s.lightingProtocol, mantenimiento: { ...s.lightingProtocol.mantenimiento, [key]: value } }, isDirty: true })),
+
       // Lifecycle
       loadInspectionData: (establishment, sectors) => set(() => ({
         establishment: JSON.parse(JSON.stringify(establishment)),
@@ -326,6 +365,7 @@ export const useStore = create<AppState>()(
         noiseProtocol: { rows: [defaultNoiseRow()], company: defaultNoiseCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
         thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
         coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', metodologia: '', conclusiones: '', recomendaciones: '' },
+        lightingProtocol: { company: defaultLightingCompany(), mantenimiento: {}, observaciones: '', conclusiones: '', recomendaciones: '' },
         isDirty: false, lastSavedAt: null,
       }),
       saveInspection: async () => {
@@ -390,7 +430,7 @@ export const useStore = create<AppState>()(
       setSignatoryRegistration: (registration) => set({ signatoryRegistration: registration }),
     }),
     {
-      name: 'eea-app-state-v5',
+      name: 'eea-app-state-v6',
       storage: createJSONStorage(() => localStorage),
     }
   )
