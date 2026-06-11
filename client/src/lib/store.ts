@@ -87,18 +87,19 @@ export interface ColdRow {
   sector: string;
   puestoTrabajo: string;
   rangoTemp: string;
-  ciclosExposicion: string;
+  cantidadCiclos: string;
   duracionCiclo: string;
   tiempoNetoExposicion: string;
   tiempoIntegracion: string;
   caracteristicasExposicion: string;
   tbs: string;
-  velocidadViento: string;
+  velocidadAire: string;
   tee: string;
   tipoUniforme: string;
   equipo: string;
   exposicionMas4h: string;
-  riesgo: string;
+  nivelPeligro: string;
+  observaciones: string;
 }
 
 export interface ColdProtocol {
@@ -106,10 +107,14 @@ export interface ColdProtocol {
   company: {
     razonSocial: string; direccion: string; localidad: string; provincia: string;
     cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
-    turnos: string; instrumento1: string; instrumento1Serie: string; instrumento1Cert: string;
-    instrumento1FechaCal: string; condicionesAtm: string;
+    turnos: string;
+    instrumento1Marca: string; instrumento1Modelo: string; instrumento1Serie: string;
+    instrumento1Cert: string; instrumento1FechaCal: string;
+    tempExterior: string; humedad: string; presionAtm: string;
+    condicionesNormales: string; condicionesMedicion: string;
   };
   observaciones: string;
+  metodologia: string;
   conclusiones: string;
   recomendaciones: string;
 }
@@ -157,7 +162,7 @@ interface AppState {
   addColdRow: () => void;
   deleteColdRow: (id: string) => void;
   updateColdCompany: (data: Partial<ColdProtocol['company']>) => void;
-  updateColdText: (field: 'observaciones' | 'conclusiones' | 'recomendaciones', value: string) => void;
+  updateColdText: (field: 'observaciones' | 'metodologia' | 'conclusiones' | 'recomendaciones', value: string) => void;
   setColdRows: (rows: ColdRow[]) => void;
 
   loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
@@ -199,9 +204,10 @@ const defaultThermalRow = (): ThermalRow => ({
 });
 
 const defaultColdRow = (): ColdRow => ({
-  id: uuidv4(), sector: '', puestoTrabajo: '', rangoTemp: '', ciclosExposicion: '',
+  id: uuidv4(), sector: '', puestoTrabajo: '', rangoTemp: '', cantidadCiclos: '',
   duracionCiclo: '', tiempoNetoExposicion: '', tiempoIntegracion: '', caracteristicasExposicion: '',
-  tbs: '', velocidadViento: '', tee: '', tipoUniforme: '', equipo: '', exposicionMas4h: 'NO', riesgo: ''
+  tbs: '', velocidadAire: '', tee: '', tipoUniforme: '', equipo: '', exposicionMas4h: 'NO',
+  nivelPeligro: '', observaciones: ''
 });
 
 const defaultNoiseCompany = () => ({
@@ -223,8 +229,8 @@ const defaultThermalCompany = () => ({
 const defaultColdCompany = () => ({
   razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
   fechaMedicion: '', horaInicio: '', horaFin: '', turnos: '',
-  instrumento1: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
-  condicionesAtm: ''
+  instrumento1Marca: '', instrumento1Modelo: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
+  tempExterior: '', humedad: '', presionAtm: '', condicionesNormales: '', condicionesMedicion: ''
 });
 
 const initialEstablishment: Establishment = {
@@ -239,7 +245,7 @@ export const useStore = create<AppState>()(
       sectors: sampleSectors,
       noiseProtocol: { rows: [defaultNoiseRow()], company: defaultNoiseCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
       thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
-      coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+      coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', metodologia: '', conclusiones: '', recomendaciones: '' },
       digitalSignature: null, signatoryName: null, signatoryTitle: null, signatoryRegistration: null,
       lastSavedAt: null, isDirty: false,
 
@@ -319,7 +325,7 @@ export const useStore = create<AppState>()(
         establishment: initialEstablishment, sectors: [],
         noiseProtocol: { rows: [defaultNoiseRow()], company: defaultNoiseCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
         thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
-        coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
+        coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', metodologia: '', conclusiones: '', recomendaciones: '' },
         isDirty: false, lastSavedAt: null,
       }),
       saveInspection: async () => {

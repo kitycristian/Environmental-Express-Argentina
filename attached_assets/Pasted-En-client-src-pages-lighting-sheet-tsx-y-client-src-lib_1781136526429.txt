@@ -1,0 +1,49 @@
+En client/src/pages/lighting-sheet.tsx y client/src/lib/store.ts, completar la hoja de Iluminación para que coincida exactamente con el Protocolo para Medición de Iluminación según Resol. SRT 84/2012.
+1. store.ts — revisar la interfaz del sector de iluminación y agregar los campos que faltan en cada punto de medición dentro de cada sector:
+
+hora: string — hora en que se realizó la medición del punto
+tipoIluminacion: string — Natural / Artificial / Mixta
+tipofuente: string — Incandescente / Descarga / LED / Mixta
+tipoSistema: string — General / Localizada / Mixta
+eMinima: number — valor de E mínima medida en el punto
+eMedia: number — promedio de todos los puntos del sector (calculado automático)
+uniformidadCumple: boolean — calculado automático: eMinima >= eMedia/2
+valorLegalLux: number — valor requerido legalmente según Anexo IV Dec. 351/79 (ingresado manualmente o seleccionado de lista)
+cumpleLimite: boolean — calculado automático: eMedia >= valorLegalLux
+fueraDeSevicio: boolean — checkbox F/S (Fuera de Servicio)
+
+2. lighting-sheet.tsx — agregar a la tabla principal de cada sector las columnas que faltan junto a las existentes:
+La tabla debe tener exactamente estas columnas por punto de medición:
+Punto | Hora | Sector | Sección/Puesto | Tipo Iluminación (select) | Tipo Fuente (select) | Tipo Sistema (select) | E mínima ≥ (E media)/2 (calculado) | Valor Medido Lux (E media, calculado del promedio) | Valor Legal Lux (input o select) | Cumple Uniformidad (auto) | Cumple Límite (auto) | F/S (checkbox)
+Los selects deben tener estas opciones fijas:
+
+Tipo Iluminación: Natural / Artificial / Mixta
+Tipo Fuente: Incandescente / Descarga / LED / Mixta
+Tipo Sistema: General / Localizada / Mixta
+
+El Valor Legal según Anexo IV Dec. 351/79 debe poder seleccionarse de una lista desplegable con los valores más comunes:
+50 lux (depósitos, cámaras) / 100 lux (pasillos, depósitos generales) / 200 lux (comedores, vestuarios) / 300 lux (oficinas, laboratorios, farmacia) / 500 lux (salón de ventas, recepción, carnicería) — o ingresarse manualmente.
+3. lighting-sheet.tsx — agregar Tab de Datos Generales al inicio con:
+
+Campos del establecimiento precargados desde store.establishment
+Fecha, hora inicio, hora fin, turnos habituales
+Instrumento 1: marca (Luxómetro), modelo, serie, certificado, fecha calibración
+Instrumento 2 opcional: marca (Medidor de Distancia Láser), modelo, serie
+Metodología: texto fijo "Metodología de la cuadrícula (Guía SRT 2012)" con campo editable
+Condiciones atmosféricas: temperatura, humedad, presión
+Textarea observaciones generales
+
+4. lighting-sheet.tsx — agregar Tab de Análisis y Conclusiones al final con:
+
+Textarea: observaciones particulares
+Tabla de Mantenimiento Preventivo (checkboxes de las 12 recomendaciones estándar del protocolo)
+Textarea: conclusiones (editable + botón "Generar con IA")
+Textarea: recomendaciones (editable + botón "Generar con IA")
+
+5. Lógica calculada automáticamente:
+
+E media = promedio de todos los valores de lux ingresados en la cuadrícula del sector
+E mínima = el valor más bajo de todos los puntos del sector
+Uniformidad cumple = E mínima ≥ E media / 2
+Cumple límite = E media ≥ valor legal seleccionado
+Colorear la fila en verde si cumple todo, en rojo si no cumple uniformidad o límite
