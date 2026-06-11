@@ -1,0 +1,55 @@
+Rediseña la página de login (el componente que maneja la autenticación) con un estilo ejecutivo futurista. Mantén toda la lógica de autenticación existente (passport.js, sesiones, etc.) pero reemplaza completamente el diseño visual.
+
+DISEÑO REQUERIDO:
+
+Layout: Pantalla dividida en dos paneles horizontales (flex row)
+- Panel IZQUIERDO (flex 1.1): fondo #07111f, canvas con red de nodos animada (partículas que se conectan con líneas cuando se acercan), logo de la empresa centrado en caja blanca con border-radius 20px y sutil glow verde, debajo 3 métricas separadas por líneas verticales ("9+ Servicios", "SRT Normativa", "24/7 Sistema")
+- Panel DERECHO (flex 0.9): fondo #0b1928, border-left 1px solid rgba(0,210,150,0.07), formulario centrado con max-width 360px
+
+PALETA:
+- Fondo base: #07111f
+- Fondo panel derecho: #0b1928  
+- Acento verde tech: #00D296
+- Texto principal: #ffffff
+- Texto secundario: rgba(255,255,255,0.35)
+
+TIPOGRAFÍAS (importar de Google Fonts):
+- Rajdhani (weights 500,600,700) para títulos, labels de métricas, botón
+- Inter (weights 300,400,500,600) para el resto
+
+PANEL DERECHO - FORMULARIO:
+- Tag superior: "ACCESO SEGURO" en #00D296, font-size 10px, letter-spacing 3px, uppercase
+- Título: "Sistema de Gestión" en Rajdhani 28px bold, color blanco
+- Subtítulo: "Higiene Ocupacional y Medio Ambiente" en Inter 13px, color rgba(255,255,255,0.35)
+- Campos con icono a la izquierda, fondo rgba(255,255,255,0.04), border rgba(255,255,255,0.08), border-radius 8px, padding 12px 14px 12px 42px
+- En focus: border-color rgba(0,210,150,0.4), background rgba(0,210,150,0.04)
+- Botón "INGRESAR": ancho 100%, background #00D296, color #07111f, Rajdhani bold, letter-spacing 2.5px, uppercase, border-radius 8px
+- Badge inferior: flex row con punto verde pulsante (animation opacity 1→0.3→1 cada 2s) + texto "Sistema activo · Protocolos SRT vigentes · Sesión cifrada", fondo rgba(0,210,150,0.04), border rgba(0,210,150,0.1), border-radius 8px
+
+LOGO:
+- Importar el archivo de logo existente del proyecto (buscar en src/assets/ o public/ un archivo .jpeg o .png del logo EEA)
+- Mostrarlo dentro de la caja blanca del panel izquierdo con object-fit contain
+- La caja blanca: 200x200px, background white, border-radius 20px, border 1px solid rgba(0,210,150,0.25), box-shadow: 0 0 60px rgba(0,210,150,0.08)
+
+ANIMACIÓN RED DE NODOS (canvas):
+- 28 nodos con posición y velocidad aleatoria (vx/vy entre -0.4 y 0.4)
+- Si distancia entre dos nodos < 120px: dibujar línea con opacidad proporcional a (1 - distancia/120) * 0.12, color rgba(0,210,150,...)
+- Nodos: círculos de radio 1.2-3.2px, color rgba(0,210,150,0.55)
+- Rebotar en los bordes del canvas
+- Usar requestAnimationFrame
+- Canvas position absolute inset 0, width 100% height 100%
+- useEffect con cleanup (cancelAnimationFrame + removeEventListener)
+
+RESPONSIVE:
+- En mobile (max-width 768px): flex-direction column, panel izquierdo min-height 280px, logo 140x140px, panel derecho sin border-left, con border-top
+
+PROPS DEL COMPONENTE:
+interface LoginPageProps {
+  onLogin: (username: string, password: string) => Promise<void>;
+  error?: string;
+  loading?: boolean;
+}
+- Botón disabled cuando loading o campos vacíos
+- Mostrar error en caja roja si existe: background rgba(255,107,107,0.08), border rgba(255,107,107,0.2), color #ff6b6b
+
+Todo el CSS debe ir en un template literal dentro del componente (no usar Tailwind ni archivos CSS separados). El componente debe ser un default export llamado LoginPage.
