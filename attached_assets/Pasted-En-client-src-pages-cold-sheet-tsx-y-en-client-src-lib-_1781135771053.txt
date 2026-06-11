@@ -1,0 +1,62 @@
+En client/src/pages/cold-sheet.tsx y en client/src/lib/store.ts, corregir la hoja de Estrés por Frío para que coincida exactamente con el Informe de Medición de Estrés por Frío según Resol. MTEySS 295/2003.
+1. store.ts — actualizar la interfaz ColdRow para agregar los campos que faltan:
+
+rangoTemp: string — Rango de temperatura del sector (ej: -18 < -21)
+cantidadCiclos: string — Cantidad de ciclos de exposición por turno
+duracionCiclo: string — Duración de los ciclos de exposición (min)
+tiempoNetoExposicion: string — Tiempo neto de exposición del trabajador (min)
+tiempoIntegracion: string — Tiempo de integración/medición (min)
+caracteristicasExposicion: string — Continua / Intermitente con Periodos de Recuperación
+tbs: string — Temperatura Bulbo Seco (°C)
+velocidadAire: string — Velocidad del aire (m/s)
+tee: string — Temperatura Equivalente de Enfriamiento (°C) — calculada o ingresada
+tipoUniforme: string — descripción de la ropa utilizada
+equipo: string — equipo de medición utilizado
+exposicionMas4h: string — SI/NO
+nivelPeligro: string — Poco Peligroso / Peligro Creciente / Gran Peligro (resultado de Tabla 2)
+observaciones: string — observaciones por puesto
+
+Actualizar defaultColdRow() con todos estos campos vacíos.
+2. store.ts — actualizar ColdProtocol.company para agregar:
+
+instrumento1Marca: string
+instrumento1Modelo: string
+instrumento1Serie: string
+instrumento1Cert: string
+instrumento1FechaCal: string
+tempExterior: string
+humedad: string
+presionAtm: string
+condicionesNormales: string — textarea descripción de condiciones habituales por sector
+condicionesMedicion: string — textarea condiciones al momento de la medición
+
+3. cold-sheet.tsx — rediseñar con tabs:
+Tab 1 — Datos Generales:
+
+Campos del establecimiento precargados desde store.establishment (razón social, dirección, localidad, provincia, CP, CUIT)
+Fecha, hora inicio, hora fin, turnos habituales
+Instrumento: tipo (Termoanemómetro de Hilo Caliente), marca, modelo, serie, certificado, fecha calibración
+Condiciones atmosféricas: temperatura exterior, humedad, presión atmosférica
+Textarea: condiciones normales de trabajo (una línea por sector con descripción del puesto)
+Textarea: condiciones al momento de la medición
+
+Tab 2 — Tabla de Mediciones:
+Tabla con una fila por puesto con todas las columnas del protocolo oficial:
+Punto | Sector | Puesto de Trabajo | Rango Temp Sector (°C) | Ciclos por Turno | Duración Ciclo (min) | Tiempo Neto Exposición (min) | Tiempo Integración (min) | Características Exposición (select: Continua / Intermitente con Periodos de Recuperación) | TBS (°C) | Velocidad (m/s) | TEE (°C) | Tipo Uniforme | Equipo | Exposición >4hs (SI/NO) | Nivel Peligro (auto)
+El campo Nivel de Peligro se determina automáticamente según la Tabla 2 de la Resol. MTEySS 295/03 usando TBS y velocidad del viento convertida a km/h:
+
+TEE > -1°C → Poco Peligroso
+TEE entre -1°C y -18°C → Peligro Creciente
+TEE < -18°C → Gran Peligro
+
+Tab 3 — Valores de Referencia:
+Mostrar como referencia visual (no editable) la Tabla 3 de TLVs para plan de trabajo/calentamiento en turno de 4 horas, con las columnas: Temperatura del aire (°C) | Sin viento | Viento 8km/h | Viento 16km/h | Viento 24km/h | Viento 32km/h — cada columna con Período máximo y N° interrupciones.
+Tab 4 — Observaciones y Conclusiones:
+
+Textarea: detalles constructivos de los sectores medidos (observaciones)
+Textarea: metodología de medición
+Textarea: conclusiones (editable + botón "Generar con IA")
+Textarea: recomendaciones para prevenir el estrés por frío (editable + botón "Generar con IA")
+
+4. Lógica de guardado: todos los datos deben guardarse en el store de Zustand usando updateColdRow y updateColdCompany existentes, extendidos con los nuevos campos.
+Hacer commit y push después del cambio.

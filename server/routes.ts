@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import OpenAI from "openai";
 import { storage } from "./storage";
 import fs from "fs";
 import path from "path";
@@ -1679,6 +1680,35 @@ Si es NO APTO, indicar si requiere intervención INMEDIATA o PROGRAMADA.`
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Cache-Control", "no-store, no-cache");
     res.send(buf);
+  });
+
+  // ── AI text generation for thermal protocol ──────────────────────────────
+  app.post("/api/thermal/generate-text", requireAuth, async (req, res) => {
+    const { field, summary, empresa } = req.body as { field: string; summary: string; empresa: string };
+    if (!field || !summary) return res.status(400).json({ message: "Faltan datos" });
+    try {
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+      const prompts: Record<string, string> = {
+        conclusiones: `Sos un profesional en higiene y seguridad laboral argentino. Redactá las CONCLUSIONES técnicas de un informe de medición de Carga Térmica (Res. SRT 30/2023) para la empresa "${empresa}" en base a los siguientes resultados de medición:\n\n${summary}\n\nRedacta 2-3 párrafos técnicos concisos en español formal, mencionando los puestos que cumplen/no cumplen VLA y VLP. Sin viñetas, solo texto corrido.`,
+        recomendaciones: `Sos un profesional en higiene y seguridad laboral argentino. Redactá las RECOMENDACIONES técnicas de un informe de medición de Carga Térmica (Res. SRT 30/2023) para la empresa "${empresa}" en base a los siguientes resultados:\n\n${summary}\n\nRedactá medidas de control y mejora concretas. 2-3 párrafos en español formal. Sin viñetas, solo texto corrido.`,
+      };
+      const prompt = prompts[field];
+      if (!prompt) return res.status(400).json({ message: "Campo inválido" });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 600,
+        temperature: 0.4,
+      });
+      const text = completion.choices[0]?.message?.content?.trim() ?? "";
+      res.json({ text });
+    } catch (err) {
+      console.error("Error generando texto IA:", err);
+      res.status(500).json({ message: "Error generando texto" });
+    }
   });
 
   return httpServer;

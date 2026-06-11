@@ -1,0 +1,84 @@
+Perfecto. APP — prompt para corregir la hoja de Carga Térmica:
+
+En client/src/pages/thermal-sheet.tsx y en client/src/lib/store.ts, corregir la hoja de Carga Térmica para que coincida exactamente con el Protocolo de Medición de Estrés por Calor según Resol. SRT 30/2023.
+1. store.ts — actualizar la interfaz ThermalRow para agregar los campos que faltan:
+
+tbh: string — Temperatura Bulbo Húmedo (°C)
+tg: string — Temperatura Globo (°C)
+tgbhSinPonderar: string — TGBH sin ponderar (calculado automáticamente: 0.7×TBH + 0.3×TG)
+var_uniforme: string — Adicional por tipo de uniforme (VAR): opciones 0, 0.5, 1, 3, 11
+tgbhPonderado: string — TGBH ponderado (calculado: TGBH sin ponderar + VAR + ajuste por tiempo)
+tmSentado: string — TM Sentado en W
+suplementoTM: string — Suplemento por postura en W
+posturaSeleccionada: string — Sentado/De rodillas/En cuclillas/De pie/De pie e inclinado
+parteDelCuerpo: string — Ambas manos/Un brazo/Ambos brazos/Cuerpo entero
+intensidadTrabajo: string — Ligera/Moderada/Pesada
+factoresExposicion: string[] — checkboxes múltiples: Gasto Energético, Temperatura de Aire, Humedad del Aire, Movimiento del Aire, Intercambio calor radiante, Producto Terminado Caliente, Operación de Horno, Requisito de la Ropa
+comentario: string — texto libre por puesto
+aclimatado: string — SI/NO
+
+Actualizar defaultThermalRow() con todos estos campos vacíos.
+2. store.ts — actualizar ThermalProtocol.company para agregar:
+
+instrumento1Marca: string
+instrumento1Modelo: string
+instrumento1Serie: string
+instrumento1Cert: string
+instrumento1FechaCal: string
+instrumento2Marca: string
+instrumento2Modelo: string
+instrumento2Serie: string
+instrumento2Cert: string
+instrumento2FechaCal: string
+tempExterior: string
+humedad: string
+presionAtm: string
+condicionesNormales: string — textarea descripción de condiciones habituales
+condicionesMedicion: string — textarea condiciones al momento de la medición
+
+3. thermal-sheet.tsx — rediseñar la pantalla con tabs:
+Tab 1 — Datos Generales:
+
+Campos del establecimiento (razón social, dirección, localidad, provincia, CP, CUIT) — precargados desde el store establishment
+Fecha, hora inicio, hora fin, turnos habituales
+Instrumento 1: marca, modelo, serie, certificado, fecha calibración
+Instrumento 2: marca, modelo, serie, certificado, fecha calibración
+Condiciones atmosféricas: temperatura exterior, humedad, presión
+Textarea: condiciones normales de trabajo
+Textarea: condiciones al momento de la medición
+
+Tab 2 — Tabla de Mediciones:
+Tabla con una fila por puesto con todas las columnas del protocolo oficial:
+Punto | Sector | Puesto | Exposición (hs) | TBS (°C) | TBH (°C) | TG (°C) | TGBH sin pond. (auto) | VAR uniforme (select) | TGBH ponderado (auto) | Aclimatado | TM (W) (auto) | VLA | VLP | ¿TGBHp < VLA? (auto) | ¿TGBHp < VLP? (auto)
+Los campos calculados automáticamente:
+
+TGBH sin ponderar = 0.7 × TBH + 0.3 × TG
+TGBH ponderado = TGBH sin ponderar + VAR
+TM = TM Sentado + Suplemento TM
+¿TGBHp < VLA? y ¿TGBHp < VLP? = comparación automática
+
+El VAR según tipo de uniforme:
+
+Ropa algodón manga larga → 0
+Overol tejido → 0
+Overol polipropileno SMS → +0.5
+Overol poliolefina → +1
+Ropa doble capa → +3
+Overol barrera de vapor → +11
+
+Tab 3 — Ficha por Puesto:
+Para cada puesto de la tabla, mostrar una ficha expandible con:
+
+Tabla de Tasa Metabólica: selector de postura (con su suplemento W automático: Sentado=0, Rodillas=18, Cuclillas=18, De pie=27, Inclinado=36) y selector de parte del cuerpo × intensidad (la tabla 4×3 de valores W del protocolo)
+El TM Sentado se autocompleta según la celda seleccionada
+El Suplemento se autocompleta según la postura
+Checkboxes de Factores de Exposición
+Campo de texto Comentario
+
+Tab 4 — Conclusiones:
+
+Textarea observaciones generales
+Textarea conclusiones (editable + botón "Generar con IA")
+Textarea recomendaciones (editable + botón "Generar con IA")
+
+4. Lógica de guardado: todos los datos deben guardarse en el store de Zustand usando updateThermalRow y updateThermalCompany existentes, extendidos con los nuevos campos. El botón "Guardar" del header de nueva-inspeccion.tsx ya llama a saveInspection() que persiste todo.

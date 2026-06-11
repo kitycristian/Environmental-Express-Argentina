@@ -44,18 +44,23 @@ export interface ThermalRow {
   tbs: string;
   tbh: string;
   tg: string;
-  tgbh: string;
+  tgbhSinPonderar: string;
+  varUniforme: string;
   tgbhPonderado: string;
   aclimatado: string;
+  tmSentado: string;
+  suplementoTM: string;
   cargaMetabolica: string;
+  posturaSeleccionada: string;
+  parteDelCuerpo: string;
+  intensidadTrabajo: string;
   vla: string;
   vlp: string;
   cumpleVla: string;
   cumpleVlp: string;
-  observaciones: string;
-  tmSentado: string;
-  tmSuplemento: string;
   factoresExposicion: string[];
+  comentario: string;
+  observaciones: string;
 }
 
 export interface ThermalProtocol {
@@ -63,10 +68,13 @@ export interface ThermalProtocol {
   company: {
     razonSocial: string; direccion: string; localidad: string; provincia: string;
     cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
-    turnos: string; instrumento1: string; instrumento1Serie: string; instrumento1Cert: string;
-    instrumento1FechaCal: string; instrumento2: string; instrumento2Serie: string;
-    instrumento2Cert: string; instrumento2FechaCal: string; condicionesAtm: string;
-    tempExterior: string;
+    turnos: string;
+    instrumento1Marca: string; instrumento1Modelo: string; instrumento1Serie: string;
+    instrumento1Cert: string; instrumento1FechaCal: string;
+    instrumento2Marca: string; instrumento2Modelo: string; instrumento2Serie: string;
+    instrumento2Cert: string; instrumento2FechaCal: string;
+    tempExterior: string; humedad: string; presionAtm: string;
+    condicionesNormales: string; condicionesMedicion: string;
   };
   observaciones: string;
   conclusiones: string;
@@ -182,10 +190,12 @@ const defaultNoiseRow = (): NoiseRow => ({
 });
 
 const defaultThermalRow = (): ThermalRow => ({
-  id: uuidv4(), sector: '', puestoTrabajo: '', exposicionHs: '', tbs: '', tbh: '', tg: '',
-  tgbh: '', tgbhPonderado: '', aclimatado: 'SI', cargaMetabolica: '', vla: '', vlp: '',
-  cumpleVla: '', cumpleVlp: '', observaciones: '', tmSentado: '126', tmSuplemento: '27',
-  factoresExposicion: []
+  id: uuidv4(), sector: '', puestoTrabajo: '', exposicionHs: '',
+  tbs: '', tbh: '', tg: '', tgbhSinPonderar: '', varUniforme: '0', tgbhPonderado: '',
+  aclimatado: 'SI', tmSentado: '', suplementoTM: '27', cargaMetabolica: '',
+  posturaSeleccionada: 'De pie', parteDelCuerpo: 'Cuerpo entero', intensidadTrabajo: 'Moderada',
+  vla: '', vlp: '', cumpleVla: '', cumpleVlp: '',
+  factoresExposicion: [], comentario: '', observaciones: ''
 });
 
 const defaultColdRow = (): ColdRow => ({
@@ -205,9 +215,9 @@ const defaultNoiseCompany = () => ({
 const defaultThermalCompany = () => ({
   razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
   fechaMedicion: '', horaInicio: '', horaFin: '', turnos: '',
-  instrumento1: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
-  instrumento2: '', instrumento2Serie: '', instrumento2Cert: '', instrumento2FechaCal: '',
-  condicionesAtm: '', tempExterior: ''
+  instrumento1Marca: '', instrumento1Modelo: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
+  instrumento2Marca: '', instrumento2Modelo: '', instrumento2Serie: '', instrumento2Cert: '', instrumento2FechaCal: '',
+  tempExterior: '', humedad: '', presionAtm: '', condicionesNormales: '', condicionesMedicion: ''
 });
 
 const defaultColdCompany = () => ({
@@ -374,7 +384,7 @@ export const useStore = create<AppState>()(
       setSignatoryRegistration: (registration) => set({ signatoryRegistration: registration }),
     }),
     {
-      name: 'eea-app-state-v4',
+      name: 'eea-app-state-v5',
       storage: createJSONStorage(() => localStorage),
     }
   )
