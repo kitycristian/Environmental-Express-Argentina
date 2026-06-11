@@ -13,16 +13,16 @@ const measurementTypes = [
   },
   {
     id: 'continuity',
-    title: 'Ensayos de Continuidad',
-    description: 'Ensayos de Continuidad y Dispositivo de Corte Automático',
-    icon: FileSpreadsheet,
+    title: 'Continuidad Eléctrica PAT',
+    description: 'Ensayos de Continuidad Eléctrica del Conductor de PAT por sector/tablero (TC)',
+    icon: Cable,
     route: '/grounding/continuity'
   },
   {
     id: 'electrical',
-    title: 'Continuidad Eléctrica PAT',
-    description: 'Ensayos de Continuidad Eléctrica del Conductor de PAT',
-    icon: Cable,
+    title: 'Testeo Dispositivos DD',
+    description: 'Testeo de Disyuntores Diferenciales — Corriente de CC, Corte y Tiempo de Respuesta',
+    icon: FileSpreadsheet,
     route: '/grounding/electrical'
   },
   {

@@ -1,0 +1,116 @@
+Refactorizar completamente el sistema de generación de informes para que cada protocolo genere un DOCX que se parezca lo máximo posible al informe oficial SRT.
+Estrategia general:
+
+Crear un archivo server/report-generators/ con un generador por protocolo
+El endpoint POST /api/generate-report recibe { protocols: string[], data: any, signatory: any } y devuelve un ZIP con un DOCX por protocolo, o un único DOCX si se pide { combined: true }
+Cada generador sigue exactamente la estructura del protocolo oficial
+
+Estructura de cada DOCX debe ser:
+Página 1: Portada (razón social, dirección, fecha, estudio realizado, logo EEA)
+Página 2: Sección "ESTUDIO DE X SEGÚN RESOL. SRT N°..."
+Página 3+: Protocolo oficial con:
+  - Encabezado con datos del establecimiento en cada página
+  - Datos para la medición (instrumentos, fechas, condiciones)
+  - Tabla de datos de medición (exactamente como el protocolo oficial)
+  - Valores de referencia (tablas y textos legales fijos)
+  - Análisis de datos: Conclusiones
+  - Análisis de datos: Recomendaciones
+  - Constancia fotográfica (espacio reservado)
+  - Certificación de condiciones meteorológicas (espacio reservado)
+  - Instructivo para completar el protocolo (texto fijo oficial)
+Última página: Pie con firma del profesional interviniente en CADA página
+Reglas de formato que deben respetarse en todos los DOCX:
+
+Fuente Arial en todo el documento
+Tamaño de página A4, márgenes 2.5cm
+Encabezado repetido en cada página con: título del protocolo en azul navy (#0D2F5E), razón social, CUIT, dirección, localidad, CP, provincia — exactamente como el informe real
+Pie de página en cada página: nombre y matrícula del profesional a la izquierda, "Firma, aclaración y registro del Profesional interviniente." a la derecha, número de página centrado
+Tablas con bordes finos grises, encabezados con fondo azul claro (#D6E4F0) y texto navy bold
+Celdas "CUMPLE SI" con fondo verde claro, "CUMPLE NO" con fondo rojo claro
+Valores medidos que no cumplen resaltados en rojo bold
+
+Crear server/report-generators/thermal.ts — Generador de Carga Térmica:
+Estructura exacta del protocolo SRT 30/2023:
+
+Portada
+Título "ESTUDIO DE ESTRÉS POR CALOR SEGÚN RESOL. SRT Nº 30/2023"
+Tabla encabezado con datos del establecimiento e instrumentos (exactamente como página 3 del informe real DORINKA)
+Figura 1 — Esquema de toma de decisiones (texto descriptivo del esquema ya que no se puede insertar imagen fácilmente)
+Tabla principal de datos de medición con TODAS las columnas: Punto | Sector | Puesto | Exposición (h) | TBS (°C) | TBH (°C) | TG (°C) | TGBH (°C) | Adicional uniforme VAR | TGBH Ponderado (°C) | Aclimatado SI/NO | TM (W) | VLA | VLP | ¿TGBHp < VLA? | ¿TGBHp < VLP?
+Por cada fila/puesto: ficha individual de carga térmica con tabla de TM (postura × parte del cuerpo × intensidad), suplemento, factores de exposición y comentario
+Valores de referencia: tabla de categorías TM, texto sobre VLP y VLA, Tabla 8 VLP, Tabla 9 VLA
+Conclusiones
+Recomendaciones y Controles Generales (texto estándar + conclusiones específicas)
+Constancia fotográfica (espacio)
+Certificación meteorológica (espacio)
+Instructivo (texto fijo oficial)
+
+Crear server/report-generators/cold.ts — Generador de Estrés por Frío:
+Estructura exacta Resol. MTEySS 295/2003:
+
+Portada
+Título
+Tabla encabezado + instrumentos
+Tabla de datos: Punto | Sector | Puesto | Rango Temp Sector (°C) | Ciclos/Turno | Duración Ciclo (min) | Tiempo Neto Exposición (min) | Tiempo Integración (min) | Características | TBS (°C) | Velocidad (m/s) | TEE (°C) | Tipo Uniforme | Equipo | Exposición >4hs
+Observaciones (detalles constructivos de sectores)
+Metodología de medición (texto estándar)
+Valores de referencia: Tabla 2 TEE, Tabla 3 TLVs, Tabla 1 Hipotermia
+Conclusiones
+Recomendaciones para prevenir estrés por frío (texto estándar + específicas)
+Constancia fotográfica
+Certificación meteorológica
+
+Crear server/report-generators/noise.ts — Generador de Ruido:
+Estructura exacta Resol. SRT 85/2012:
+
+Portada
+Título
+Tabla encabezado + dos instrumentos (sonómetro y dosímetro)
+Tabla de datos: Punto | Sector | Puesto | Te (hs) | Tiempo Integración | Características | LC Pico dBC | LAeq,Te dBA | Suma Fracciones | Dosis % | ¿Cumple?
+Tabla de cálculos de fracciones Ci/Ti por punto
+Valores de referencia: tabla de valores límite (24hs→80dBA... etc.)
+Conclusiones diferenciadas por tipo (fijos vs móviles)
+Recomendaciones (en la fuente, barreras, en el trabajador — texto estándar)
+Constancia fotográfica
+Certificación meteorológica
+Instructivo (texto fijo oficial)
+
+Crear server/report-generators/lighting.ts — Generador de Iluminación:
+Estructura exacta Resol. SRT 84/2012:
+
+Portada
+Título
+Tabla encabezado + instrumentos
+Tabla de datos por punto: Punto | Hora | Sector | Sección/Puesto | Tipo Iluminación | Tipo Fuente | Tipo Sistema | E mínima ≥ (E media)/2 | Valor Medido (Lux) | Valor Requerido (Lux) | Cumple Uniformidad | Cumple Límite
+Memoria de cálculos: tabla con dimensiones, factor K, puntos individuales de la cuadrícula
+Observaciones
+Análisis y mejoras: recomendaciones de mantenimiento preventivo (lista estándar de 12 ítems)
+Conclusiones
+Constancia fotográfica
+Certificación meteorológica
+Instructivo (texto fijo oficial)
+
+Actualizar server/routes.ts — endpoint /api/generate-report:
+typescriptapp.post("/api/generate-report", requireAuth, async (req, res) => {
+  const { protocols, data, signatory, combined } = req.body;
+  // protocols: array de strings ['thermal', 'cold', 'noise', 'lighting', 'pat', 'ventilation']
+  // data: objeto con thermalProtocol, coldProtocol, noiseProtocol, lightingSectors, etc.
+  // combined: boolean — si true genera un solo DOCX, si false genera ZIP con un DOCX por protocolo
+  
+  if (combined || protocols.length === 1) {
+    // Generar un solo DOCX con todas las secciones
+    // Devolver como attachment
+  } else {
+    // Generar ZIP con un DOCX por protocolo
+    // Usar la librería 'archiver' o 'jszip'
+  }
+});
+Actualizar client/src/pages/report.tsx — simplificar la UI:
+La página debe tener:
+
+Selector de qué protocolos incluir (checkboxes: Carga Térmica, Estrés por Frío, Ruido, Iluminación, PAT, Ventilación) — solo mostrar los que tienen datos cargados
+Toggle: "Documento único" / "Archivos separados"
+Datos del firmante: nombre, título, matrícula profesional
+Firma digital (ya existe)
+Botón "Generar Informe DOCX" → llama al endpoint
+Botón "Análisis IA" → genera conclusiones y recomendaciones con GPT-4o

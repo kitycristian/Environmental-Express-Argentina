@@ -123,6 +123,48 @@ export interface ColdProtocol {
   recomendaciones: string;
 }
 
+// ─── Ventilation Protocol Types ───────────────────────────────────────────────
+export interface VentilationRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  tipoTrabajo: string;          // Ligero | Moderado | Pesado
+  tiempoExposicion: string;     // hs
+  tiempoMedicion: string;       // min
+  caracteristicasExposicion: string; // Continua | Intermitente
+  cantidadPersonas: string;
+  cubajLocal: string;           // m3 total (ancho×largo×alto o directo)
+  ancho: string; largo: string; alto: string;
+  cubajePorPersona: string;     // calculado o directo
+  superficieRejilla: string;    // m2
+  velocidadMedida: string;      // m/s
+  caudalExtraccion: string;     // calculado: sup×vel×3600
+  cubajeMinimoRequerido: string;
+  caudalMinimoRequerido: string;
+  cumpleCubaje: string;
+  cumpleCaudal: string;
+  cumple: string;
+  observaciones: string;
+}
+
+export interface VentilationProtocol {
+  rows: VentilationRow[];
+  company: {
+    razonSocial: string; direccion: string; localidad: string; provincia: string;
+    cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
+    turnos: string;
+    instrumento1Marca: string; instrumento1Modelo: string; instrumento1Serie: string;
+    instrumento1Cert: string; instrumento1FechaCal: string;
+    instrumento2Marca: string; instrumento2Modelo: string; instrumento2Serie: string;
+    instrumento2Cert: string; instrumento2FechaCal: string;
+    tempExterior: string; humedad: string; presionAtm: string;
+    condicionesNormales: string; condicionesMedicion: string;
+  };
+  observaciones: string;
+  conclusiones: string;
+  recomendaciones: string;
+}
+
 // ─── Lighting Protocol Types ──────────────────────────────────────────────────
 export interface LightingProtocol {
   company: {
@@ -148,6 +190,7 @@ interface AppState {
   thermalProtocol: ThermalProtocol;
   coldProtocol: ColdProtocol;
   lightingProtocol: LightingProtocol;
+  ventilationProtocol: VentilationProtocol;
   digitalSignature: string | null;
   signatoryName: string | null;
   signatoryTitle: string | null;
@@ -191,6 +234,13 @@ interface AppState {
   updateLightingCompany: (data: Partial<LightingProtocol['company']>) => void;
   updateLightingText: (field: 'observaciones' | 'conclusiones' | 'recomendaciones', value: string) => void;
   updateLightingMantenimiento: (key: string, value: boolean) => void;
+
+  updateVentilationRow: (id: string, data: Partial<VentilationRow>) => void;
+  addVentilationRow: () => void;
+  deleteVentilationRow: (id: string) => void;
+  updateVentilationCompany: (data: Partial<VentilationProtocol['company']>) => void;
+  updateVentilationText: (field: 'observaciones' | 'conclusiones' | 'recomendaciones', value: string) => void;
+  setVentilationRows: (rows: VentilationRow[]) => void;
 
   loadInspectionData: (establishment: Establishment, sectors: Sector[]) => void;
   resetStore: () => void;
@@ -249,6 +299,26 @@ const defaultNoiseCompany = () => ({
   condicionesNormales: '', condicionesMedicion: ''
 });
 
+const defaultVentilationRow = (): VentilationRow => ({
+  id: uuidv4(), sector: '', puestoTrabajo: '', tipoTrabajo: 'Ligero',
+  tiempoExposicion: '', tiempoMedicion: '', caracteristicasExposicion: 'Continua',
+  cantidadPersonas: '', cubajLocal: '', ancho: '', largo: '', alto: '',
+  cubajePorPersona: '', superficieRejilla: '', velocidadMedida: '', caudalExtraccion: '',
+  cubajeMinimoRequerido: '10', caudalMinimoRequerido: '12',
+  cumpleCubaje: '', cumpleCaudal: '', cumple: '', observaciones: ''
+});
+
+const defaultVentilationCompany = () => ({
+  razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
+  fechaMedicion: '', horaInicio: '', horaFin: '', turnos: '',
+  instrumento1Marca: '', instrumento1Modelo: '', instrumento1Serie: '',
+  instrumento1Cert: '', instrumento1FechaCal: '',
+  instrumento2Marca: '', instrumento2Modelo: '', instrumento2Serie: '',
+  instrumento2Cert: '', instrumento2FechaCal: '',
+  tempExterior: '', humedad: '', presionAtm: '',
+  condicionesNormales: '', condicionesMedicion: ''
+});
+
 const defaultThermalCompany = () => ({
   razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
   fechaMedicion: '', horaInicio: '', horaFin: '', turnos: '',
@@ -288,6 +358,7 @@ export const useStore = create<AppState>()(
       thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
       coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', metodologia: '', conclusiones: '', recomendaciones: '' },
       lightingProtocol: { company: defaultLightingCompany(), mantenimiento: {}, observaciones: '', conclusiones: '', recomendaciones: '' },
+      ventilationProtocol: { rows: [defaultVentilationRow()], company: defaultVentilationCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
       digitalSignature: null, signatoryName: null, signatoryTitle: null, signatoryRegistration: null,
       lastSavedAt: null, isDirty: false,
 
@@ -362,6 +433,14 @@ export const useStore = create<AppState>()(
       updateLightingText: (field, value) => set((s) => ({ lightingProtocol: { ...s.lightingProtocol, [field]: value }, isDirty: true })),
       updateLightingMantenimiento: (key, value) => set((s) => ({ lightingProtocol: { ...s.lightingProtocol, mantenimiento: { ...s.lightingProtocol.mantenimiento, [key]: value } }, isDirty: true })),
 
+      // Ventilation
+      updateVentilationRow: (id, data) => set((s) => ({ ventilationProtocol: { ...s.ventilationProtocol, rows: s.ventilationProtocol.rows.map(r => r.id === id ? { ...r, ...data } : r) }, isDirty: true })),
+      addVentilationRow: () => set((s) => ({ ventilationProtocol: { ...s.ventilationProtocol, rows: [...s.ventilationProtocol.rows, defaultVentilationRow()] }, isDirty: true })),
+      deleteVentilationRow: (id) => set((s) => ({ ventilationProtocol: { ...s.ventilationProtocol, rows: s.ventilationProtocol.rows.filter(r => r.id !== id) }, isDirty: true })),
+      updateVentilationCompany: (data) => set((s) => ({ ventilationProtocol: { ...s.ventilationProtocol, company: { ...s.ventilationProtocol.company, ...data } }, isDirty: true })),
+      updateVentilationText: (field, value) => set((s) => ({ ventilationProtocol: { ...s.ventilationProtocol, [field]: value }, isDirty: true })),
+      setVentilationRows: (rows) => set((s) => ({ ventilationProtocol: { ...s.ventilationProtocol, rows }, isDirty: true })),
+
       // Lifecycle
       loadInspectionData: (establishment, sectors) => set(() => ({
         establishment: JSON.parse(JSON.stringify(establishment)),
@@ -374,6 +453,7 @@ export const useStore = create<AppState>()(
         thermalProtocol: { rows: [defaultThermalRow()], company: defaultThermalCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
         coldProtocol: { rows: [defaultColdRow()], company: defaultColdCompany(), observaciones: '', metodologia: '', conclusiones: '', recomendaciones: '' },
         lightingProtocol: { company: defaultLightingCompany(), mantenimiento: {}, observaciones: '', conclusiones: '', recomendaciones: '' },
+        ventilationProtocol: { rows: [defaultVentilationRow()], company: defaultVentilationCompany(), observaciones: '', conclusiones: '', recomendaciones: '' },
         isDirty: false, lastSavedAt: null,
       }),
       saveInspection: async () => {
@@ -438,7 +518,7 @@ export const useStore = create<AppState>()(
       setSignatoryRegistration: (registration) => set({ signatoryRegistration: registration }),
     }),
     {
-      name: 'eea-app-state-v7',
+      name: 'eea-app-state-v8',
       storage: createJSONStorage(() => localStorage),
     }
   )
