@@ -1,0 +1,81 @@
+En client/src/pages/noise-sheet.tsx y client/src/lib/store.ts, completar la hoja de Ruido para que coincida exactamente con el Protocolo de Medición de Ruido según Resol. SRT 85/2012 y Anexo V Resol. MTEySS 295/2003.
+1. store.ts — actualizar la interfaz NoiseRow agregando los campos que faltan:
+
+tipoRuido: string — Continuo / Intermitente / Impulso o Impacto
+lcPicoDbc: string — Nivel pico ponderado C (LC pico en dBC) — solo para ruido de impulso
+laeqTe: string — Nivel de presión acústica integrado (LAeq,Te en dBA) — para continuo/intermitente
+sumaFracciones: string — resultado de Σ Ci/Ti — calculado automático cuando hay múltiples períodos
+dosis: string — Dosis en porcentaje % — para puesto móvil con dosímetro
+cumple: string — SI/NO — calculado automático
+esPuestoMovil: boolean — si es puesto móvil medido con dosímetro
+observaciones: string — información adicional por punto
+
+Actualizar defaultNoiseRow() con todos estos campos vacíos.
+2. Cálculo automático de fracción Ci/Ti y cumplimiento:
+Cuando esPuestoMovil es false y el tipo es Continuo o Intermitente:
+
+La fracción = tiempo de exposición (Te en minutos) / tiempo permitido según tabla de valores límite
+Tabla de tiempos permitidos según nivel dBA (Anexo V Resol. 295/03): 85dBA→480min, 88dBA→240min, 91dBA→120min, 94dBA→60min, 97dBA→30min, 100dBA→15min, 103dBA→7.5min, 106dBA→3.75min
+sumaFracciones se calcula interpolando el nivel medido en la tabla
+cumple = SI si sumaFracciones < 1
+cumple = SI si dosis < 100%
+Para impulso: cumple = SI si lcPicoDbc < 140 dBC
+
+3. store.ts — actualizar NoiseProtocol.company agregando:
+
+instrumento1Marca: string
+instrumento1Modelo: string
+instrumento1Tipo: string — Sonómetro Integrador / Dosímetro
+instrumento1Serie: string
+instrumento1Cert: string
+instrumento1FechaCal: string
+instrumento1Norma: string — ej: IRAM 4074 / IEC 804 Clase 2
+instrumento2Marca: string
+instrumento2Modelo: string
+instrumento2Tipo: string
+instrumento2Serie: string
+instrumento2Cert: string
+instrumento2FechaCal: string
+condicionesNormales: string — descripción de fuentes de ruido habituales
+condicionesMedicion: string — condiciones al momento de la medición
+tempExterior: string
+humedad: string
+presionAtm: string
+
+4. noise-sheet.tsx — rediseñar con tabs:
+Tab 1 — Datos Generales:
+
+Campos del establecimiento precargados desde store.establishment
+Fecha, hora inicio, hora fin, turnos habituales
+Instrumento 1 (Sonómetro): tipo, marca, modelo, serie, certificado, fecha calibración, norma cumplida
+Instrumento 2 (Dosímetro): tipo, marca, modelo, serie, certificado, fecha calibración
+Condiciones atmosféricas: temperatura, humedad, presión
+Textarea: condiciones normales/habituales de trabajo (fuentes de ruido)
+Textarea: condiciones al momento de la medición
+
+Tab 2 — Tabla de Mediciones:
+Tabla con una fila por punto con estas columnas exactas del protocolo oficial:
+Punto | Sector | Puesto/Puesto tipo/Puesto móvil | Tiempo exposición Te (hs) | Tiempo integración (min) | Tipo de ruido (select) | LC pico dBC (solo impulso) | LAeq,Te dBA (continuo/intermitente) | Suma fracciones (auto) | Dosis % (dosímetro) | ¿Cumple? (auto)
+Lógica de visualización por fila:
+
+Si tipoRuido = Impulso: mostrar columna LC pico, ocultar LAeq y fracciones
+Si esPuestoMovil = true: mostrar columna Dosis%, ocultar LAeq y fracciones
+Si continuo/intermitente fijo: mostrar LAeq y fracciones, ocultar dosis%
+Colorear fila en verde si cumple, rojo si no cumple
+
+Tab 3 — Cálculos:
+Para cada punto fijo mostrar la tabla de cálculo:
+| Punto | Tiempo Exposición (min) | Tiempo Permitido (min) | Fracción |
+Y al final la suma de fracciones total con indicador de cumplimiento.
+Para punto móvil mostrar:
+| Dosis Medida % | Tiempo Total Exposición (min) | Tiempo de Medición (min) | Dosis Proyectada % |
+Con fórmula: Dosis proyectada = (Dosis medida × Tiempo total) / Tiempo medición
+Tab 4 — Valores de Referencia:
+Tabla fija no editable con los valores límite según Anexo V Resol. 295/03:
+| Duración por día | Nivel dBA |
+24hs→80 / 16hs→82 / 8hs→85 / 4hs→88 / 2hs→91 / 1hs→94 / 30min→97 / 15min→100 / 7.5min→103 / 3.75min→106
+Tab 5 — Conclusiones:
+
+Tabla resumen de cumplimiento por puesto
+Textarea: conclusiones (editable + botón "Generar con IA")
+Textarea: recomendaciones (editable + botón "Generar con IA")

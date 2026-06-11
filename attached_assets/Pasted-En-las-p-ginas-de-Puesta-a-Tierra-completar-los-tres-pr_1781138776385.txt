@@ -1,0 +1,32 @@
+En las páginas de Puesta a Tierra, completar los tres protocolos para que coincidan exactamente con el informe real según Resol. SRT 900/2015 y Reglamento AEA 90364.
+1. grounding-protocol.tsx — Protocolo de Medición PAT:
+Agregar un encabezado de datos generales arriba de la tabla existente con:
+
+Instrumento 1 (Telurómetro/Medidor PAT): marca (SONEL), modelo, serie, fecha calibración, certificado, laboratorio calibración
+Instrumento 2 (Comprobador de instalaciones): marca, modelo, serie, fecha calibración, certificado — con nota fija: "cumple requerimientos IEC 61557, VDE 0100, BS7671"
+Fecha de medición, hora inicio, hora fin
+Metodología: campo de texto con valor por defecto "1. IRAM 2281-2da edición 2002 (caída de tensión) / 2. Impedancia del Bucle con inyección de corriente para corte de DD"
+Potencia del servicio eléctrico: checkbox 380V / 220V
+Condiciones atmosféricas: temperatura, humedad, presión
+
+La tabla de mediciones ya existe pero agregar estas columnas que faltan comparando con el informe real. La tabla debe tener exactamente:
+N° Toma | Sector | Condición Terreno | Uso PAT | Esquema Conexión | Valor Ω (input) | Cumple SI/NO (auto: ≤40Ω = SI) | Circuito PAT Continuo SI/NO | Capacidad de Carga SI/NO | Protección (DD/IA/Fusible) | Dispositivo Desconecta SI/NO | Observaciones
+Agregar al pie de la tabla una nota fija: "Reglamento AEA 90364 (versión 2006), sub cláusula 771.3.3.1: valor máximo de resistencia de PAT = 40Ω para protecciones diferenciales de hasta 30mA"
+2. grounding-continuity.tsx — Ensayos de Continuidad Eléctrica del Conductor de PAT:
+Rediseñar esta página con la tabla correcta según el informe real:
+Tabla resumen por sector/tablero:
+Sector | Referencia Tablero | TC Ensayados | TC Con Continuidad | TC Sin Continuidad | TC Invertidos F-N | Observaciones
+Cada fila tiene inputs numéricos para TC Ensayados, Con Continuidad, Sin Continuidad, Invertidos. Las observaciones son texto libre con sugerencias predefinidas (botones quick-insert): "Revisar Continuidad del conductor de PAT en TC" / "Rectificar F-N invertidos" / "Cumple Resol. SRT N° 900/2015"
+3. grounding-electrical.tsx — Testeo de Dispositivos de Corte Automático:
+Rediseñar esta página con la tabla del informe real:
+Tabla por disyuntor diferencial:
+Med. N° | Descripción/Referencia | Ubicación Tablero | Disyuntor N° | Corriente de CC (A) | Corriente de Corte (mA) | Tiempo de Respuesta (ms) | Observaciones
+Las observaciones tienen opciones rápidas: "Disyuntor Eficiente" / "Disyuntor Deficiente - Botón de corte no funciona (Debe ser reemplazado)" / "Sin disyuntor diferencial"
+4. Agregar tab de Inspección de Tableros en el selector /grounding o dentro de grounding-protocol.tsx con la tabla de inspección visual de tableros que aparece en el informe:
+Tabla por tablero:
+Ubicación Tablero | N° Tablero | 1-Grado IP apto | 1-Apto personal BA1 | 1-Símbolo Riesgo Eléctrico | 1-Contratapa no combustible | 2-Diferencial ≤30mA IEC 61008 | 3-Conductor PE bicolor | 3-Masas conectadas PE | 3-Sección mínima PE | 4-Tomacorrientes IRAM 2071 | 5-Posee electrodo+caja+conductor PAT | 5-PAT conectada a PE | 5-RPAT ≤ 40Ω
+Todas las celdas son select SI/NO/N.A. con colores verde/rojo/gris automáticos.
+5. Conclusiones — agregar al final de grounding-protocol.tsx una sección de conclusiones con:
+
+Textarea conclusiones con botón "Generar con IA"
+Textarea recomendaciones con las buenas prácticas estándar precargadas (revisión anual, prohibición de intercalar elementos de corte, comprobación de continuidad, etc.)

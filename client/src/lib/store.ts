@@ -8,15 +8,15 @@ export interface NoiseRow {
   id: string;
   sector: string;
   puestoTrabajo: string;
-  tiempoExposicion: string;
-  tiempoIntegracion: string;
-  tipoRuido: string;
-  valorMedido: string;
-  unidad: string;
-  dosisRuido: string;
-  limitePermisible: string;
-  fraccion: string;
-  cumple: string;
+  tipoRuido: string;           // Continuo | Intermitente | Impulso o Impacto
+  esPuestoMovil: boolean;      // medido con dosímetro en recorrido
+  tiempoExposicion: string;    // Te en horas
+  tiempoIntegracion: string;   // duración integración en minutos
+  laeqTe: string;              // LAeq,Te en dBA (continuo/intermitente)
+  lcPicoDbc: string;           // LC pico en dBC (impulso)
+  sumaFracciones: string;      // Σ Ci/Ti (calculado, display)
+  dosis: string;               // % dosímetro
+  cumple: string;              // SI/NO (calculado, display)
   observaciones: string;
 }
 
@@ -25,9 +25,13 @@ export interface NoiseProtocol {
   company: {
     razonSocial: string; direccion: string; localidad: string; provincia: string;
     cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
-    jornadaLaboral: string; turnos: string; instrumento1: string; instrumento1Serie: string;
-    instrumento1Cert: string; instrumento1FechaCal: string; instrumento2: string;
+    jornadaLaboral: string; turnos: string;
+    instrumento1Marca: string; instrumento1Modelo: string; instrumento1Tipo: string;
+    instrumento1Serie: string; instrumento1Cert: string; instrumento1FechaCal: string;
+    instrumento1Norma: string;
+    instrumento2Marca: string; instrumento2Modelo: string; instrumento2Tipo: string;
     instrumento2Serie: string; instrumento2Cert: string; instrumento2FechaCal: string;
+    tempExterior: string; humedad: string; presionAtm: string;
     condicionesNormales: string; condicionesMedicion: string;
   };
   observaciones: string;
@@ -212,9 +216,9 @@ export const sampleSectors: Sector[] = [
 ];
 
 const defaultNoiseRow = (): NoiseRow => ({
-  id: uuidv4(), sector: '', puestoTrabajo: '', tiempoExposicion: '', tiempoIntegracion: '',
-  tipoRuido: '', valorMedido: '', unidad: 'dBA', dosisRuido: '', limitePermisible: '85',
-  fraccion: '', cumple: '', observaciones: ''
+  id: uuidv4(), sector: '', puestoTrabajo: '', tipoRuido: 'Continuo', esPuestoMovil: false,
+  tiempoExposicion: '', tiempoIntegracion: '', laeqTe: '', lcPicoDbc: '',
+  sumaFracciones: '', dosis: '', cumple: '', observaciones: ''
 });
 
 const defaultThermalRow = (): ThermalRow => ({
@@ -235,9 +239,13 @@ const defaultColdRow = (): ColdRow => ({
 
 const defaultNoiseCompany = () => ({
   razonSocial: '', direccion: '', localidad: '', provincia: '', cp: '', cuit: '',
-  fechaMedicion: '', horaInicio: '', horaFin: '', jornadaLaboral: '', turnos: '',
-  instrumento1: '', instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
-  instrumento2: '', instrumento2Serie: '', instrumento2Cert: '', instrumento2FechaCal: '',
+  fechaMedicion: '', horaInicio: '', horaFin: '', jornadaLaboral: '8 Horas', turnos: '',
+  instrumento1Marca: '', instrumento1Modelo: '', instrumento1Tipo: 'Sonómetro Integrador',
+  instrumento1Serie: '', instrumento1Cert: '', instrumento1FechaCal: '',
+  instrumento1Norma: 'IRAM 4074 / IEC 804 Clase 2',
+  instrumento2Marca: '', instrumento2Modelo: '', instrumento2Tipo: 'Dosímetro',
+  instrumento2Serie: '', instrumento2Cert: '', instrumento2FechaCal: '',
+  tempExterior: '', humedad: '', presionAtm: '',
   condicionesNormales: '', condicionesMedicion: ''
 });
 
@@ -430,7 +438,7 @@ export const useStore = create<AppState>()(
       setSignatoryRegistration: (registration) => set({ signatoryRegistration: registration }),
     }),
     {
-      name: 'eea-app-state-v6',
+      name: 'eea-app-state-v7',
       storage: createJSONStorage(() => localStorage),
     }
   )

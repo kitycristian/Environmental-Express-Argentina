@@ -1,0 +1,79 @@
+En client/src/pages/ventilation-sheet.tsx y client/src/lib/store.ts, rediseñar completamente la hoja de Ventilación para que coincida con el Informe de Medición de Ventilación según Ley 19.587/72 y Decreto 351/79 Capítulo XI Art. 64.
+1. store.ts — agregar interfaz VentilationProtocol con:
+typescriptinterface VentilationRow {
+  id: string;
+  sector: string;
+  puestoTrabajo: string;
+  tipoTrabajo: string; // Ligero / Moderado / Pesado
+  tiempoExposicion: string; // hs
+  tiempoMedicion: string; // min
+  caracteristicasExposicion: string; // Continua / Intermitente
+  cantidadPersonas: string;
+  // Cálculo Cubaje por Persona
+  cubajLocal: string; // m3 (Ancho × Largo × Alto)
+  ancho: string; // m
+  largo: string; // m
+  alto: string; // m
+  cubajePorPersona: string; // calculado: cubajLocal / cantidadPersonas
+  // Cálculo Caudal de Extracción por Persona (medido)
+  superficieRejilla: string; // m2
+  velocidadMedida: string; // m/s
+  caudalExtraccion: string; // calculado: superficieRejilla × velocidadMedida × 3600
+  // Ventilación Mínima Requerida (Dec. 351/79 Art. 64)
+  cubajeMinimoRequerido: string; // m3/pers según tabla
+  caudalMinimoRequerido: string; // m3/h por persona según tabla
+  // Cumplimiento
+  cumpleCubaje: string; // SI/NO auto: cubajePorPersona >= cubajeMinimoRequerido
+  cumpleCaudal: string; // SI/NO auto: caudalExtraccion/cantidadPersonas >= caudalMinimoRequerido
+  cumple: string; // SI/NO auto: cumple ambos
+  observaciones: string;
+}
+
+interface VentilationProtocol {
+  rows: VentilationRow[];
+  company: {
+    razonSocial: string; direccion: string; localidad: string; provincia: string;
+    cp: string; cuit: string; fechaMedicion: string; horaInicio: string; horaFin: string;
+    turnos: string;
+    instrumento1Marca: string; instrumento1Modelo: string; instrumento1Serie: string;
+    instrumento1Cert: string; instrumento1FechaCal: string;
+    instrumento2Marca: string; instrumento2Modelo: string; instrumento2Serie: string;
+    instrumento2Cert: string; instrumento2FechaCal: string;
+    tempExterior: string; humedad: string; presionAtm: string;
+    condicionesNormales: string; condicionesMedicion: string;
+  };
+  observaciones: string;
+  conclusiones: string;
+  recomendaciones: string;
+}
+Agregar ventilationProtocol al store con sus acciones: updateVentilationRow, addVentilationRow, deleteVentilationRow, updateVentilationCompany, updateVentilationText, setVentilationRows.
+2. Tabla de valores mínimos según Decreto 351/79 Art. 64 (hardcodeada en el código para los cálculos automáticos):
+Tipo de TrabajoCubaje mínimo por persona (m3)Caudal mínimo por persona (m3/h)Ligero1012Moderado1518Pesado2024
+3. Cálculos automáticos por fila:
+
+cubajePorPersona = (ancho × largo × alto) / cantidadPersonas — si se ingresan dimensiones; o se puede ingresar directamente el cubaje total
+caudalExtraccion = superficieRejilla × velocidadMedida × 3600 (conversión m/s → m3/h)
+cumpleCubaje = cubajePorPersona >= cubajeMinimoRequerido (según tipoTrabajo)
+cumpleCaudal = (caudalExtraccion / cantidadPersonas) >= caudalMinimoRequerido (según tipoTrabajo)
+cumple = cumpleCubaje AND cumpleCaudal
+
+4. ventilation-sheet.tsx — rediseñar con tabs:
+Tab 1 — Datos Generales:
+
+Datos del establecimiento precargados desde store.establishment
+Fecha, hora inicio, hora fin, turnos habituales
+Instrumento 1 (Termoanemómetro de Hilo Caliente): marca, modelo, serie, certificado, fecha calibración
+Instrumento 2 (Termohigrobarómetro): marca, modelo, serie, certificado, fecha calibración
+Condiciones atmosféricas: temperatura, humedad, presión
+Textarea: condiciones normales de trabajo
+Textarea: condiciones al momento de la medición
+
+Tab 2 — Tabla de Mediciones:
+Tabla con estas columnas exactas del informe real:
+# | Sector | Puesto | Tiempo Exposición (hs) | Tiempo Medición (min) | Características (select) | Tipo Trabajo (select: Ligero/Moderado/Pesado) | Cantidad Personas | Cubaje Local (m3) | Cubaje/Persona (auto m3) | Sup. Rejilla (m2) | Veloc. Medida (m/s) | Caudal Extracción (auto m3/h) | Cubaje Mínimo (auto m3/pers) | Caudal Mínimo (auto m3/h·pers) | ¿Cumple? (auto SI/NO)
+Colorear fila verde si cumple, rojo si no cumple.
+Tab 3 — Conclusiones:
+
+Tabla resumen de cumplimiento por sector con las dos condiciones (cubaje y caudal)
+Textarea conclusiones con botón "Generar con IA"
+Textarea recomendaciones con botón "Generar con IA"
