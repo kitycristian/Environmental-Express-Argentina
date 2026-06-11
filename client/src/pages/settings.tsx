@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit, Save, Users, Settings, Wrench, Building2, UserPlus, Key, Shield, PenTool, Upload, X } from "lucide-react";
+import { Plus, Trash2, Edit, Save, Users, Settings, Wrench, Building2, UserPlus, Key, Shield, PenTool, Upload, X, Loader2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { Instrument, Rubro } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -52,14 +53,70 @@ export default function SettingsPage() {
   );
 }
 
+type ApiUser = { id: string; username: string; role: string; name: string; createdAt: string };
+
 function UsersSettings() {
-    // Mock Users Data for Prototype
-    const [users, setUsers] = useState([
-        { id: 1, name: "Admin Principal", email: "admin@syh.com", role: "Administrador", active: true },
-        { id: 2, name: "Técnico Campo", email: "tecnico@syh.com", role: "Técnico", active: true },
-        { id: 3, name: "Auditor Externo", email: "auditor@cliente.com", role: "Invitado", active: false },
-    ]);
+    const { toast } = useToast();
+    const qc = useQueryClient();
+
+    const { data: users = [], isLoading } = useQuery<ApiUser[]>({
+        queryKey: ["/api/users"],
+        queryFn: () => fetch("/api/users", { credentials: "include" }).then(r => r.json()),
+    });
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [form, setForm] = useState({ name: "", username: "", password: "", role: "operator" });
+
+    const createUser = useMutation({
+        mutationFn: async () => {
+            const res = await fetch("/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(form),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ message: "Error al crear usuario" }));
+                throw new Error(err.message || "Error al crear usuario");
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["/api/users"] });
+            toast({ title: "Usuario creado correctamente" });
+            setIsDialogOpen(false);
+            setForm({ name: "", username: "", password: "", role: "operator" });
+        },
+        onError: (err: Error) => {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        },
+    });
+
+    const deleteUser = useMutation({
+        mutationFn: (id: string) =>
+            fetch(`/api/users/${id}`, { method: "DELETE", credentials: "include" }).then(async r => {
+                if (!r.ok) {
+                    const err = await r.json().catch(() => ({ message: "Error al eliminar" }));
+                    throw new Error(err.message || "Error al eliminar");
+                }
+            }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["/api/users"] });
+            toast({ title: "Usuario eliminado" });
+        },
+        onError: (err: Error) => {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!form.username.trim() || !form.password.trim()) {
+            toast({ title: "Completá usuario y contraseña", variant: "destructive" });
+            return;
+        }
+        createUser.mutate();
+    };
 
     return (
         <Card>
@@ -68,49 +125,66 @@ function UsersSettings() {
                     <CardTitle>Gestión de Usuarios</CardTitle>
                     <CardDescription>Control de acceso y perfiles del sistema.</CardDescription>
                 </div>
-                <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
+                <Button onClick={() => setIsDialogOpen(true)} className="gap-2" data-testid="button-nuevo-usuario">
                     <UserPlus className="h-4 w-4" /> Nuevo Usuario
                 </Button>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Rol / Perfil</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead className="text-right">Acciones</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell className="font-medium">{user.name}</TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>
-                                    <Badge variant="outline" className={user.role === 'Administrador' ? 'border-primary text-primary' : ''}>
-                                        {user.role}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <div className={`flex items-center gap-2 ${user.active ? 'text-green-600' : 'text-gray-400'}`}>
-                                        <div className={`h-2 w-2 rounded-full ${user.active ? 'bg-green-600' : 'bg-gray-400'}`} />
-                                        <span className="text-xs font-medium">{user.active ? 'Activo' : 'Inactivo'}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon">
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                                        <Key className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Cargando usuarios...
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead>Usuario</TableHead>
+                                <TableHead>Rol</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {users.map((user) => (
+                                <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                    <TableCell className="font-mono text-sm">{user.username}</TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant="outline"
+                                            className={user.role === "admin" ? "border-primary text-primary" : ""}
+                                        >
+                                            {user.role === "admin" ? "Administrador" : "Operador"}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-muted-foreground hover:text-destructive"
+                                            data-testid={`button-delete-user-${user.id}`}
+                                            disabled={deleteUser.isPending}
+                                            onClick={() => {
+                                                if (confirm(`¿Eliminar al usuario "${user.username}"?`)) {
+                                                    deleteUser.mutate(user.id);
+                                                }
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {users.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                        No hay usuarios registrados.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                )}
             </CardContent>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -118,32 +192,63 @@ function UsersSettings() {
                     <DialogHeader>
                         <DialogTitle>Crear Nuevo Usuario</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
+                    <form onSubmit={handleSubmit} className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label>Nombre Completo</Label>
-                            <Input placeholder="Ej. Juan Pérez" />
+                            <Label htmlFor="u-name">Nombre completo</Label>
+                            <Input
+                                id="u-name"
+                                placeholder="Ej. Juan Pérez"
+                                value={form.name}
+                                onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
+                                data-testid="input-user-name"
+                            />
                         </div>
                         <div className="space-y-2">
-                            <Label>Email</Label>
-                            <Input type="email" placeholder="usuario@empresa.com" />
+                            <Label htmlFor="u-username">Usuario</Label>
+                            <Input
+                                id="u-username"
+                                placeholder="juanperez"
+                                value={form.username}
+                                onChange={(e) => setForm(f => ({ ...f, username: e.target.value }))}
+                                data-testid="input-user-username"
+                                required
+                            />
                         </div>
                         <div className="space-y-2">
-                            <Label>Contraseña</Label>
-                            <Input type="password" placeholder="******" />
+                            <Label htmlFor="u-password">Contraseña</Label>
+                            <Input
+                                id="u-password"
+                                type="password"
+                                placeholder="Mínimo 6 caracteres"
+                                value={form.password}
+                                onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
+                                data-testid="input-user-password"
+                                required
+                            />
                         </div>
                         <div className="space-y-2">
-                            <Label>Perfil</Label>
-                            <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                <option>Técnico</option>
-                                <option>Administrador</option>
-                                <option>Invitado</option>
+                            <Label htmlFor="u-role">Rol</Label>
+                            <select
+                                id="u-role"
+                                value={form.role}
+                                onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))}
+                                data-testid="select-user-role"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                            >
+                                <option value="admin">Administrador</option>
+                                <option value="operator">Operador</option>
                             </select>
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                        <Button onClick={() => setIsDialogOpen(false)}>Crear Usuario</Button>
-                    </DialogFooter>
+                        <DialogFooter className="pt-2">
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                                Cancelar
+                            </Button>
+                            <Button type="submit" disabled={createUser.isPending} data-testid="button-submit-usuario">
+                                {createUser.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                Crear Usuario
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </Card>
