@@ -92,7 +92,7 @@ export default function Dashboard() {
       {/* ── AI Card + Recent Inspections ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* AI Card */}
-        <Link href="/report">
+        <Link href="/grounding">
           <div className="eea-card p-5 cursor-pointer group hover:shadow-md transition-all border-2 border-[hsl(144,60%,40%)]/20 hover:border-[hsl(144,60%,40%)]/50 h-full flex flex-col justify-between">
             <div>
               <div className="flex items-start justify-between mb-3">
@@ -102,14 +102,14 @@ export default function Dashboard() {
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-[hsl(144,60%,40%)] text-white px-2 py-0.5 rounded-full">NUEVO</span>
               </div>
               <div className="font-semibold text-[15px] text-foreground leading-tight mb-1.5">
-                Análisis IA disponible
+                Puesta a Tierra + IA
               </div>
               <p className="text-[12px] text-muted-foreground leading-relaxed">
-                Analizá tableros eléctricos con visión artificial e identificá riesgos y no conformidades automáticamente.
+                Protocolo PAT, continuidad eléctrica y análisis de tableros con visión artificial.
               </p>
             </div>
             <div className="flex items-center gap-1 text-[13px] font-medium text-[hsl(144,60%,35%)] mt-4 group-hover:gap-2 transition-all">
-              <span>Abrir Analizador</span>
+              <span>Ir a PAT</span>
               <ArrowRight size={14} />
             </div>
           </div>
